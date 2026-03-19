@@ -15,29 +15,30 @@ interface DashboardStatsProps {
 
 export function DashboardStats({ stats }: DashboardStatsProps) {
   const statCards = [
-    { label: "Students", value: stats.students, icon: Users, color: "bg-green-100", textColor: "text-green-600" },
-    { label: "Teachers", value: stats.teachers, icon: UserCheck, color: "bg-blue-100", textColor: "text-blue-600" },
-    { label: "Parents", value: stats.parents, icon: Users2, color: "bg-yellow-100", textColor: "text-yellow-600" },
-    {
-      label: "Total Revenue",
-      value: `¢${stats.earnings.toLocaleString()}`,
-      icon: DollarSign,
-      color: "bg-teal-100",
-      textColor: "text-teal-600",
-    },
+    { label: "Total Students", value: stats.students, icon: Users, color: "bg-cyan-50 dark:bg-cyan-900/20", iconColor: "text-cyan-600 dark:text-cyan-400" },
+    { label: "Total Teachers", value: stats.teachers, icon: UserCheck, color: "bg-emerald-50 dark:bg-emerald-900/20", iconColor: "text-emerald-600 dark:text-emerald-400" },
+    { label: "Total Parents", value: stats.parents, icon: Users2, color: "bg-purple-50 dark:bg-purple-900/20", iconColor: "text-purple-600 dark:text-purple-400" },
+    { label: "Total Revenue", value: `¢${stats.earnings.toLocaleString()}`, icon: DollarSign, color: "bg-amber-50 dark:bg-amber-900/20", iconColor: "text-amber-600 dark:text-amber-400" },
   ]
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       {statCards.map((stat, idx) => {
         const Icon = stat.icon
         return (
-          <div key={idx} className="bg-white p-6 rounded-lg shadow border border-gray-100">
-            <div className={`w-12 h-12 ${stat.color} rounded-lg flex items-center justify-center mb-4`}>
-              <Icon className={`${stat.textColor}`} size={24} />
+          <div 
+            key={idx} 
+            className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 hover:shadow-md transition-shadow duration-200"
+          >
+            <div className="flex items-center justify-between">
+              <div className={`p-3 rounded-lg ${stat.color}`}>
+                <Icon className={`w-5 h-5 ${stat.iconColor}`} />
+              </div>
             </div>
-            <p className="text-gray-600 text-sm mb-2">{stat.label}</p>
-            <p className="text-3xl font-bold text-gray-800">
+            <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-4">
+              {stat.label}
+            </p>
+            <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">
               {stats.loading ? <CircularLoader size="sm" /> : stat.value}
             </p>
           </div>
@@ -46,3 +47,4 @@ export function DashboardStats({ stats }: DashboardStatsProps) {
     </div>
   )
 }
+

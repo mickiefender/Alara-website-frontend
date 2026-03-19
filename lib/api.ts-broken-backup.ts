@@ -301,11 +301,7 @@ export const messagingAPI = {
   createNotice: (data: any) => apiClient.post("/messaging/notices/", data),
   updateNotice: (id: number, data: any) => apiClient.put(`/messaging/notices/${id}/`, data),
   deleteNotice: (id: number) => apiClient.delete(`/messaging/notices/${id}/`),
-  pinNotice: (id: number) => apiClient.post(`/messaging/notices/${id}/pin/`),  
-  sendPersonalNotice: (studentId: number, data: { title: string; content: string }) => 
-    apiClient.post("/messaging/notices/send_personal_notice/", { student_id: studentId, ...data }),  
-  personalNotices: () => apiClient.get("/messaging/notices/my_personal_notices/"),  
-}
+  pinNotice: (id: number) => apiClient.post(`/messaging/notices/${id}/pin/`),\n  sendPersonalNotice: (studentId: number, data: { title: string; content: string }) => \n    apiClient.post("/messaging/notices/send_personal_notice/", { student_id: studentId, ...data }),\n  personalNotices: () => apiClient.get("/messaging/notices/my_personal_notices/"),\n},
 
 export const usersAPI = {
   list: () => apiClient.get("/users/users/"),
@@ -477,7 +473,7 @@ export const billingAPI = {
   studentFeeAssignments: () => apiClient.get("/billing/student-fee-assignments/"),
   studentFeeAssignmentsByStudent: (studentId: number) => apiClient.get(`/billing/student-fee-assignments/?student=${studentId}`),
   createStudentFeeAssignment: (data: any) => apiClient.post("/billing/student-fee-assignments/", data),
-  updateStudentFeeAssignment: (id: number, data: any) => apiClient.patch(`/billing/student-fee-assignments/${id}/`, data),
+  updateStudentFeeAssignment: (id: number, data: any) => apiClient.put(`/billing/student-fee-assignments/${id}/`, data),
   deleteStudentFeeAssignment: (id: number) => apiClient.delete(`/billing/student-fee-assignments/${id}/`),
   myFees: () => apiClient.get("/billing/student-fee-assignments/my_fees/"),
   markFeePaid: (id: number) => apiClient.post(`/billing/student-fee-assignments/${id}/mark_paid/`),
@@ -506,3 +502,4 @@ export const billingAPI = {
   updatePayment: (id: number, data: any) => apiClient.put(`/billing/payments/${id}/`, data),
   deletePayment: (id: number) => apiClient.delete(`/billing/payments/${id}/`),
 }
+

@@ -308,7 +308,7 @@ export function ModernTimetable() {
   if (loading) {
     return (
       <Card className="border-0 shadow-lg">
-        <CardHeader className="bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-t-lg">
+      <CardHeader className="bg-gradient-to-r from-cyan-600 to-cyan-600 text-white rounded-t-lg">
           <CardTitle className="flex items-center gap-2">
             <Calendar className="w-5 h-5" />
             Timetable Management
@@ -324,7 +324,7 @@ export function ModernTimetable() {
   return (
     <Card className="border-0 shadow-lg overflow-hidden">
       {/* Header */}
-      <CardHeader className="bg-gradient-to-r from-indigo-600 to-blue-600 text-white pb-6">
+      <CardHeader className="bg-gradient-to-r from-cyan-600 to-cyan-600 text-white pb-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <CardTitle className="flex items-center gap-2 text-xl">

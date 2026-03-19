@@ -3,6 +3,16 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useAuthContext } from "@/lib/auth-context"
+import { 
+  Wallet, 
+  TrendingUp, 
+  Clock, 
+  ArrowRight, 
+  CheckCircle2, 
+  AlertCircle, 
+  XCircle,
+  Receipt
+} from "lucide-react"
 
 interface PaymentRecord {
   id: string
@@ -26,7 +36,7 @@ export function RecentPayments() {
       const schoolId = user?.school_id || "default"
       const response = await fetch(`/api/payments/history?school_id=${schoolId}`)
       const data = await response.json()
-      const apiPayments = (data.payments || []).slice(0, 8)
+      const apiPayments = (data.payments || []).slice(0, 6)
 
       // Also check localStorage for school payment notifications
       if (typeof window !== "undefined") {
@@ -51,7 +61,7 @@ export function RecentPayments() {
 
           const merged = [...apiPayments, ...localPayments]
             .sort((a: any, b: any) => new Date(b.created_at || b.paid_at).getTime() - new Date(a.created_at || a.paid_at).getTime())
-            .slice(0, 8)
+            .slice(0, 6)
 
           setPayments(merged)
         } catch {
@@ -73,17 +83,17 @@ export function RecentPayments() {
     return () => clearInterval(interval)
   }, [])
 
-  const getStatusBadge = (status: string) => {
-    const styles: Record<string, string> = {
-      success: "bg-green-100 text-green-800",
-      pending: "bg-yellow-100 text-yellow-800",
-      failed: "bg-red-100 text-red-800",
+  const getStatusConfig = (status: string) => {
+    const configs: Record<string, { icon: React.ElementType, bg: string, text: string, label: string }> = {
+      success: { icon: CheckCircle2, bg: "bg-emerald-100 dark:bg-emerald-500/20", text: "text-emerald-600 dark:text-emerald-400", label: "Success" },
+      pending: { icon: Clock, bg: "bg-amber-100 dark:bg-amber-500/20", text: "text-amber-600 dark:text-amber-400", label: "Pending" },
+      failed: { icon: XCircle, bg: "bg-red-100 dark:bg-red-500/20", text: "text-red-600 dark:text-red-400", label: "Failed" },
     }
-    return (
-      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${styles[status] || styles.pending}`}>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
-      </span>
-    )
+    return configs[status] || configs.pending
+  }
+
+  const getPaymentIcon = (channel: string) => {
+    return <Wallet className="w-4 h-4" />
   }
 
   const formatTimeAgo = (dateStr: string) => {
@@ -95,65 +105,108 @@ export function RecentPayments() {
     const diffDays = Math.floor(diffMs / 86400000)
 
     if (diffMins < 1) return "Just now"
-    if (diffMins < 60) return `${diffMins} min ago`
+    if (diffMins < 60) return `${diffMins}m ago`
     if (diffHours < 24) return `${diffHours}h ago`
     if (diffDays < 7) return `${diffDays}d ago`
     return date.toLocaleDateString()
   }
 
+  // Calculate summary
+  const totalAmount = payments.reduce((sum, p) => sum + (p.status === "success" ? Number(p.amount) : 0), 0)
+  const successCount = payments.filter(p => p.status === "success").length
+
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex justify-between items-center">
-          <CardTitle className="text-lg">Recent Fee Payments</CardTitle>
-          <a
-            href="/dashboard/school-admin/payments"
-            className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-          >
-            View All
-          </a>
+    <div className="space-y-4">
+      {/* Header with summary */}
+      <div className="flex items-center justify-between">
+        <h3 className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+          <Receipt className="w-4 h-4 text-slate-500" />
+          Recent Transactions
+        </h3>
+        <a
+          href="/dashboard/school-admin/payments"
+          className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex items-center gap-1"
+        >
+          View All
+          <ArrowRight className="w-3 h-3" />
+        </a>
+      </div>
+
+      {/* Summary Cards */}
+      {payments.length > 0 && (
+        <div className="grid grid-cols-2 gap-3">
+          <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20">
+            <div className="flex items-center gap-2 mb-1">
+              <TrendingUp className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">Total Collected</span>
+            </div>
+            <p className="text-lg font-bold text-emerald-700 dark:text-emerald-300">
+              ¢{totalAmount.toLocaleString()}
+            </p>
+          </div>
+          <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700">
+            <div className="flex items-center gap-2 mb-1">
+              <CheckCircle2 className="w-3.5 h-3.5 text-slate-600 dark:text-slate-400" />
+              <span className="text-xs text-slate-600 dark:text-slate-400 font-medium">Successful</span>
+            </div>
+            <p className="text-lg font-bold text-slate-700 dark:text-slate-300">
+              {successCount} transactions
+            </p>
+          </div>
         </div>
-      </CardHeader>
-      <CardContent>
-        {loading ? (
-          <div className="flex justify-center py-6">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+      )}
+
+      {loading ? (
+        <div className="flex justify-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
+        </div>
+      ) : payments.length === 0 ? (
+        <div className="text-center py-8">
+          <div className="w-14 h-14 mx-auto mb-3 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center">
+            <Receipt className="w-6 h-6 text-slate-400" />
           </div>
-        ) : payments.length === 0 ? (
-          <div className="text-center py-6 text-gray-500">
-            <p className="text-sm">No payments recorded yet</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {payments.map((payment) => (
+          <p className="text-sm text-slate-500 dark:text-slate-400">No payments recorded yet</p>
+          <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Payment transactions will appear here</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {payments.map((payment) => {
+            const statusConfig = getStatusConfig(payment.status)
+            const StatusIcon = statusConfig.icon
+            
+            return (
               <div
                 key={payment.id}
-                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
+                className="flex items-center justify-between p-3 rounded-xl bg-white dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 hover:border-slate-200 dark:hover:border-slate-600 hover:shadow-sm transition-all group"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center text-green-600 text-sm font-bold">
-                    ₵
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${statusConfig.bg} ${statusConfig.text}`}>
+                    {getPaymentIcon(payment.payment_channel)}
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-900">
+                    <p className="text-sm font-semibold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                       {payment.student_name || "Student"}
                     </p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
                       {payment.fee_type} • {formatTimeAgo(payment.paid_at || payment.created_at)}
                     </p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-semibold text-green-700">
-                    GH¢{Number(payment.amount).toFixed(2)}
+                  <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                    +¢{Number(payment.amount).toFixed(2)}
                   </p>
-                  {getStatusBadge(payment.status)}
+                  <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${statusConfig.bg} ${statusConfig.text}`}>
+                    <StatusIcon className="w-3 h-3" />
+                    {statusConfig.label}
+                  </div>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+            )
+          })}
+        </div>
+      )}
+    </div>
   )
 }
+

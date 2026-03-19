@@ -86,7 +86,7 @@ export default function TeacherNotificationsPage() {
               onClick={() => setActiveTab(tab)}
               className={`px-4 py-2 font-medium border-b-2 transition ${
                 activeTab === tab
-                  ? 'border-blue-500 text-blue-600'
+                  ? 'border-cyan-500 text-cyan-600'
                   : 'border-transparent text-gray-600 hover:text-gray-900'
               }`}
             >
@@ -114,7 +114,7 @@ export default function TeacherNotificationsPage() {
                 <div
                   key={notice.id}
                   onClick={() => setSelectedNotice(notice)}
-                  className="bg-white rounded-lg p-6 border border-gray-200 hover:border-blue-300 cursor-pointer transition"
+                  className="bg-white rounded-lg p-6 border border-gray-200 hover:border-cyan-300 cursor-pointer transition"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -133,7 +133,7 @@ export default function TeacherNotificationsPage() {
                         {new Date(notice.created_at).toLocaleDateString()}
                       </p>
                     </div>
-                    {notice.is_pinned && <Bell size={20} className="text-blue-600" />}
+                    {notice.is_pinned && <Bell size={20} className="text-cyan-600" />}
                   </div>
                 </div>
               ))
@@ -154,7 +154,7 @@ export default function TeacherNotificationsPage() {
                 <div
                   key={announcement.id}
                   onClick={() => setSelectedAnnouncement(announcement)}
-                  className="bg-white rounded-lg p-6 border border-gray-200 hover:border-blue-300 cursor-pointer transition"
+                  className="bg-white rounded-lg p-6 border border-gray-200 hover:border-cyan-300 cursor-pointer transition"
                 >
                   <h3 className="text-lg font-bold mb-2">{announcement.title}</h3>
                   <p className="text-gray-600 line-clamp-3">{announcement.content}</p>

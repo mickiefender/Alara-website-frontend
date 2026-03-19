@@ -2,13 +2,16 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { usersAPI, academicsAPI, attendanceAPI, billingAPI } from '@/lib/api'
+import { usersAPI, academicsAPI, attendanceAPI, billingAPI, messagingAPI } from '@/lib/api'
+import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import CircularLoader from '@/components/circular-loader'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { ChevronLeft, Edit2, AlertCircle, BookOpen, DollarSign, Flag, FileText, Camera, Save, X, User, Phone, Mail, MapPin, Calendar, Briefcase, Heart, Users, MessageSquare, Download, Trash2, Plus } from 'lucide-react'
+import { ChevronLeft, Edit2, AlertCircle, BookOpen, DollarSign, Flag, FileText, Camera, Save, X, User, Phone, Mail, MapPin, Calendar, Briefcase, Heart, Users, MessageSquare, Download, Trash2, Plus, Edit3, CheckCircle2 } from 'lucide-react'
+import { toast } from 'sonner'
 import Link from 'next/link'
 import Image from 'next/image'
 
@@ -78,6 +81,18 @@ export default function StudentDetailPage() {
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false)
   const [selectedClassId, setSelectedClassId] = useState('')
   const [assigningClass, setAssigningClass] = useState(false)
+
+  // Fee management state
+  const [studentFees, setStudentFees] = useState<any[]>([])
+  const [feesLoading, setFeesLoading] = useState(false)
+  const [editingFeeId, setEditingFeeId] = useState<number | null>(null)
+  const [tempFeeData, setTempFeeData] = useState<Record<number, { amount: string; due_date: string }>>({})
+  const [savingFee, setSavingFee] = useState(false)
+
+  // Message modal states
+  const [isMessageModalOpen, setIsMessageModalOpen] = useState(false)
+  const [messageForm, setMessageForm] = useState({ title: '', content: '' })
+  const [sendingMessage, setSendingMessage] = useState(false)
 
   const [profilePic, setProfilePic] = useState('')
   const [profilePicId, setProfilePicId] = useState<number | null>(null)
@@ -176,13 +191,18 @@ export default function StudentDetailPage() {
           }
         } catch { /* no pic */ }
       }
-      // Load other data
+      // Load fees
       try {
-        // Use billing API to get student-specific fee assignments
+        setFeesLoading(true)
         const feesRes = await billingAPI.studentFeeAssignmentsByStudent(parseInt(studentId))
         const sf = (feesRes.data.results || feesRes.data || [])
-        setDueFees(sf.filter((f: any) => f.status === 'pending' || f.status === 'partial').reduce((s: number, f: any) => s + (parseFloat(f.amount) || 0) - (parseFloat(f.amount_paid) || 0), 0))
-      } catch { /* skip */ }
+        setStudentFees(sf)
+        setDueFees(sf.filter((f: any) => f.status === 'pending' || f.status === 'partial').reduce((s: number, f: any) => s + parseFloat(f.balance || '0'), 0))
+      } catch (err) {
+        console.error('Fee load error:', err)
+      } finally {
+        setFeesLoading(false)
+      }
       
       // Also check for school-wide fee assignments
       try {
@@ -314,6 +334,52 @@ export default function StudentDetailPage() {
     }
   }
 
+  const handleEditFee = (feeId: number) => {
+    setEditingFeeId(feeId)
+    const fee = studentFees.find(f => f.id === feeId)
+    if (fee) {
+      setTempFeeData(prev => ({
+        ...prev,
+        [feeId]: { 
+          amount: fee.amount, 
+          due_date: fee.due_date.split('T')[0] || fee.due_date 
+        }
+      }))
+    }
+  }
+
+  const handleCancelEdit = () => {
+    setEditingFeeId(null)
+    setTempFeeData({})
+  }
+
+  const handleSaveFee = async (feeId: number) => {
+    if (!tempFeeData[feeId]) return
+
+    setSavingFee(true)
+    try {
+      const data = tempFeeData[feeId]
+      await billingAPI.updateStudentFeeAssignment(feeId, {
+        amount: parseFloat(data.amount),
+        due_date: data.due_date
+      })
+      toast.success('Fee updated successfully!')
+      
+      // Refresh fees
+      const feesRes = await billingAPI.studentFeeAssignmentsByStudent(parseInt(studentId))
+      const sf = feesRes.data.results || feesRes.data || []
+      setStudentFees(sf)
+      setDueFees(sf.filter((f: any) => f.status === 'pending' || f.status === 'partial').reduce((s: number, f: any) => s + parseFloat(f.balance || '0'), 0))
+      
+      setEditingFeeId(null)
+      setTempFeeData({})
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || 'Failed to update fee')
+    } finally {
+      setSavingFee(false)
+    }
+  }
+
   // Get enrolled class IDs for filtering available classes
   const enrolledClassIds = new Set(enrollments.map((e) => e.class_obj))
   const availableClasses = classes.filter((c) => !enrolledClassIds.has(c.id))
@@ -363,8 +429,84 @@ export default function StudentDetailPage() {
           ) : (
             <>
               <Button variant="outline" className="gap-2 bg-transparent" onClick={() => setIsEditing(true)}><Edit2 size={18} />Edit Profile</Button>
-              <Button variant="outline" className="gap-2 bg-transparent"><MessageSquare size={18} />Message</Button>
+              <Button variant="outline" className="gap-2" onClick={() => setIsMessageModalOpen(true)}>
+                <MessageSquare size={18} /> Send Message ({email()})
+              </Button>
               <Button variant="outline" className="gap-2 bg-transparent"><Download size={18} />Report</Button>
+              <Button variant="outline" className="gap-2 bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100" onClick={() => {
+                const feesSection = document.getElementById('fees-section')
+                feesSection?.scrollIntoView({ behavior: 'smooth' })
+              }}>
+                <DollarSign size={18} /> Manage Fees
+              </Button>
+
+              {/* Message Modal */}
+              <Dialog open={isMessageModalOpen} onOpenChange={setIsMessageModalOpen}>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Send Personal Notice</DialogTitle>
+                    <p className="text-sm text-muted-foreground">To: {studentName} &amp;lt;{email()}&amp;gt;</p>
+
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div>
+                      <Label>Title *</Label>
+                      <Input
+                        value={messageForm.title}
+                        onChange={(e) => setMessageForm({ ...messageForm, title: e.target.value })}
+                        placeholder="e.g. Fee Reminder, Meeting Notice"
+                        maxLength={255}
+                      />
+                    </div>
+                    <div>
+                      <Label>Message *</Label>
+                      <Textarea
+                        value={messageForm.content}
+                        onChange={(e) => setMessageForm({ ...messageForm, content: e.target.value })}
+                        placeholder="Enter detailed message (will be emailed)..."
+                        rows={6}
+                        maxLength={5000}
+                      />
+                    </div>
+                    <div className="flex gap-3 pt-4">
+                      <Button 
+                        className="flex-1"
+                        disabled={sendingMessage || !messageForm.title.trim() || !messageForm.content.trim()}
+                        onClick={async () => {
+                          const uid = userId()
+                          if (!uid) {
+                            toast.error('Student ID not found')
+                            return
+                          }
+                          try {
+                            setSendingMessage(true)
+                            await messagingAPI.sendPersonalNotice(uid, messageForm)
+                            toast.success('✅ Notice created and email sent successfully!')
+                            setMessageForm({ title: '', content: '' })
+                            setIsMessageModalOpen(false)
+                          } catch (err: any) {
+                            console.error('Send notice error:', err)
+                            toast.error(err.response?.data?.error || 'Failed to send notice/email')
+                          } finally {
+                            setSendingMessage(false)
+                          }
+                        }}
+                      >
+                        {sendingMessage ? 'Sending...' : 'Send Notice & Email'}
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => {
+                          setIsMessageModalOpen(false)
+                          setMessageForm({ title: '', content: '' })
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </>
           )}
         </div>
@@ -717,15 +859,166 @@ export default function StudentDetailPage() {
             </div>
           </div>
 
-          {/* Exam Results */}
+          {/* NEW Fee Management Section */}
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-semibold text-gray-900">Exam Results</h2>
-              <div className="flex gap-2">
-                <input type="text" placeholder="Search by Exam..." className="px-3 py-1.5 border rounded-lg text-sm" />
-                <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white">Search</Button>
-              </div>
+            <div id="fees-section" className="flex items-center justify-between mb-6">
+              <h2 className="text-base font-semibold text-gray-900 flex items-center gap-2">
+                <DollarSign size={16} className="text-orange-600" />
+                Fee Management (GH¢{dueFees.toFixed(2)} due)
+              </h2>
+              {feesLoading && <CircularLoader size="sm" />}
             </div>
+            
+            {feesLoading ? (
+              <div className="flex justify-center py-12">
+                <CircularLoader />
+              </div>
+            ) : studentFees.length === 0 ? (
+              <div className="text-center py-12 text-gray-500">
+                <DollarSign className="h-12 w-12 mx-auto mb-4 opacity-40" />
+                <p>No fees assigned to this student</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto rounded-lg border">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fee</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Balance</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {studentFees.map((fee: any) => {
+                      const isEditing = editingFeeId === fee.id
+                      const tempData = tempFeeData[fee.id]
+                      
+                      return (
+                        <tr key={fee.id} className="hover:bg-gray-50">
+                          <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {fee.fee_name}
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap">
+                            {isEditing ? (
+                              <Input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                value={tempData?.amount || fee.amount}
+                                onChange={(e) => setTempFeeData(prev => ({
+                                  ...prev,
+                                  [fee.id]: { ...prev[fee.id], amount: e.target.value }
+                                }))}
+                                className="w-20"
+                              />
+                            ) : (
+                              <span className="font-semibold">${parseFloat(fee.amount).toFixed(2)}</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap">
+                            {isEditing ? (
+                              <Input
+                                type="date"
+                                value={tempData?.due_date || new Date(fee.due_date).toISOString().split('T')[0]}
+                                onChange={(e) => setTempFeeData(prev => ({
+                                  ...prev,
+                                  [fee.id]: { ...prev[fee.id], due_date: e.target.value }
+                                }))}
+                                className="w-28"
+                              />
+                            ) : (
+                              <span className="text-sm text-gray-900">
+                                {new Date(fee.due_date).toLocaleDateString()}
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap">
+                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                              parseFloat(fee.balance) === 0 
+                                ? 'bg-green-100 text-green-800' 
+                                : 'bg-red-100 text-red-800'
+                            }`}>
+                              ${parseFloat(fee.balance).toFixed(2)}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap">
+                            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                              fee.status === 'paid' ? 'bg-green-100 text-green-800' :
+                              fee.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                              fee.status === 'partial' ? 'bg-blue-100 text-blue-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {fee.status?.toUpperCase() || 'UNKNOWN'}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            {isEditing ? (
+                              <div className="flex gap-1">
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleSaveFee(fee.id)}
+                                  disabled={savingFee || !tempData}
+                                  className="h-8 bg-green-600 hover:bg-green-700"
+                                >
+                                  <CheckCircle2 className="h-3 w-3 mr-1" />
+                                  Save
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={handleCancelEdit}
+                                  className="h-8 p-0 w-8"
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ) : (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleEditFee(fee.id)}
+                                className="h-8"
+                              >
+                                <Edit3 className="h-3 w-3 mr-1" />
+                                Edit
+                              </Button>
+                            )}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+  {/* Exam Results */}
+  <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+    {examResults.length > 0 && (
+      <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border-l-4 border-blue-500">
+        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+          <div>
+            <h3 className="font-semibold text-lg text-gray-900 mb-1">Performance Summary</h3>
+            <div className="text-sm text-gray-600 space-y-0.5">
+              <div>Average: {examResults.length > 0 ? (examResults.reduce((sum, r) => sum + (r.percentage || 0), 0) / examResults.length).toFixed(1) + '%' : '0%'}</div>
+              <div>Exams: {examResults.length} | Best: {examResults.length > 0 ? Math.max(...examResults.map(r => r.percentage || 0)).toFixed(1) + '%' : '0%'}</div>
+            </div>
+          </div>
+          <span className="bg-secondary text-secondary-foreground text-lg px-4 py-2 rounded-md font-medium">Results Visible ✅</span>
+        </div>
+      </div>
+    )}
+    <div className="flex items-center justify-between mb-4">
+      <h2 className="text-base font-semibold text-gray-900">Exam Results ({examResults.length})</h2>
+      <div className="flex gap-2">
+        <input type="text" placeholder="Search by Exam..." className="px-3 py-1.5 border rounded-lg text-sm" />
+        <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white">Search</Button>
+      </div>
+    </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-gray-50">

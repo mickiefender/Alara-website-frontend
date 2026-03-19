@@ -10,6 +10,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { useState, useEffect } from "react"
 import { gradesAPI, academicsAPI, usersAPI } from "@/lib/api"
 import { CardLoader } from "@/components/circular-loader"
+import { useRouter } from "next/navigation"
+import Link from "next/link"
+import { Badge } from "@/components/ui/badge"
 
 export function GradesManagement() {
   const [grades, setGrades] = useState<any[]>([])
@@ -87,15 +90,7 @@ export function GradesManagement() {
     return student?.user_data?.first_name || student?.first_name || `Student ${studentId}`
   }
 
-  const getSubjectName = (subjectId: number, grade?: any) => {
-    // First try to use subject_name from API if available
-    if (grade?.subject_name) {
-      return grade.subject_name
-    }
-    
-    const subject = subjects.find((s) => s.id === subjectId)
-    return subject?.name || `Subject ${subjectId}`
-  }
+
 
   if (loading) return (
     <Card>
@@ -207,29 +202,47 @@ export function GradesManagement() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b">
-                <th className="text-left py-2 px-2">Student</th>
-                <th className="text-left py-2 px-2">Subject</th>
-                <th className="text-left py-2 px-2">Type</th>
-                <th className="text-left py-2 px-2">Score</th>
-                <th className="text-left py-2 px-2">Grade</th>
+              <tr className="border-b border-border dark:border-slate-800">
+                <th className="text-left py-2 px-2 text-muted-foreground dark:text-slate-400">Student</th>
+                <th className="text-left py-2 px-2 text-muted-foreground dark:text-slate-400">Overall Grade</th>
+                <th className="text-left py-2 px-2 text-muted-foreground dark:text-slate-400"># Subjects</th>
+                <th className="text-left py-2 px-2 text-muted-foreground dark:text-slate-400">Avg Score</th>
+                <th className="text-left py-2 px-2 text-muted-foreground dark:text-slate-400">Action</th>
               </tr>
             </thead>
             <tbody>
-              {grades.length === 0 ? (
+              {studentSummaries.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="text-center py-4 text-muted-foreground">
-                    No grades recorded yet
+                  <td colSpan={5} className="text-center py-4 text-muted-foreground dark:text-slate-500">
+                    No grades recorded yet. Add grades using the "Add Grade" button above.
                   </td>
                 </tr>
               ) : (
-                grades.map((grade) => (
-                  <tr key={grade.id} className="border-b hover:bg-muted/50">
-                    <td className="py-2 px-2">{getStudentName(grade.student, grade)}</td>
-                    <td className="py-2 px-2">{getSubjectName(grade.subject, grade)}</td>
-                    <td className="py-2 px-2 capitalize">{grade.assessment_type}</td>
-                    <td className="py-2 px-2 font-bold">{grade.percentage?.toFixed(1) || 0}%</td>
-                    <td className="py-2 px-2 font-bold">{grade.grade || "N/A"}</td>
+                studentSummaries.map(({ studentId, name, overallGrade, avgPercentage, subjectCount }) => (
+                  <tr key={studentId} className="border-b border-border dark:border-slate-800 hover:bg-muted/50 dark:hover:bg-slate-800/50">
+                    <td className="py-2 px-2 text-foreground dark:text-slate-200 font-medium">{name}</td>
+                    <td className="py-2 px-2">
+                      <span className={`px-3 py-1 rounded-full text-sm font-bold ${
+                        overallGrade === 'A' ? 'bg-green-100 text-green-800' :
+                        overallGrade === 'B' ? 'bg-blue-100 text-blue-800' :
+                        overallGrade === 'C' ? 'bg-yellow-100 text-yellow-800' :
+                        overallGrade === 'D' ? 'bg-orange-100 text-orange-800' :
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        {overallGrade}
+                      </span>
+                    </td>
+                    <td className="py-2 px-2 text-muted-foreground dark:text-slate-400">{subjectCount}</td>
+                    <td className="py-2 px-2 font-bold text-foreground dark:text-slate-200">{avgPercentage.toFixed(1)}%</td>
+                    <td className="py-2 px-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => router.push(`/dashboard/school-admin/grading/${studentId}`)}
+                      >
+                        View Details
+                      </Button>
+                    </td>
                   </tr>
                 ))
               )}

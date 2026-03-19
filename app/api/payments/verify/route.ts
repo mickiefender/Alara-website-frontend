@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server"
 import { PaystackService } from "@/lib/paystack"
 import { addPaymentRecord } from "../history/route"
 import { addRevenueRecord } from "../../revenue/route"
+import axios from "axios"
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"
 
 export async function GET(request: NextRequest) {
   try {
@@ -20,26 +23,31 @@ export async function GET(request: NextRequest) {
 
     if (result.data.status === "success") {
       const amountInCedis = result.data.amount / 100
+      
+      // Get metadata - use type assertion for additional metadata fields
+      const metadata = result.data.metadata as any
+      const studentId = metadata?.student_id
+      const feeId = metadata?.fee_id
+      const schoolId = metadata?.school_id || "default"
+      const studentName = result.data.metadata?.custom_fields?.find(
+        (f: any) => f.variable_name === "student_name"
+      )?.value || result.data.customer?.first_name || ""
 
-      // Save payment record server-side
+      // Save payment record server-side (in-memory)
       try {
-        const studentName = result.data.metadata?.custom_fields?.find(
-          (f: any) => f.variable_name === "student_name"
-        )?.value || result.data.customer?.first_name || ""
-
         addPaymentRecord({
-          student_id: result.data.metadata?.student_id,
+          student_id: studentId,
           student_name: studentName,
           email: result.data.customer?.email,
           amount: amountInCedis,
           fee_type: result.data.metadata?.fee_type,
-          fee_id: result.data.metadata?.fee_id,
+          fee_id: feeId,
           academic_year: result.data.metadata?.academic_year,
           term: result.data.metadata?.term,
           reference: result.data.reference,
           status: "success",
           payment_channel: result.data.channel,
-          school_id: result.data.metadata?.school_id || "default",
+          school_id: schoolId,
           paid_at: result.data.paid_at,
         })
 
@@ -48,14 +56,49 @@ export async function GET(request: NextRequest) {
           type: "payment",
           amount: amountInCedis,
           reference: result.data.reference,
-          student_id: result.data.metadata?.student_id,
+          student_id: studentId,
           student_name: studentName,
           fee_type: result.data.metadata?.fee_type,
-          school_id: result.data.metadata?.school_id || "default",
+          school_id: schoolId,
           created_at: new Date().toISOString(),
         })
       } catch (err) {
         console.error("Failed to save payment record:", err)
+      }
+
+      // NEW: Record payment in Django backend and update fee assignment
+      try {
+        // Get auth token from headers if available
+        const authHeader = request.headers.get("authorization")
+        
+        // Prepare the payment data for Django API
+        const paymentData = {
+          student_id: parseInt(studentId) || 0,
+          fee_assignment_id: feeId ? parseInt(feeId) : null,
+          amount: amountInCedis,
+          reference: result.data.reference,
+          transaction_id: String(result.data.id),
+          channel: result.data.channel,
+          status: "success",
+          notes: `Paid via Paystack - ${result.data.channel}`,
+        }
+
+        // Call Django API to record the online payment
+        const djangoResponse = await axios.post(
+          `${API_URL}/billing/online-payments/`,
+          paymentData,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              ...(authHeader ? { Authorization: authHeader } : {}),
+            },
+          }
+        )
+
+        console.log("Online payment recorded in Django:", djangoResponse.data)
+      } catch (djangoErr: any) {
+        // Log the error but don't fail the whole request
+        console.error("Failed to record payment in Django backend:", djangoErr.response?.data || djangoErr.message)
       }
 
       return NextResponse.json({

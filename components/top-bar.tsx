@@ -5,8 +5,14 @@ import { useNotifications } from "@/lib/notifications-context"
 import { useState, useEffect, useRef } from "react"
 import { academicsAPI } from "@/lib/api"
 import Image from "next/image"
+import { ThemeToggle } from "@/components/theme-toggle"
+import { Bell, Menu } from "lucide-react"
 
-export function TopBar() {
+interface TopBarProps {
+  onMenuClick?: () => void
+}
+
+export function TopBar({ onMenuClick }: TopBarProps) {
   const { user, logout, school } = useAuthContext()
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications()
   const [showProfileMenu, setShowProfileMenu] = useState(false)
@@ -15,9 +21,8 @@ export function TopBar() {
   const notifRef = useRef<HTMLDivElement>(null)
   const profileRef = useRef<HTMLDivElement>(null)
 
-  // Get school logo URL
-  const schoolLogoUrl = school?.logo_url || school?.logo_url_computed
-  const schoolInitial = school?.name?.charAt(0) || "S"
+  // Get school logo
+  const schoolLogo = school?.logo_url || school?.logo_url_computed
 
   useEffect(() => {
     const fetchProfilePic = async () => {
@@ -85,39 +90,30 @@ export function TopBar() {
   }
 
   return (
-    <header className="border-b border-[#e0e0e0] bg-white h-16 flex items-center justify-between px-8 sticky top-0 z-40">
-      {/* Left side - Welcome text with school logo */}
+    <header className="bg-slate-900 h-16 flex items-center justify-between px-4 md:px-8 border-b border-slate-800">
+      {/* Left side - Hamburger menu for mobile */}
       <div className="flex items-center gap-3">
-        {schoolLogoUrl && (
-          <div className="w-8 h-8 rounded overflow-hidden bg-white border border-gray-200">
-            <img 
-              src={schoolLogoUrl} 
-              alt={school?.name || "School"} 
-              className="w-full h-full object-contain"
-            />
-          </div>
+        {onMenuClick && (
+          <button 
+            onClick={onMenuClick}
+            className="lg:hidden p-2 hover:bg-slate-800 rounded-lg transition-colors"
+          >
+            <Menu size={24} className="text-slate-200" />
+          </button>
         )}
-        <h2 className="text-lg text-[#666] font-medium">Dashboard</h2>
       </div>
 
-      {/* Right side - Search, language, notifications, profile */}
-      <div className="flex items-center gap-6">
-        {/* Search Bar */}
-        <div className="hidden md:flex items-center bg-[#f5f5f5] rounded-lg px-4 py-2 w-64">
-          <span className="text-[#999]"></span>
-          <input
-            type="text"
-            placeholder="Search here ..."
-            className="bg-transparent outline-none ml-2 text-sm text-[#666] flex-1"
-          />
-        </div>
-
+      {/* Right side - Language, theme toggle, notifications, profile */}
+      <div className="flex items-center gap-4 md:gap-6">
         {/* Language Selector */}
-        <select className="bg-transparent text-sm text-[#666] font-medium outline-none cursor-pointer hover:text-[#1a3a52]">
-          <option>English</option>
-          <option>Bangla</option>
-          <option>Arabic</option>
+        <select className="bg-transparent text-sm text-slate-400 font-medium outline-none cursor-pointer hover:text-slate-200">
+          <option className="dark:bg-slate-800">English</option>
+          <option className="dark:bg-slate-800">Bangla</option>
+          <option className="dark:bg-slate-800">Arabic</option>
         </select>
+
+        {/* Theme Toggle */}
+        <ThemeToggle />
 
         {/* Notifications Bell */}
         <div className="relative" ref={notifRef}>
@@ -126,9 +122,9 @@ export function TopBar() {
               setShowNotifications(!showNotifications)
               setShowProfileMenu(false)
             }}
-            className="relative text-[#999] hover:text-[#1a3a52] transition-colors"
+            className="relative text-slate-400 hover:text-slate-200 transition-colors"
           >
-            <span className="text-2xl">🔔</span>
+            <Bell size={22} />
             {unreadCount > 0 && (
               <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium">
                 {unreadCount > 9 ? "9+" : unreadCount}
@@ -138,20 +134,20 @@ export function TopBar() {
 
           {/* Notifications Dropdown */}
           {showNotifications && (
-            <div className="absolute right-0 mt-2 bg-white border border-[#e0e0e0] rounded-lg shadow-xl w-96 max-h-[480px] overflow-hidden z-50">
+            <div className="absolute right-0 mt-2 bg-slate-900 border border-slate-700 rounded-lg shadow-xl w-96 max-h-[480px] overflow-hidden z-50">
               {/* Header */}
-              <div className="flex items-center justify-between px-4 py-3 border-b border-[#e0e0e0] bg-[#f9f9f9]">
-                <h3 className="font-semibold text-[#333] text-sm">Notifications</h3>
+              <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700 bg-slate-800/50">
+                <h3 className="font-semibold text-slate-200 text-sm">Notifications</h3>
                 <div className="flex items-center gap-3">
                   {unreadCount > 0 && (
-                    <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-medium">
+                    <span className="text-xs bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-2 py-0.5 rounded-full font-medium">
                       {unreadCount} new
                     </span>
                   )}
                   {notifications.length > 0 && (
                     <button
                       onClick={markAllAsRead}
-                      className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                      className="text-xs text-cyan-600 dark:text-cyan-400 hover:text-cyan-800 dark:hover:text-cyan-300 font-medium"
                     >
                       Mark all read
                     </button>
@@ -164,15 +160,15 @@ export function TopBar() {
                 {notifications.length === 0 ? (
                   <div className="py-12 text-center">
                     <span className="text-4xl block mb-2">🔔</span>
-                    <p className="text-sm text-[#999]">No notifications yet</p>
+                    <p className="text-sm text-slate-400">No notifications yet</p>
                   </div>
                 ) : (
                   notifications.slice(0, 20).map((notif) => (
                     <button
                       key={notif.id}
                       onClick={() => markAsRead(notif.id)}
-                      className={`w-full text-left px-4 py-3 border-b border-[#f0f0f0] hover:bg-[#f9f9f9] transition-colors ${
-                        !notif.read ? "bg-blue-50/50" : ""
+                      className={`w-full text-left px-4 py-3 border-b border-slate-800 hover:bg-slate-800 transition-colors ${
+                        !notif.read ? "bg-cyan-900/20" : ""
                       }`}
                     >
                       <div className="flex gap-3">
@@ -181,15 +177,15 @@ export function TopBar() {
                         </span>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-2">
-                            <p className={`text-sm ${!notif.read ? "font-semibold text-[#333]" : "text-[#555]"}`}>
+                            <p className={`text-sm ${!notif.read ? "font-semibold text-slate-200" : "text-slate-400"}`}>
                               {notif.title}
                             </p>
                             {!notif.read && (
-                              <span className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-1.5" />
+                              <span className="w-2 h-2 bg-cyan-500 rounded-full flex-shrink-0 mt-1.5" />
                             )}
                           </div>
-                          <p className="text-xs text-[#888] mt-0.5 line-clamp-2">{notif.message}</p>
-                          <p className="text-xs text-[#aaa] mt-1">{formatTimeAgo(notif.created_at)}</p>
+                          <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{notif.message}</p>
+                          <p className="text-xs text-slate-500 mt-1">{formatTimeAgo(notif.created_at)}</p>
                         </div>
                       </div>
                     </button>
@@ -207,35 +203,37 @@ export function TopBar() {
               setShowProfileMenu(!showProfileMenu)
               setShowNotifications(false)
             }}
-            className="flex items-center gap-3 hover:bg-[#f5f5f5] px-3 py-2 rounded-lg transition-colors"
+            className="flex items-center gap-3 hover:bg-slate-800 px-3 py-2 rounded-lg transition-colors"
           >
-            <div className="w-8 h-8 bg-[#ffc107] rounded-full flex items-center justify-center text-sm font-bold text-[#1a3a52] overflow-hidden">
+            <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-slate-900 overflow-hidden bg-white">
               {profilePic ? (
                 <Image src={profilePic} alt="Profile" width={32} height={32} className="w-full h-full object-cover" />
+              ) : schoolLogo ? (
+                <Image src={schoolLogo} alt="School" width={32} height={32} className="w-full h-full object-contain p-1" />
               ) : (
-                user.first_name?.[0]
+                <span className="text-slate-900">{user.first_name?.[0]}</span>
               )}
             </div>
-            <div className="text-left">
-              <p className="text-sm font-medium text-[#333]">
+            <div className="text-left hidden md:block">
+              <p className="text-sm font-medium text-slate-200">
                 {user.first_name} {user.last_name}
               </p>
-              <p className="text-xs text-[#999]">{roleLabels[user.role as keyof typeof roleLabels]}</p>
+              <p className="text-xs text-slate-400">{roleLabels[user.role as keyof typeof roleLabels]}</p>
             </div>
           </button>
 
           {/* Profile Dropdown */}
           {showProfileMenu && (
-            <div className="absolute right-0 mt-2 bg-white border border-[#e0e0e0] rounded-lg shadow-lg w-48">
-              <button className="w-full text-left px-4 py-2 text-sm text-[#666] hover:bg-[#f5f5f5]">My Profile</button>
-              <button className="w-full text-left px-4 py-2 text-sm text-[#666] hover:bg-[#f5f5f5]">Settings</button>
-              <hr className="my-2" />
+            <div className="absolute right-0 mt-2 bg-slate-900 border border-slate-700 rounded-lg shadow-lg w-48">
+              <button className="w-full text-left px-4 py-2 text-sm text-slate-300 hover:bg-slate-800">My Profile</button>
+              <button className="w-full text-left px-4 py-2 text-sm text-slate-300 hover:bg-slate-800">Settings</button>
+              <hr className="my-2 border-slate-700" />
               <button
                 onClick={() => {
                   setShowProfileMenu(false)
                   logout()
                 }}
-                className="w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-red-50"
+                className="w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
               >
                 Logout
               </button>
@@ -246,3 +244,4 @@ export function TopBar() {
     </header>
   )
 }
+

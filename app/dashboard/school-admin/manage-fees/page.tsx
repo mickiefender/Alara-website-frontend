@@ -124,7 +124,7 @@ export default function ManageSchoolFeesPage() {
 
     if (studentFilter) {
       newFilteredStudents = newFilteredStudents.filter((s) => {
-        const studentName = s.full_name || s.first_name + " " + s.last_name || s.username || ""
+        const studentName = s.user_name || s.full_name || s.first_name + " " + s.last_name || s.username || ""
         return studentName.toLowerCase().includes(studentFilter.toLowerCase())
       })
     }
@@ -232,8 +232,8 @@ export default function ManageSchoolFeesPage() {
       alert("Fee assigned to entire school successfully!")
       await fetchAllData()
     } catch (err: any) {
-      console.error("School assignment error:", err.response?.data)
-      setError(err?.response?.data?.detail || err?.message || "Failed to assign fee to school")
+console.error("School assignment error:", err)
+setError(err?.message || err?.response?.data?.detail || "Failed to assign fee to school")
     }
   }
 
@@ -260,8 +260,8 @@ export default function ManageSchoolFeesPage() {
       alert("Fee assigned to class successfully!")
       await fetchAllData()
     } catch (err: any) {
-      console.error("Class assignment error:", err.response?.data)
-      setError(err?.response?.data?.detail || err?.message || "Failed to assign fee to class")
+console.error("Class assignment error:", err)
+setError(err?.message || err?.response?.data?.detail || "Failed to assign fee to class")
     }
   }
 
@@ -274,22 +274,57 @@ export default function ManageSchoolFeesPage() {
         return
       }
 
+      const feeId = parseInt(studentForm.fee)
+      const studentId = parseInt(studentForm.student)
+      const amount = parseFloat(studentForm.amount)
+      
+      if (isNaN(feeId) || isNaN(studentId) || isNaN(amount) || amount <= 0) {
+        setError("Invalid fee, student, or amount values")
+        return
+      }
+
+      // **FIX 2: Validate student exists before API call (use user_id)**
+      const studentExists = students.find(s => (s.user_id || s.user?.id) === studentId)
+      if (!studentExists) {
+        setError(`Student with User ID ${studentId} not found in loaded students list. Please refresh page.`)
+        return
+      }
+
       const data = {
-        fee: parseInt(studentForm.fee),
-        student: parseInt(studentForm.student),
-        amount: parseFloat(studentForm.amount),
+        fee: feeId,
+        student: studentId,
+        amount,
         due_date: studentForm.due_date,
       }
 
-      await billingAPI.createStudentFeeAssignment(data)
+      console.log("Sending student fee assignment data:", data)
+      console.log("Fee ID:", feeId, "Student ID:", studentId)
+      
+      try {
+        await billingAPI.createStudentFeeAssignment(data)
+      } catch (apiErr: any) {
+        console.error("=== STUDENT FEE ASSIGNMENT API ERROR ===")
+        console.error("Full error:", apiErr)
+        console.error("Response status:", apiErr?.response?.status)
+        console.error("Response data:", apiErr?.response?.data)
+        console.error("Response headers:", apiErr?.response?.headers)
+        throw apiErr
+      }
+      
       setIsStudentDialogOpen(false)
       setStudentForm({ fee: "", student: "", amount: "", due_date: "" })
       setError(null)
       alert("Fee assigned to student successfully!")
       await fetchAllData()
     } catch (err: any) {
-      console.error("Student fee assignment error:", err.response?.data)
-      setError(err?.response?.data?.detail || err?.message || "Failed to assign fee to student")
+      console.error("Student fee assignment error:", err)
+      const errorMsg = err?.response?.data?.error || 
+                      err?.response?.data?.detail || 
+                      (err?.response?.data as any)?.student?.[0] ||
+                      Object.values(err?.response?.data || {})[0]?.[0] || // Handle DRF field errors
+                      err?.message || 
+                      "Failed to assign fee to student - check console for details"
+      setError(errorMsg)
     }
   }
 
@@ -812,15 +847,15 @@ export default function ManageSchoolFeesPage() {
 
                       <div>
                         <Label>Student *</Label>
-                        <select
+                      <select
                           value={studentForm.student}
                           onChange={(e) => setStudentForm({ ...studentForm, student: e.target.value })}
                           className="w-full border rounded px-3 py-2"
                         >
                           <option value="">Select Student</option>
                           {filteredStudents.map((s) => (
-                            <option key={s.id} value={s.id}>
-                              {s.full_name || s.first_name + " " + s.last_name || s.username || `User ${s.id}`}
+                            <option key={s.id} value={s.user_id}>
+                              {s.user_name || s.full_name || s.first_name + " " + s.last_name || s.username || `User ${s.user_id}`}
                             </option>
                           ))}
                         </select>

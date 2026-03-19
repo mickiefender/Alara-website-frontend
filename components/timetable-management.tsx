@@ -57,12 +57,14 @@ const SUBJECT_COLORS = [
 
 export function TimetableManagement() {
   const [timetable, setTimetable] = useState<TimeSlot[]>([])
+  const [filteredTimetable, setFilteredTimetable] = useState<TimeSlot[]>([])
   const [classes, setClasses] = useState<any[]>([])
   const [subjects, setSubjects] = useState<any[]>([])
   const [teachers, setTeachers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editingSlot, setEditingSlot] = useState<TimeSlot | null>(null)
+  const [selectedClass, setSelectedClass] = useState<string>("all")
   const [newSlot, setNewSlot] = useState({
     class_obj: "",
     day: "monday",
@@ -72,6 +74,15 @@ export function TimetableManagement() {
     teacher: "",
     venue: "",
   })
+
+  // Filter timetable by class
+  useEffect(() => {
+    if (selectedClass === "all") {
+      setFilteredTimetable(timetable)
+    } else {
+      setFilteredTimetable(timetable.filter(slot => slot.class_obj === parseInt(selectedClass) || slot.class_obj_id === parseInt(selectedClass)))
+    }
+  }, [selectedClass, timetable])
 
   useEffect(() => {
     fetchData()
@@ -230,7 +241,7 @@ export function TimetableManagement() {
     <Card className="border-0 shadow-lg overflow-hidden">
       {/* Header */}
       <CardHeader className="bg-gradient-to-r from-indigo-600 to-blue-600 text-white pb-6">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
           <div>
             <CardTitle className="flex items-center gap-2 text-xl">
               <Calendar className="w-6 h-6" />
@@ -240,14 +251,29 @@ export function TimetableManagement() {
               Manage class schedules and weekly timetables
             </CardDescription>
           </div>
-          <Button 
-            size="sm" 
-            onClick={() => setShowForm(!showForm)}
-            className="bg-white text-indigo-600 hover:bg-indigo-50 gap-2"
-          >
-            {showForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-            {showForm ? "Cancel" : "Add Time Slot"}
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-2">
+            {/* Class Filter */}
+            <select
+              value={selectedClass}
+              onChange={(e) => setSelectedClass(e.target.value)}
+              className="px-3 py-2 bg-white text-gray-900 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-white"
+            >
+              <option value="all">All Classes</option>
+              {classes.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+            <Button 
+              size="sm" 
+              onClick={() => setShowForm(!showForm)}
+              className="bg-white text-indigo-600 hover:bg-indigo-50 gap-2"
+            >
+              {showForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+              {showForm ? "Cancel" : "Add Time Slot"}
+            </Button>
+          </div>
         </div>
       </CardHeader>
 
@@ -383,15 +409,17 @@ export function TimetableManagement() {
 
           {/* Table */}
           <div className="overflow-x-auto">
-            {timetable.length === 0 ? (
+            {filteredTimetable.length === 0 ? (
               <div className="text-center py-12">
                 <Calendar className="w-12 h-12 mx-auto text-slate-300 mb-4" />
-                <h3 className="text-lg font-medium text-slate-600">No timetable entries</h3>
+                <h3 className="text-lg font-medium text-slate-600">
+                  {selectedClass === "all" ? "No timetable entries" : "No timetable entries for selected class"}
+                </h3>
                 <p className="text-slate-500 mt-1">Click "Add Time Slot" to create your first entry</p>
               </div>
             ) : (
               <div className="grid gap-3">
-                {timetable.map((slot) => {
+                {filteredTimetable.map((slot) => {
                   const colorClass = getSubjectColor(slot.subject)
                   return (
                     <div

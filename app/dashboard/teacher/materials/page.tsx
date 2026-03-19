@@ -263,8 +263,8 @@ export default function TeacherDocumentsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
-        <Loader size="md" color="#3b82f6" />
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-cyan-50 to-indigo-50">
+        <Loader size="md" color="#41e0e0" />
       </div>
     )
   }
@@ -297,7 +297,7 @@ export default function TeacherDocumentsPage() {
             <div className="flex gap-2 flex-wrap">
               <Button
                 onClick={() => { setShowAIPanel(true); setAiMode("topic"); setSelectedDocId(null); setNormalized(null); setAiError(null) }}
-                className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:shadow-lg transition-shadow"
+                className="bg-gradient-to-r from-cyan-600 to-cyan-600 text-white hover:shadow-lg transition-shadow"
               >
                 <Sparkles className="w-5 h-5 mr-2" /> Generate from Topic
               </Button>
@@ -368,7 +368,7 @@ export default function TeacherDocumentsPage() {
                         <Button
                           size="sm" variant="outline"
                           onClick={() => { setSelectedDocId(doc.id); setAiMode("document"); setShowAIPanel(true); setNormalized(null); setAiError(null) }}
-                          className="flex items-center gap-1 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-300 text-blue-700 hover:bg-blue-100"
+                          className="flex items-center gap-1 bg-gradient-to-r from-cyan-50 to-cyan-50 border-cyan-300 text-cyan-700 hover:bg-cyan-100"
                         >
                           <Sparkles className="w-4 h-4" /> Generate Questions
                         </Button>

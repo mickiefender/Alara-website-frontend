@@ -4,15 +4,18 @@ import { useAuthContext } from "@/lib/auth-context"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { CircularLoader } from "@/components/circular-loader"
+import Image from "next/image"
+import { academicsAPI } from "@/lib/api"
 import {
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   LayoutDashboard,
   Settings,
   Users,
   User,
-  HeartHandshake,
   BookOpen,
   School,
   Book,
@@ -37,6 +40,8 @@ import {
   DollarSignIcon,
   CreditCard,
   Bell,
+  Search,
+  X,
 } from "lucide-react"
 
 type NavItem = {
@@ -125,15 +130,7 @@ const navSections: Record<string, NavSection[]> = {
         { label: "Categories", href: "/dashboard/school-admin/library/categories", icon: BookOpen },
       ],
     },
-    {
-      label: "Profile Pictures",
-      icon: UserCircle,
-      items: [
-        { label: "Teachers", href: "/dashboard/school-admin/profile-pictures/teachers", icon: User },
-        { label: "Students", href: "/dashboard/school-admin/profile-pictures/students", icon: Users },
-      ],
-
-    }
+    
   ],
   
   teacher: [
@@ -186,14 +183,53 @@ const navSections: Record<string, NavSection[]> = {
   ],
 }
 
-export function SidebarNav() {
+interface SidebarNavProps {
+  isCollapsed?: boolean
+  onClose?: () => void
+  isMobile?: boolean
+  onToggleCollapse?: () => void
+}
+
+export function SidebarNav({ isCollapsed = false, onClose, isMobile = false, onToggleCollapse }: SidebarNavProps) {
   const { user, logout, school, loading } = useAuthContext()
   const pathname = usePathname()
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(["Dashboard"]))
+  const [searchQuery, setSearchQuery] = useState("")
+  const [profilePic, setProfilePic] = useState<string>("")
+
+  useEffect(() => {
+    const fetchProfilePic = async () => {
+      if (!user?.id) return
+      try {
+        const picRes = await academicsAPI.profilePictureByUser(user.id)
+        const pics = picRes.data.results || picRes.data || []
+        if (pics.length > 0) {
+          const picUrl = pics[0].display_url || pics[0].storage_url || pics[0].picture || ""
+          setProfilePic(picUrl)
+        }
+      } catch (err) {
+        // silent
+      }
+    }
+    fetchProfilePic()
+  }, [user?.id])
 
   if (!user) return null
 
   const sections = navSections[user.role as keyof typeof navSections] || []
+
+  // Filter sections based on search
+  const filteredSections = searchQuery
+    ? sections.map(section => ({
+        ...section,
+        items: section.items?.filter(
+          item => item.label.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+      })).filter(section => 
+        section.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        section.items?.length
+      )
+    : sections
 
   const toggleSection = (label: string) => {
     const newExpanded = new Set(expandedSections)
@@ -215,53 +251,99 @@ export function SidebarNav() {
   const schoolLogoUrl = school?.logo_url || school?.logo_url_computed
   const schoolInitial = loading ? "" : school?.name?.charAt(0) || "S"
 
+  const sidebarWidth = isCollapsed ? "w-20" : "w-72"
+  const collapsedWidth = "w-20"
+
   return (
-    <aside className="w-64 bg-gradient-to-b from-[#1a3a52] to-[#0f2438] border-r border-[#ffc107]/20 h-screen flex flex-col">
+    <aside 
+      className={`
+        flex flex-col bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 
+        backdrop-blur-xl
+        transition-all duration-300 ease-in-out
+        ${isMobile ? "h-[100dvh] w-[85%] max-w-[320px] shadow-2xl border-r-0" : `h-screen border-r border-slate-700/50 ${isCollapsed ? "w-20" : "w-72"}`}
+      `}
+    >
       {/* Header */}
-      <div className="p-6 border-b border-[#ffc107]/20">
-        <div className="flex items-center gap-3">
-          {/* School Logo */}
-          {schoolLogoUrl ? (
-            <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-white">
-              <img 
-                src={schoolLogoUrl} 
-                alt={school?.name || "School"} 
-                className="w-full h-full object-contain"
-              />
-            </div>
-          ) : (
-            <div className="w-10 h-10 bg-[#ffc107] rounded-lg flex items-center justify-center font-bold text-[#1a3a52] flex-shrink-0">
-              {schoolInitial}
-            </div>
-          )}
-          <div className="min-w-0 flex-1">
-            <h1 className="text-lg font-bold text-white truncate">{schoolName}</h1>
-            <p className="text-xs text-[#ffc107]/80">School Management</p>
+      <div className={`
+        p-4 border-b border-slate-700/50 flex items-center gap-3
+        ${isCollapsed && !isMobile ? "justify-center" : ""}
+      `}>
+        {/* Mobile Close Button */}
+        {isMobile && onClose && (
+          <button 
+            onClick={onClose}
+            className="absolute top-4 right-4 p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+          >
+            <X size={20} />
+          </button>
+        )}
+
+        {/* School Logo */}
+        {schoolLogoUrl ? (
+          <div className="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0 bg-white shadow-lg">
+            <img 
+              src={schoolLogoUrl} 
+              alt={school?.name || "School"} 
+              className="w-full h-full object-contain"
+            />
           </div>
-        </div>
+        ) : (
+          <div className="w-10 h-10 bg-gradient-to-br from-cyan-400 to-cyan-500 rounded-xl flex items-center justify-center font-bold text-slate-900 flex-shrink-0 shadow-lg">
+            {schoolInitial}
+          </div>
+        )}
+        
+        {!isCollapsed || isMobile ? (
+          <div className="min-w-0 flex-1">
+            <h1 className="text-base font-bold text-white truncate">{schoolName}</h1>
+            <p className="text-xs text-slate-400">School Management</p>
+          </div>
+        ) : null}
       </div>
 
+      {/* Search Bar */}
+      {!isCollapsed || isMobile ? (
+        <div className="px-4 py-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
+            <input
+              type="text"
+              placeholder="Search menu..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-slate-800/50 border border-slate-700/50 rounded-lg pl-9 pr-4 py-2 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 transition-all"
+            />
+          </div>
+        </div>
+      ) : null}
+
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto p-4 space-y-2">
-        {sections.map((section) => {
+      <nav className="flex-1 overflow-y-auto p-3 space-y-1 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
+        {filteredSections.map((section) => {
           const isExpanded = expandedSections.has(section.label)
           const isActive = section.href && pathname.includes(section.href.split("#")[0])
           const Icon = section.icon
+          const hasItems = section.items && section.items.length > 0
 
-          if (!section.items) {
+          if (!hasItems) {
             // Direct link section
             return (
-              <Link key={section.label} href={section.href || "#"}>
-                <button
-                  className={`w-full text-left px-4 py-3 rounded-lg transition-all flex items-center gap-3 ${
-                    isActive
-                      ? "bg-[#ffc107] text-[#1a3a52] font-semibold"
-                      : "text-[#e0e0e0] hover:bg-[#ffc107]/10 hover:text-[#ffc107]"
-                  }`}
+              <Link key={section.label} href={section.href || "#"} onClick={isMobile ? onClose : undefined}>
+                <div
+                  className={`
+                    group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200
+                    ${isActive 
+                      ? "bg-gradient-to-r from-cyan-500/20 to-cyan-500/10 text-cyan-400 border-l-4 border-cyan-400 -ml-1 pl-4" 
+                      : "text-slate-300 hover:bg-slate-800/50 hover:text-white"
+                    }
+                    ${isCollapsed && !isMobile ? "justify-center" : ""}
+                  `}
                 >
-                  <Icon className="text-lg" />
-                  <span>{section.label}</span>
-                </button>
+                  <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? "text-cyan-400" : "text-slate-400 group-hover:text-white"}`} />
+                  {!isCollapsed || isMobile ? (
+                    <span className="font-medium text-sm truncate">{section.label}</span>
+                  ) : null}
+                </div>
               </Link>
             )
           }
@@ -271,32 +353,47 @@ export function SidebarNav() {
             <div key={section.label}>
               <button
                 onClick={() => toggleSection(section.label)}
-                className="w-full text-left px-4 py-3 rounded-lg transition-all flex items-center justify-between gap-3 text-[#e0e0e0] hover:bg-[#ffc107]/10 hover:text-[#ffc107]"
+                className={`
+                  w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200
+                  text-slate-300 hover:bg-slate-800/50 hover:text-white
+                  ${isCollapsed && !isMobile ? "justify-center" : ""}
+                `}
               >
-                <div className="flex items-center gap-3">
-                  <Icon className="text-lg" />
-                  <span className="font-medium">{section.label}</span>
-                </div>
-                <ChevronDown size={18} className={`transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                <Icon className="w-4 h-4 flex-shrink-0 text-slate-400" />
+                {!isCollapsed || isMobile ? (
+                  <>
+                    <span className="font-medium text-sm flex-1 text-left truncate">{section.label}</span>
+                    <ChevronDown 
+                      size={16} 
+                      className={`text-slate-500 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} 
+                    />
+                  </>
+                ) : null}
               </button>
 
               {/* Submenu Items */}
-              {isExpanded && section.items && (
-                <div className="ml-4 mt-1 space-y-1 border-l border-[#ffc107]/20 pl-0">
-                  {section.items.map((item) => {
+              {isExpanded && hasItems && (
+                <div className="ml-3 mt-1 space-y-1 border-l border-slate-700/50 pl-3">
+                  {section.items?.map((item) => {
                     const ItemIcon = item.icon
+                    const isItemActive = pathname.includes(item.href.split("#")[0])
                     return (
-                      <Link key={item.href} href={item.href}>
-                        <button
-                          className={`w-full text-left px-4 py-2 rounded-lg text-sm transition-all flex items-center gap-2 ${
-                            pathname.includes(item.href.split("#")[0])
-                              ? "bg-[#ffc107]/20 text-[#ffc107] font-medium"
-                              : "text-[#b0b0b0] hover:text-[#ffc107] hover:bg-[#ffc107]/10"
-                          }`}
+                      <Link key={item.href} href={item.href} onClick={isMobile ? onClose : undefined}>
+                        <div
+                          className={`
+                            group flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-200
+                            ${isItemActive 
+                              ? "bg-cyan-500/10 text-cyan-400" 
+                              : "text-slate-400 hover:text-white hover:bg-slate-800/30"
+                            }
+                            ${isCollapsed && !isMobile ? "justify-center" : ""}
+                          `}
                         >
-                          <ItemIcon className="ml-2" />
-                          <span>{item.label}</span>
-                        </button>
+                          <ItemIcon className={`w-3.5 h-3.5 flex-shrink-0 ${isItemActive ? "text-cyan-400" : "text-slate-500 group-hover:text-white"}`} />
+                          {!isCollapsed || isMobile ? (
+                            <span className="truncate">{item.label}</span>
+                          ) : null}
+                        </div>
                       </Link>
                     )
                   })}
@@ -307,10 +404,32 @@ export function SidebarNav() {
         })}
       </nav>
 
+     
       {/* Footer */}
-      <div className="p-4 border-t border-[#ffc107]/20">
-        <Button onClick={logout} className="w-full bg-[#ffc107] text-[#1a3a52] hover:bg-[#ffc107]/90 font-semibold">
-          Logout
+      <div className="p-4 border-t border-slate-700/50">
+        {/* Collapse Toggle Button - Only on desktop */}
+        {!isMobile && onToggleCollapse && (
+          <button
+            onClick={onToggleCollapse}
+            className="w-full mb-3 flex items-center justify-center gap-2 py-2 rounded-lg bg-slate-800/50 hover:bg-slate-700 text-slate-400 hover:text-white transition-all duration-200"
+          >
+            <ChevronLeft size={16} className={`transition-transform duration-200 ${isCollapsed ? "rotate-180" : ""}`} />
+            {isCollapsed ? <span className="text-xs">Expand</span> : <span className="text-xs">Collapse</span>}
+          </button>
+        )}
+        
+        <Button 
+          onClick={logout} 
+          className={`
+            w-full bg-slate-800/50 hover:bg-red-500/20 text-slate-300 hover:text-red-400 
+            border border-slate-700/50 hover:border-red-500/50 font-semibold transition-all duration-200
+            ${isCollapsed && !isMobile ? "px-2" : ""}
+          `}
+        >
+          <span className={isCollapsed && !isMobile ? "" : "flex items-center gap-2 justify-center"}>
+         
+            {!isCollapsed || isMobile ? <span>Logout</span> : null}
+          </span>
         </Button>
       </div>
     </aside>

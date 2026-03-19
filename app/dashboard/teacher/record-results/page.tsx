@@ -129,7 +129,7 @@ export default function RecordExamResultsPage() {
                 setEditingResult(null)
                 setFormData({ exam: "", student: "", marks_obtained: "", remarks: "" })
               }}
-              className="bg-blue-600"
+              className="bg-cyan-600"
             >
               <Plus className="w-4 h-4 mr-2" />
               Record Result
@@ -194,7 +194,7 @@ export default function RecordExamResultsPage() {
                 />
               </div>
 
-              <Button type="submit" className="w-full bg-blue-600">
+              <Button type="submit" className="w-full bg-cyan-600">
                 {editingResult ? "Update" : "Record"} Result
               </Button>
             </form>
@@ -234,7 +234,7 @@ export default function RecordExamResultsPage() {
                     </td>
                     <td className="py-3 px-4">{result.percentage?.toFixed(1)}%</td>
                     <td className="py-3 px-4">
-                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-bold">{result.grade}</span>
+                      <span className="bg-cyan-100 text-cyan-800 px-2 py-1 rounded text-xs font-bold">{result.grade}</span>
                     </td>
                     <td className="py-3 px-4">{new Date(result.recorded_date).toLocaleDateString()}</td>
                     <td className="py-3 px-4 flex gap-2">

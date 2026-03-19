@@ -220,10 +220,10 @@ export function StudentsManagement() {
                 <DialogTitle>{editingStudent ? "Edit Student" : "Add New Student"}</DialogTitle>
               </DialogHeader>
               {generatedStudentId && (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <p className="text-sm font-semibold text-green-900 mb-2">Student ID Generated Successfully!</p>
-                  <p className="text-lg font-bold text-green-700 font-mono">{generatedStudentId}</p>
-                  <p className="text-xs text-green-600 mt-2">
+                <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                  <p className="text-sm font-semibold text-green-900 dark:text-green-300 mb-2">Student ID Generated Successfully!</p>
+                  <p className="text-lg font-bold text-green-700 dark:text-green-400 font-mono">{generatedStudentId}</p>
+                  <p className="text-xs text-green-600 dark:text-green-500 mt-2">
                     Share this ID with the student. They will use it to login along with their password.
                   </p>
                   <Button 
@@ -311,26 +311,26 @@ export function StudentsManagement() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b">
-                <th className="text-left py-2 px-2">Name</th>
-                <th className="text-left py-2 px-2">Email</th>
-                <th className="text-left py-2 px-2">Student ID</th>
-                <th className="text-left py-2 px-2">Actions</th>
+              <tr className="border-b border-border dark:border-slate-800">
+                <th className="text-left py-2 px-2 text-muted-foreground dark:text-slate-400">Name</th>
+                <th className="text-left py-2 px-2 text-muted-foreground dark:text-slate-400">Email</th>
+                <th className="text-left py-2 px-2 text-muted-foreground dark:text-slate-400">Student ID</th>
+                <th className="text-left py-2 px-2 text-muted-foreground dark:text-slate-400">Actions</th>
               </tr>
             </thead>
             <tbody>
               {students.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="text-center py-4 text-muted-foreground">
+                  <td colSpan={4} className="text-center py-4 text-muted-foreground dark:text-slate-500">
                     No students found. Add your first student.
                   </td>
                 </tr>
               ) : (
                 students.map((student) => (
-                  <tr key={student.id} className="border-b hover:bg-muted/50">
-                    <td className="py-2 px-2">{getStudentName(student)}</td>
-                    <td className="py-2 px-2">{getStudentEmail(student)}</td>
-                    <td className="py-2 px-2">{student.student_id || "N/A"}</td>
+                  <tr key={student.id} className="border-b border-border dark:border-slate-800 hover:bg-muted/50 dark:hover:bg-slate-800/50">
+                    <td className="py-2 px-2 text-foreground dark:text-slate-200">{getStudentName(student)}</td>
+                    <td className="py-2 px-2 text-muted-foreground dark:text-slate-400">{getStudentEmail(student)}</td>
+                    <td className="py-2 px-2 text-muted-foreground dark:text-slate-400">{student.student_id || "N/A"}</td>
                     <td className="py-2 px-2">
                       <div className="flex gap-2">
                         <Button variant="ghost" size="sm" onClick={() => handleEdit(student)}>

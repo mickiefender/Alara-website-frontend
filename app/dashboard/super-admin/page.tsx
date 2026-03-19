@@ -66,7 +66,7 @@ export default function SuperAdminPage() {
                 <CardTitle className="text-sm font-medium">Monthly Revenue</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-2xl font-bold">${stats.monthlyRevenue.toLocaleString()}</p>
+                <p className="text-2xl font-bold">¢{stats.monthlyRevenue.toLocaleString()}</p>
               </CardContent>
             </Card>
           </div>

@@ -8,6 +8,8 @@ import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 import ProfilePictureUpload from "@/components/profile-picture-upload"
 
+import { ProfileAvatar } from "@/components/profile-avatar"
+
 interface StudentProfile {
   id: number
   email: string
@@ -83,9 +85,20 @@ export default function StudentProfilePage() {
         {/* Personal Information */}
         <Card className="md:col-span-2">
           <CardHeader>
-            <CardTitle>Personal Information</CardTitle>
+<CardTitle>My Information</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+<CardContent className="space-y-6">
+            <div className="flex items-center gap-6 pb-6 border-b">
+              <ProfileAvatar 
+                src={profile?.picture || undefined} 
+                alt={`${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || 'Student'}
+                size="lg"
+              />
+              <div>
+                <p className="text-2xl font-bold">{profile?.first_name} {profile?.last_name}</p>
+                <p className="text-lg text-gray-600">ID: {profile?.student_id || profile?.username || 'Not available'}</p>
+              </div>
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-gray-600">First Name</p>

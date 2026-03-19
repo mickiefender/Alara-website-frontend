@@ -11,37 +11,50 @@ import { Menu } from "lucide-react"
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const { user } = useAuthContext()
-  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
+
+  const toggleSidebar = () => {
+    setSidebarCollapsed(!sidebarCollapsed)
+  }
 
   return (
     <NotificationProvider userId={user?.id}>
-      <div className="flex h-screen bg-background">
-        {/* Sidebar - collapsible on mobile, always visible on desktop */}
-        <div className="hidden lg:block w-64">
-          <SidebarNav />
+      <div className="flex h-screen bg-background dark:bg-slate-950 overflow-hidden">
+        {/* Desktop Sidebar - Flex item that can collapse */}
+        <div 
+          className={`hidden lg:block transition-all duration-300 ease-in-out ${sidebarCollapsed ? "w-20" : "w-72"}`}
+        >
+          <SidebarNav 
+            isCollapsed={sidebarCollapsed} 
+            onToggleCollapse={toggleSidebar}
+          />
         </div>
 
-        {/* Mobile Sidebar Overlay */}
-        {sidebarOpen && (
-          <div className="fixed inset-0 z-40 lg:hidden">
-            <div className="absolute inset-0 bg-black/50" onClick={() => setSidebarOpen(false)} />
-            <div className="absolute left-0 top-0 h-full w-64 bg-background">
-              <SidebarNav />
+        {/* Mobile Sidebar - Full screen overlay */}
+        {mobileOpen && (
+          <div className="lg:hidden fixed inset-0 z-50">
+            {/* Backdrop */}
+            <div 
+              className="absolute inset-0 bg-black/50"
+              onClick={() => setMobileOpen(false)}
+            />
+            {/* Sidebar */}
+            <div className="absolute left-0 top-0 h-[100dvh] w-[85%] max-w-[320px] bg-slate-900 shadow-2xl overflow-y-auto overflow-x-hidden">
+              <SidebarNav isMobile={true} onClose={() => setMobileOpen(false)} />
             </div>
           </div>
         )}
 
-        {/* Main Content */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="flex items-center justify-between">
-            <button onClick={() => setSidebarOpen(!sidebarOpen)} className="lg:hidden p-4 hover:bg-muted">
-              <Menu size={24} />
-            </button>
-            <div className="flex-1">
-              <TopBar />
-            </div>
-          </div>
-          <main className="flex-1 overflow-auto">{children}</main>
+        {/* Main Content - Flexes to fill remaining space */}
+        <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
+          {/* Top Bar - includes hamburger for mobile */}
+          <TopBar onMenuClick={() => setMobileOpen(true)} />
+
+          {/* Main Content */}
+          <main className="flex-1 overflow-auto bg-slate-50 dark:bg-slate-950">
+            {children}
+          </main>
         </div>
       </div>
     </NotificationProvider>

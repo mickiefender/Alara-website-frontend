@@ -1,17 +1,19 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ChevronLeft, ChevronRight, Trash2, Edit2, Search, Settings, Lock, Unlock } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import Link from "next/link"
 import Loader from '@/components/loader'
 import { GradingPolicyManagement } from "@/components/grading-policy-management"
 import { gradesAPI, usersAPI, academicsAPI } from "@/lib/api"
+import { Search, ArrowRight, Users, TrendingUp, Award } from "lucide-react"
 
 interface Grade {
   id: number
@@ -25,10 +27,15 @@ interface Grade {
   percentage: number
   grade: string
   academic_session?: number
-  is_locked: boolean
-  locked_by?: string
-  locked_at?: string
   recorded_date: string
+}
+
+interface StudentSummary {
+  studentId: number
+  studentName: string
+  gradeCount: number
+  avgPercentage: number
+  overallGrade: string
 }
 
 export default function GradingPage() {
@@ -38,11 +45,8 @@ export default function GradingPage() {
   const [sessions, setSessions] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
-  const [currentPage, setCurrentPage] = useState(1)
-  const [isOpen, setIsOpen] = useState(false)
-  const [editingGrade, setEditingGrade] = useState<Grade | null>(null)
-  const [activeTab, setActiveTab] = useState("grades")
   const [filterSession, setFilterSession] = useState("")
+  const [isOpen, setIsOpen] = useState(false)
   const [formData, setFormData] = useState({
     student: "",
     subject: "",
@@ -52,7 +56,6 @@ export default function GradingPage() {
     academic_session: "",
   })
 
-  const itemsPerPage = 10
   const assessmentTypes = [
     { value: "exam", label: "Exam" },
     { value: "test", label: "Test" },
@@ -69,7 +72,7 @@ export default function GradingPage() {
     try {
       setLoading(true)
       const [gradesRes, studentsRes, subjectsRes, sessionsRes] = await Promise.all([
-        gradesAPI.list(),
+        gradesAPI.list({ ordering: '-percentage' }),
         usersAPI.students(),
         academicsAPI.subjects(),
         academicsAPI.academicSessions(),
@@ -82,7 +85,6 @@ export default function GradingPage() {
       const sessionsData = sessionsRes.data.results || sessionsRes.data || []
       setSessions(sessionsData)
       
-      // Set default session to current
       const currentSession = sessionsData.find((s: any) => s.is_current)
       if (currentSession) {
         setFilterSession(currentSession.id.toString())
@@ -93,6 +95,42 @@ export default function GradingPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const studentsSummary = useMemo((): StudentSummary[] => {
+    const filteredGrades = grades.filter((g) => {
+      if (filterSession && g.academic_session?.toString() !== filterSession) return false
+      return true
+    })
+
+    const studentMap = new Map<number, { grades: Grade[], name: string }>()
+
+    filteredGrades.forEach((g) => {
+      if (!studentMap.has(g.student)) {
+        studentMap.set(g.student, { grades: [], name: g.student_name || '' })
+      }
+      studentMap.get(g.student)!.grades.push(g)
+    })
+
+    return Array.from(studentMap.values())
+      .map(({ grades, name }) => {
+        const avgPercentage = grades.reduce((sum, g) => sum + g.percentage, 0) / grades.length || 0
+        const overallGrade = avgPercentage >= 90 ? 'A' : avgPercentage >= 80 ? 'B' : avgPercentage >= 70 ? 'C' : avgPercentage >= 60 ? 'D' : 'F'
+        return {
+          studentId: grades[0].student,
+          studentName: name || `Student ${grades[0].student}`,
+          gradeCount: grades.length,
+          avgPercentage,
+          overallGrade
+        }
+      })
+      .sort((a, b) => b.avgPercentage - a.avgPercentage)
+      .filter((s) => s.studentName.toLowerCase().includes(searchTerm.toLowerCase()))
+  }, [grades, filterSession, searchTerm])
+
+  const getStudentName = (studentId: number) => {
+    const student = students.find((s) => (s.user?.id || s.id) === studentId)
+    return student?.user?.first_name ? `${student.user.first_name} ${student.user.last_name}` : `Student ${studentId}`
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -107,14 +145,9 @@ export default function GradingPage() {
         academic_session: formData.academic_session ? parseInt(formData.academic_session) : null,
       }
 
-      if (editingGrade) {
-        await gradesAPI.update(editingGrade.id, gradeData)
-      } else {
-        await gradesAPI.create(gradeData)
-      }
+      await gradesAPI.create(gradeData)
 
       setIsOpen(false)
-      setEditingGrade(null)
       setFormData({
         student: "",
         subject: "",
@@ -130,347 +163,219 @@ export default function GradingPage() {
     }
   }
 
-  const handleEdit = (grade: Grade) => {
-    if (grade.is_locked) {
-      alert("Cannot edit a locked grade. Please unlock first.")
-      return
-    }
-    setEditingGrade(grade)
-    setFormData({
-      student: grade.student.toString(),
-      subject: grade.subject.toString(),
-      assessment_type: grade.assessment_type,
-      score: grade.score.toString(),
-      max_score: grade.max_score.toString(),
-      academic_session: grade.academic_session?.toString() || "",
-    })
-    setIsOpen(true)
-  }
-
-  const handleDelete = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this grade?")) return
-    
-    try {
-      await gradesAPI.delete(id)
-      await fetchData()
-    } catch (err: any) {
-      console.error("Failed to delete grade:", err)
-      alert(err?.response?.data?.error || "Failed to delete grade")
-    }
-  }
-
-  const handleLockGrade = async (id: number) => {
-    try {
-      await gradesAPI.update(id, { is_locked: true })
-      await fetchData()
-    } catch (err) {
-      console.error("Failed to lock grade:", err)
-      alert("Failed to lock grade")
-    }
-  }
-
-  const handleUnlockGrade = async (id: number) => {
-    try {
-      await gradesAPI.update(id, { is_locked: false })
-      await fetchData()
-    } catch (err) {
-      console.error("Failed to unlock grade:", err)
-      alert("Failed to unlock grade")
-    }
-  }
-
-  const filteredGrades = grades.filter((g) => {
-    if (filterSession && g.academic_session?.toString() !== filterSession) return false
-    if (searchTerm) {
-      const studentName = g.student_name || `Student ${g.student}`
-      const subjectName = g.subject_name || `Subject ${g.subject}`
-      return studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-             subjectName.toLowerCase().includes(searchTerm.toLowerCase())
-    }
-    return true
-  })
-
-  const totalPages = Math.ceil(filteredGrades.length / itemsPerPage)
-  const paginatedGrades = filteredGrades.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
-
-  const getStudentName = (id: number) => {
-    const student = students.find((s) => (s.user?.id || s.id) === id)
-    return student?.user?.first_name ? `${student.user.first_name} ${student.user.last_name}` : `Student ${id}`
-  }
-
-  const getSubjectName = (id: number) => {
-    const subject = subjects.find((s) => s.id === id)
-    return subject?.name || `Subject ${id}`
-  }
-
-  const getGradeColor = (grade: string) => {
-    switch (grade) {
-      case "A": return "bg-green-500"
-      case "B": return "bg-blue-500"
-      case "C": return "bg-yellow-500"
-      case "D": return "bg-orange-500"
-      case "F": return "bg-red-500"
-      default: return "bg-gray-500"
-    }
-  }
+  const stats = [
+    { label: 'Students Graded', value: studentsSummary.length, icon: Users, color: 'blue' },
+    { label: 'Total Assessments', value: grades.filter(g => filterSession === '' || g.academic_session?.toString() === filterSession).length, icon: TrendingUp, color: 'green' },
+    { label: 'A Grade Students', value: studentsSummary.filter(s => s.overallGrade === 'A').length, icon: Award, color: 'yellow' },
+  ]
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
-        <Loader size="md" color="#3b82f6" />
-      </div>
-    )
+    return <Loader size="lg" />
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-purple-700">Grading System</h1>
+      <div className="flex justify-between items-start">
+        <div>
+          <h1 className="text-3xl font-bold text-purple-700">Student Grades Overview</h1>
+          <p className="text-gray-600 mt-1">View overall student performance and drill down into details</p>
+        </div>
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+          <DialogTrigger asChild>
+            <Button className="bg-purple-600 hover:bg-purple-700">+ Add New Grade</Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Add Grade</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Student</Label>
+                  <Select value={formData.student} onValueChange={(v) => setFormData({ ...formData, student: v })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Student" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {students.map((s) => (
+                        <SelectItem key={s.id} value={(s.user?.id || s.id).toString()}>
+{getStudentName(s.id)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Subject</Label>
+                  <Select value={formData.subject} onValueChange={(v) => setFormData({ ...formData, subject: v })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Subject" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {subjects.map((s) => (
+                        <SelectItem key={s.id} value={s.id.toString()}>
+                          {s.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Assessment Type</Label>
+                  <Select value={formData.assessment_type} onValueChange={(v) => setFormData({ ...formData, assessment_type: v })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {assessmentTypes.map((type) => (
+                        <SelectItem key={type.value} value={type.value}>
+                          {type.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Academic Session</Label>
+                  <Select value={formData.academic_session} onValueChange={(v) => setFormData({ ...formData, academic_session: v })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Session" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {sessions.map((session) => (
+                        <SelectItem key={session.id} value={session.id.toString()}>
+                          {session.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Score</Label>
+                  <Input type="number" value={formData.score} onChange={(e) => setFormData({ ...formData, score: e.target.value })} required />
+                </div>
+                <div>
+                  <Label>Max Score</Label>
+                  <Input type="number" value={formData.max_score} onChange={(e) => setFormData({ ...formData, max_score: e.target.value })} required />
+                </div>
+              </div>
+              <Button type="submit" className="w-full">Add Grade</Button>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {stats.map((stat, index) => (
+          <div key={index} className="bg-gradient-to-r from-white to-gray-50 dark:from-slate-800 dark:to-slate-700 border rounded-xl p-6 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div className={`p-3 rounded-xl bg-${stat.color}-100 dark:bg-${stat.color}-900/30`}>
+                <stat.icon className={`w-6 h-6 text-${stat.color}-600`} />
+              </div>
+              <div className="text-right">
+                <p className={`text-3xl font-bold text-${stat.color}-600`}>{stat.value}</p>
+                <p className="text-sm text-gray-600 dark:text-slate-400">{stat.label}</p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-col md:flex-row gap-4 items-end">
+        <div className="flex-1 relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+          <Input
+            placeholder="Search students by name..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <div className="w-full md:w-auto">
+          <Label>Academic Session</Label>
+          <Select value={filterSession} onValueChange={setFilterSession}>
+            <SelectTrigger>
+              <SelectValue placeholder="All Sessions" />
+            </SelectTrigger>
+            <SelectContent>
+<SelectItem value="all">All Sessions</SelectItem>
+              {sessions.map((session: any) => (
+                <SelectItem key={session.id} value={session.id.toString()}>
+                  {session.name} {session.is_current ? '(Current)' : ''}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <Tabs defaultValue="overview" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="grades">Grades</TabsTrigger>
-          <TabsTrigger value="policy">
-            <Settings className="w-4 h-4 mr-2" />
-            Grading Policy
-          </TabsTrigger>
+          <TabsTrigger value="overview">Student Overview</TabsTrigger>
+          <TabsTrigger value="policy">Grading Policy</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="grades" className="space-y-4">
-          <div className="flex gap-4 items-end">
-            <div className="flex-1">
-              <Label>Academic Session</Label>
-              <Select value={filterSession} onValueChange={setFilterSession}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select Session" />
-                </SelectTrigger>
-                <SelectContent>
-                  {sessions.map((session: any) => (
-                    <SelectItem key={session.id} value={session.id.toString()}>
-                      {session.name} {session.is_current ? '(Current)' : ''}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <Dialog open={isOpen} onOpenChange={(open) => {
-              setIsOpen(open)
-              if (!open) {
-                setEditingGrade(null)
-                setFormData({
-                  student: "",
-                  subject: "",
-                  assessment_type: "exam",
-                  score: "",
-                  max_score: "100",
-                  academic_session: filterSession,
-                })
-              }
-            }}>
-              <DialogTrigger asChild>
-                <Button className="bg-purple-600 hover:bg-purple-700">+ Add Grade</Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>{editingGrade ? "Edit Grade" : "Add Grade"}</DialogTitle>
-                </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div>
-                    <Label>Student</Label>
-                    <Select 
-                      value={formData.student} 
-                      onValueChange={(v) => setFormData({ ...formData, student: v })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select Student" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {students.map((s: any) => (
-                          <SelectItem key={s.id} value={(s.user?.id || s.id).toString()}>
-                            {s.user?.first_name} {s.user?.last_name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>Subject</Label>
-                    <Select 
-                      value={formData.subject} 
-                      onValueChange={(v) => setFormData({ ...formData, subject: v })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select Subject" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {subjects.map((s: any) => (
-                          <SelectItem key={s.id} value={s.id.toString()}>
-                            {s.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>Assessment Type</Label>
-                    <Select 
-                      value={formData.assessment_type} 
-                      onValueChange={(v) => setFormData({ ...formData, assessment_type: v })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {assessmentTypes.map((type) => (
-                          <SelectItem key={type.value} value={type.value}>
-                            {type.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label>Score</Label>
-                      <Input
-                        type="number"
-                        step="0.5"
-                        value={formData.score}
-                        onChange={(e) => setFormData({ ...formData, score: e.target.value })}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label>Max Score</Label>
-                      <Input
-                        type="number"
-                        value={formData.max_score}
-                        onChange={(e) => setFormData({ ...formData, max_score: e.target.value })}
-                        required
-                      />
-                    </div>
-                  </div>
-                  <Button type="submit" className="w-full bg-purple-600">
-                    {editingGrade ? "Update" : "Create"}
-                  </Button>
-                </form>
-              </DialogContent>
-            </Dialog>
-          </div>
-
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-3 text-gray-400" size={20} />
-            <Input
-              placeholder="Search by student or subject..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-
-          <div className="bg-white rounded-lg shadow overflow-hidden">
+        <TabsContent value="overview" className="space-y-4">
+          <div className="bg-white rounded-xl shadow border overflow-hidden">
             <table className="w-full">
-              <thead className="bg-gray-50 border-b">
+              <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Student</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Subject</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Type</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Marks</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">%</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Grade</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Action</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Student</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Subjects</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Avg Score</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Overall Grade</th>
+                  <th className="px-6 py-4 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
-              <tbody>
-                {paginatedGrades.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
-                      No grades added yet
+              <tbody className="divide-y divide-gray-200">
+                {studentsSummary.map((summary) => (
+                  <tr key={summary.studentId} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="font-medium text-gray-900">{summary.studentName}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                      {summary.gradeCount}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="text-2xl font-bold text-emerald-600">{summary.avgPercentage.toFixed(1)}%</span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <Badge className={`font-bold text-lg px-4 py-2 ${
+                        summary.overallGrade === 'A' ? 'bg-green-100 text-green-800 border-green-200' :
+                        summary.overallGrade === 'B' ? 'bg-blue-100 text-blue-800 border-blue-200' :
+                        summary.overallGrade === 'C' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' :
+                        summary.overallGrade === 'D' ? 'bg-orange-100 text-orange-800 border-orange-200' :
+                        'bg-red-100 text-red-800 border-red-200'
+                      }`}>
+                        {summary.overallGrade}
+                      </Badge>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <Link 
+                        href={`/dashboard/school-admin/grading/${summary.studentId}`}
+                        className="flex items-center gap-1 text-purple-600 hover:text-purple-900 font-semibold"
+                      >
+                        View Details
+                        <ArrowRight className="w-4 h-4" />
+                      </Link>
                     </td>
                   </tr>
-                ) : (
-                  paginatedGrades.map((grade) => (
-                    <tr key={grade.id} className="border-b hover:bg-gray-50">
-                      <td className="px-6 py-3 font-medium">{getStudentName(grade.student)}</td>
-                      <td className="px-6 py-3">{getSubjectName(grade.subject)}</td>
-                      <td className="px-6 py-3 capitalize">{grade.assessment_type}</td>
-                      <td className="px-6 py-3">{grade.score}/{grade.max_score}</td>
-                      <td className="px-6 py-3">{grade.percentage.toFixed(2)}%</td>
-                      <td className="px-6 py-3">
-                        <span className={`px-2 py-1 rounded text-white text-sm font-semibold ${getGradeColor(grade.grade)}`}>
-                          {grade.grade}
-                        </span>
-                      </td>
-                      <td className="px-6 py-3">
-                        {grade.is_locked ? (
-                          <span className="flex items-center gap-1 text-red-500 text-xs">
-                            <Lock className="w-3 h-3" /> Locked
-                          </span>
-                        ) : (
-                          <span className="text-green-500 text-xs">Editable</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-3 flex gap-2">
-                        {!grade.is_locked && (
-                          <button onClick={() => handleEdit(grade)} className="text-blue-600">
-                            <Edit2 size={18} />
-                          </button>
-                        )}
-                        {grade.is_locked ? (
-                          <button onClick={() => handleUnlockGrade(grade.id)} className="text-orange-600" title="Unlock">
-                            <Unlock size={18} />
-                          </button>
-                        ) : (
-                          <button onClick={() => handleLockGrade(grade.id)} className="text-green-600" title="Lock">
-                            <Lock size={18} />
-                          </button>
-                        )}
-                        {!grade.is_locked && (
-                          <button onClick={() => handleDelete(grade.id)} className="text-red-600">
-                            <Trash2 size={18} />
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))
+                ))}
+                {studentsSummary.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
+                      No students with grades found. Add grades to see summaries here.
+                    </td>
+                  </tr>
                 )}
               </tbody>
             </table>
-          </div>
-
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-gray-600">{itemsPerPage} / page</span>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-              >
-                <ChevronLeft size={18} />
-              </Button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                <Button
-                  key={page}
-                  variant={currentPage === page ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setCurrentPage(page)}
-                  className={currentPage === page ? "bg-purple-600" : ""}
-                >
-                  {page}
-                </Button>
-              ))}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages}
-              >
-                <ChevronRight size={18} />
-              </Button>
-            </div>
           </div>
         </TabsContent>
 
@@ -481,4 +386,3 @@ export default function GradingPage() {
     </div>
   )
 }
-

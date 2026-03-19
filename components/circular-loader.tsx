@@ -21,7 +21,7 @@ export function CircularLoader({ size = "md", className = "", color }: CircularL
     xl: "h-12 w-12",
   }
 
-  const defaultColor = "text-blue-600"
+  const defaultColor = "text-cyan-600"
   const spinnerColor = color || defaultColor
 
   return (
@@ -39,8 +39,8 @@ export function PageLoader() {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/80 backdrop-blur-sm">
       <div className="flex flex-col items-center gap-4">
         <div className="relative">
-          <Loader2 className="h-12 w-12 text-blue-600 animate-spin" />
-          <div className="absolute inset-0 h-12 w-12 animate-ping rounded-full bg-blue-400 opacity-20" />
+          <Loader2 className="h-12 w-12 text-cyan-600 animate-spin" />
+          <div className="absolute inset-0 h-12 w-12 animate-ping rounded-full bg-cyan-400 opacity-20" />
         </div>
         <p className="text-gray-600 font-medium">Loading...</p>
       </div>
@@ -54,7 +54,7 @@ export function PageLoader() {
 export function InlineLoader({ message = "Loading...", className = "" }: { message?: string; className?: string }) {
   return (
     <div className={`flex items-center justify-center gap-3 py-4 ${className}`}>
-      <Loader2 className="h-5 w-5 text-blue-600 animate-spin" />
+      <Loader2 className="h-5 w-5 text-cyan-600 animate-spin" />
       <span className="text-gray-600">{message}</span>
     </div>
   )
@@ -67,7 +67,7 @@ export function CardLoader({ className = "" }: { className?: string }) {
   return (
     <div className={`flex items-center justify-center py-12 ${className}`}>
       <div className="flex flex-col items-center gap-3">
-        <Loader2 className="h-8 w-8 text-blue-600 animate-spin" />
+        <Loader2 className="h-8 w-8 text-cyan-600 animate-spin" />
         <span className="text-sm text-gray-500">Loading data...</span>
       </div>
     </div>
@@ -105,10 +105,10 @@ export function TableLoader({ rows = 5, className = "" }: { rows?: number; class
  */
 export function FullScreenLoader() {
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-br from-cyan-50 to-cyan-100">
       <div className="relative mb-6">
-        <Loader2 className="h-16 w-16 text-indigo-600 animate-spin" />
-        <div className="absolute inset-0 h-16 w-16 animate-pulse rounded-full bg-indigo-400 opacity-20" />
+        <Loader2 className="h-16 w-16 text-cyan-600 animate-spin" />
+        <div className="absolute inset-0 h-16 w-16 animate-pulse rounded-full bg-cyan-400 opacity-20" />
       </div>
       <h2 className="text-xl font-bold text-gray-800 mb-2">School Management System</h2>
       <p className="text-gray-600">Loading your dashboard...</p>

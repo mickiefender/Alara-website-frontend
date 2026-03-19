@@ -6,9 +6,11 @@ import { Button } from "@/components/ui/button"
 import { academicsAPI, authAPI, assignmentAPI, billingAPI, gradesAPI, attendanceAPI, usersAPI } from "@/lib/api"
 import { BookOpen, DollarSign, Calendar, FileText, Edit2, Download, Share2, ClipboardList, UserCheck } from "lucide-react"
 import Image from "next/image"
+import { ProfileAvatar } from "@/components/profile-avatar"
 import Loader from '@/components/loader'
 import { NoticeBoard } from "@/components/notice-board"
 import AssignmentSubmissionModal from "@/components/AssignmentSubmissionModal"
+import { UpcomingExams } from "@/components/upcoming-exams"
 import React from "react"
 
 interface DashboardData {
@@ -267,15 +269,11 @@ export default function StudentDashboard() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Profile Picture */}
                 <div className="flex flex-col items-center gap-3">
-                  <div className="w-32 h-32 bg-cyan-400 rounded-lg flex items-center justify-center overflow-hidden">
-                    {profilePic ? (
-                      <Image src={profilePic || "/placeholder.svg"} alt="Profile" width={128} height={128} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="text-center text-white">
-                        <p className="text-sm">No Picture</p>
-                      </div>
-                    )}
-                  </div>
+                  <ProfileAvatar 
+                    src={profilePic || undefined}
+                    alt={`${data?.userProfile?.first_name || ''} ${data?.userProfile?.last_name || ''}`.trim() || 'Student'}
+                    size="xl"
+                  />
                   <div className="text-center">
                     <p className="font-semibold">{data?.userProfile?.first_name} {data?.userProfile?.last_name}</p>
                     <p className="text-xs text-gray-500">ID: {studentProfile?.student_id || data?.userProfile?.student_id || data?.userProfile?.username || "-"}</p>
@@ -351,6 +349,11 @@ export default function StudentDashboard() {
         {/* Notice Board */}
         <NoticeBoard />
       </div>
+
+      {/* UPCOMING EXAMS SECTION - NEW */}
+      {data?.upcomingExams && data.upcomingExams.length > 0 && (
+        <UpcomingExams exams={data.upcomingExams} />
+      )}
 
       {/* My Attendance Section */}
       {attendance && attendance.total_days > 0 && (

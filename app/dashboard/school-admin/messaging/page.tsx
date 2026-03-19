@@ -151,6 +151,16 @@ export default function MessagingPage() {
     }
   }
 
+  const handleDeleteAnnouncement = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this announcement?')) return
+    try {
+      await messagingAPI.deleteAnnouncement(id)
+      await fetchAllData()
+    } catch (err: any) {
+      setError('Failed to delete announcement')
+    }
+  }
+
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'urgent':
@@ -483,12 +493,22 @@ export default function MessagingPage() {
             <div className="space-y-4">
               {announcements.map((announcement) => (
                 <div key={announcement.id} className="bg-white rounded-lg p-6 border border-gray-200">
-                  <div>
-                    <h3 className="text-lg font-bold mb-2">{announcement.title}</h3>
-                    <p className="text-gray-600 mb-2">{announcement.content}</p>
-                    <div className="flex gap-4 text-sm text-gray-500">
-                      <span>Status: {announcement.status}</span>
-                      <span>{new Date(announcement.created_at).toLocaleDateString()}</span>
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="flex-1">
+                      <h3 className="text-lg font-bold">{announcement.title}</h3>
+                      <p className="text-gray-600 mb-2">{announcement.content}</p>
+                      <div className="flex gap-4 text-sm text-gray-500">
+                        <span>Status: {announcement.status}</span>
+                        <span>{new Date(announcement.created_at).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleDeleteAnnouncement(announcement.id)}
+                        className="p-2 hover:bg-red-50 text-red-600 rounded"
+                      >
+                        <Trash2 size={20} />
+                      </button>
                     </div>
                   </div>
                 </div>

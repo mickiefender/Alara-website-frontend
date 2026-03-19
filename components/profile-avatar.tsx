@@ -2,12 +2,14 @@
 
 import React from "react"
 import Image from "next/image"
+import { useAuthContext } from "@/lib/auth-context"
 
 interface ProfileAvatarProps {
   src?: string | null
   alt: string
   size?: "sm" | "md" | "lg" | "xl"
   className?: string
+  schoolLogo?: string | null
 }
 
 const sizeClasses = {
@@ -24,7 +26,12 @@ const sizeClassesImage = {
   xl: 64,
 }
 
-export function ProfileAvatar({ src, alt, size = "md", className = "" }: ProfileAvatarProps) {
+export function ProfileAvatar({ src, alt, size = "md", className = "", schoolLogo }: ProfileAvatarProps) {
+  const { school } = useAuthContext()
+  
+  // Use provided schoolLogo or get from auth context
+  const logoUrl = schoolLogo || school?.logo_url || school?.logo_url_computed
+  
   const hasImage = src && src.length > 0
   
   // Get initials from alt text (name)
@@ -53,6 +60,15 @@ export function ProfileAvatar({ src, alt, size = "md", className = "" }: Profile
           height={sizeClassesImage[size]}
           className="w-full h-full object-cover"
           unoptimized={src.startsWith("http") ? true : false}
+        />
+      ) : logoUrl ? (
+        <Image
+          src={logoUrl}
+          alt={alt}
+          width={sizeClassesImage[size]}
+          height={sizeClassesImage[size]}
+          className="w-full h-full object-cover"
+          unoptimized={logoUrl.startsWith("http") ? true : false}
         />
       ) : (
         <div className="w-full h-full flex items-center justify-center text-white font-medium">

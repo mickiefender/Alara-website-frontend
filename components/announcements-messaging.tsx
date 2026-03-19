@@ -26,6 +26,8 @@ export function AnnouncementsMessaging() {
     priority: "normal" as const,
   })
 
+  const [deletingId, setDeletingId] = useState<number | null>(null)
+
   useEffect(() => {
     fetchAnnouncements()
   }, [])
@@ -62,6 +64,22 @@ export function AnnouncementsMessaging() {
     urgent: "bg-yellow-100 text-yellow-800",
     critical: "bg-red-100 text-red-800",
   }
+
+  const handleDelete = async (id: number) => {
+    if (!confirm("Are you sure you want to delete this announcement? This action cannot be undone.")) return;
+
+    setDeletingId(id);
+    try {
+      await announcementsAPI.delete(id);
+      // Refresh list
+      await fetchAnnouncements();
+    } catch (error) {
+      console.error("Failed to delete announcement:", error);
+      alert("Failed to delete announcement. Please try again.");
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   if (loading) {
     return (
@@ -142,9 +160,27 @@ export function AnnouncementsMessaging() {
                 <div key={ann.id} className="p-4 border rounded-lg">
                   <div className="flex justify-between items-start mb-2">
                     <h3 className="font-semibold">{ann.title}</h3>
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${priorityColors[ann.priority]}`}>
-                      {ann.priority}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${priorityColors[ann.priority]}`}>
+                        {ann.priority}
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(ann.id);
+                        }}
+                        disabled={deletingId === ann.id}
+                        className="h-6 w-6 p-0"
+                      >
+                        {deletingId === ann.id ? (
+                          <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          "🗑️"
+                        )}
+                      </Button>
+                    </div>
                   </div>
                   <p className="text-sm text-muted-foreground mb-2">{ann.content}</p>
                   <div className="flex justify-between items-center text-xs text-muted-foreground">

@@ -184,12 +184,12 @@ export function FeesManagement() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b">
-                <th className="text-left py-2 px-2">Name</th>
-                <th className="text-left py-2 px-2">Amount</th>
-                <th className="text-left py-2 px-2">Is Active</th>
-                <th className="text-left py-2 px-2">Is Mandatory</th>
-                <th className="text-left py-2 px-2">Actions</th>
+              <tr className="border-b border-border dark:border-slate-800">
+                <th className="text-left py-2 px-2 text-muted-foreground dark:text-slate-400">Name</th>
+                <th className="text-left py-2 px-2 text-muted-foreground dark:text-slate-400">Amount</th>
+                <th className="text-left py-2 px-2 text-muted-foreground dark:text-slate-400">Is Active</th>
+                <th className="text-left py-2 px-2 text-muted-foreground dark:text-slate-400">Is Mandatory</th>
+                <th className="text-left py-2 px-2 text-muted-foreground dark:text-slate-400">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -201,17 +201,17 @@ export function FeesManagement() {
                 </tr>
               ) : fees.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="text-center py-4 text-muted-foreground">
+                  <td colSpan={5} className="text-center py-4 text-muted-foreground dark:text-slate-500">
                     No fees found. Add your first fee.
                   </td>
                 </tr>
               ) : (
                 fees.map((fee) => (
-                  <tr key={fee.id} className="border-b hover:bg-muted/50">
-                    <td className="py-2 px-2">{fee.name}</td>
-                    <td className="py-2 px-2">{fee.amount}</td>
-                    <td className="py-2 px-2">{fee.is_active ? "Yes" : "No"}</td>
-                    <td className="py-2 px-2">{fee.is_mandatory ? "Yes" : "No"}</td>
+                  <tr key={fee.id} className="border-b border-border dark:border-slate-800 hover:bg-muted/50 dark:hover:bg-slate-800/50">
+                    <td className="py-2 px-2 text-foreground dark:text-slate-200">{fee.name}</td>
+                    <td className="py-2 px-2 text-muted-foreground dark:text-slate-400">{fee.amount}</td>
+                    <td className="py-2 px-2 text-muted-foreground dark:text-slate-400">{fee.is_active ? "Yes" : "No"}</td>
+                    <td className="py-2 px-2 text-muted-foreground dark:text-slate-400">{fee.is_mandatory ? "Yes" : "No"}</td>
                     <td className="py-2 px-2">
                       <div className="flex gap-2">
                         <Button variant="ghost" size="sm" onClick={() => handleEdit(fee)}>

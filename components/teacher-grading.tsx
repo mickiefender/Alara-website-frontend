@@ -1,19 +1,50 @@
 "use client"
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import type React from "react"
+
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Badge } from "@/components/ui/badge"
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select"
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogFooter 
+} from "@/components/ui/dialog"
 import { useState, useEffect } from "react"
 import { gradesAPI, usersAPI, academicsAPI } from "@/lib/api"
 import { useAuthContext as useAuth } from "@/lib/auth-context"
-import { Lock, Unlock, Save, AlertCircle } from "lucide-react"
+import { 
+  Lock, 
+  Unlock, 
+  Save, 
+  Plus, 
+  Search,
+  FileText,
+  Award,
+  TrendingUp,
+  Users,
+  BookOpen,
+  AlertCircle,
+  CheckCircle,
+  Calculator
+} from "lucide-react"
 
 interface Grade {
   id: number
   student: number
   subject: number
   student_name?: string
-  student_first_name?: string
-  student_last_name?: string
   subject_name?: string
   assessment_type: string
   score: number
@@ -27,10 +58,20 @@ interface Grade {
   recorded_date: string
 }
 
+interface ClassAssignment {
+  id: number
+  class_obj: number
+  class_name?: string
+  class_data?: { id: number; name: string }
+  subject?: number | null
+  subject_name?: string
+  teacher: number
+}
+
 export function TeacherGrading() {
   const { user } = useAuth()
   const [grades, setGrades] = useState<Grade[]>([])
-  const [classes, setClasses] = useState<any[]>([])
+  const [classes, setClasses] = useState<ClassAssignment[]>([])
   const [students, setStudents] = useState<any[]>([])
   const [subjects, setSubjects] = useState<any[]>([])
   const [sessions, setSessions] = useState<any[]>([])
@@ -40,15 +81,15 @@ export function TeacherGrading() {
   const [showForm, setShowForm] = useState(false)
   const [selectedAssignmentId, setSelectedAssignmentId] = useState("")
   const [saving, setSaving] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
   const [newGrade, setNewGrade] = useState({
     student: "",
     subject: "",
-    assessment_type: "exam" as const,
+    assessment_type: "exam",
     score: "",
     max_score: "100",
   })
 
-  // Default max scores based on assessment type
   const DEFAULT_MAX_SCORES: Record<string, number> = {
     exam: 100,
     test: 20,
@@ -57,23 +98,20 @@ export function TeacherGrading() {
     continuous: 10,
   }
 
-  // Handle assessment type change - auto-set max score
   const handleAssessmentTypeChange = (value: string) => {
     const defaultMax = DEFAULT_MAX_SCORES[value] || 100
     setNewGrade(prev => ({
       ...prev,
-      assessment_type: value as any,
+      assessment_type: value,
       max_score: defaultMax.toString(),
     }))
   }
 
-  const getClassId = (assignment: any) => {
-    // API returns class_obj directly, not class_data
-    return assignment.class_obj || assignment.class_id
+  const getClassId = (assignment: ClassAssignment) => {
+    return assignment.class_obj || assignment.class_data?.id
   }
 
-  const getSubjectId = (assignment: any) => {
-    // API returns subject directly as a number ID
+  const getSubjectId = (assignment: ClassAssignment) => {
     return assignment.subject
   }
 
@@ -106,7 +144,7 @@ export function TeacherGrading() {
         setNewGrade((prev) => ({
           ...prev,
           student: "",
-          subject: subjectId !== undefined && subjectId !== null ? subjectId : "",
+          subject: subjectId !== undefined && subjectId !== null ? subjectId.toString() : "",
         }))
       }
     }
@@ -117,14 +155,12 @@ export function TeacherGrading() {
       const res = await academicsAPI.academicSessions()
       const sessionsData = res.data.results || res.data || []
       setSessions(sessionsData)
-      
-      // Set current session
       const currentSession = sessionsData.find((s: any) => s.is_current)
       if (currentSession) {
         setFilterSession(currentSession.id.toString())
       }
     } catch (error) {
-      console.error("[v0] Failed to fetch sessions:", error)
+      console.error("[TeacherGrading] Failed to fetch sessions:", error)
     }
   }
 
@@ -132,33 +168,29 @@ export function TeacherGrading() {
     if (!user) return
     try {
       setLoading(true)
-      // Fetch both ClassSubjectTeacher and ClassTeacher assignments
       const [teacherClassesRes, classTeachersRes] = await Promise.all([
         academicsAPI.classSubjectTeachers(),
         academicsAPI.classTeachers(),
-      ]);
+      ])
       
       let classesData = teacherClassesRes.data.results || teacherClassesRes.data || []
       
-      // If no subject teacher assignments, check for class teacher (form tutor) assignments
       if (classesData.length === 0) {
         const classTeacherData = classTeachersRes.data.results || classTeachersRes.data || []
-        // Transform ClassTeacher data to match ClassSubjectTeacher format
         classesData = classTeacherData.map((ct: any) => ({
           id: ct.id,
           class_obj: ct.class_obj,
           class_name: ct.class_name,
           class_data: { id: ct.class_obj, name: ct.class_name },
-          subject: null, // No specific subject for form tutors
+          subject: null,
           subject_name: "Form Tutor (All Subjects)",
           teacher: ct.teacher,
         }))
       }
       
-      console.log("[TeacherGrading] Teacher classes data:", classesData)
       setClasses(classesData)
     } catch (error) {
-      console.error("[v0] Failed to fetch teacher data:", error)
+      console.error("[TeacherGrading] Failed to fetch teacher data:", error)
     } finally {
       setLoading(false)
     }
@@ -168,67 +200,36 @@ export function TeacherGrading() {
     if (!user) return
     try {
       const classIdNum = typeof classId === 'string' ? parseInt(classId) : classId
-      console.log("[TeacherGrading] fetchClassData called with classId:", classIdNum)
       
       const [studentsRes, subjectsRes] = await Promise.all([
         usersAPI.students({ class_id: classIdNum }),
-        // Use classSubjects() to get all subjects for the class (not filtered by teacher)
         academicsAPI.classSubjects(),
       ])
       
       const studentsData = studentsRes.data.results || studentsRes.data || []
-      console.log("[TeacherGrading] Students data:", studentsData)
-      console.log("[TeacherGrading] Students data sample:", JSON.stringify(studentsData[0], null, 2))
       setStudents(studentsData)
       
       const allSubjects = subjectsRes.data.results || subjectsRes.data || []
-      console.log("[TeacherGrading] All class subjects (before filter):", allSubjects)
-      
-      // Filter subjects by class_obj (the correct API field)
-      // Ensure we compare numbers properly - subject is already an ID (PK), class_obj is also a PK
       const filteredSubjects = allSubjects.filter(
         (s: any) => Number(s.class_obj) === Number(classIdNum)
       )
-      console.log("[TeacherGrading] Filtered subjects:", filteredSubjects)
       setSubjects(filteredSubjects)
     } catch (error) {
-      console.error("[v0] Failed to fetch class data:", error)
+      console.error("[TeacherGrading] Failed to fetch class data:", error)
     }
   }
 
   const fetchGrades = async () => {
     try {
-      // Get grades for teacher's assigned classes and subjects
       const gradesRes = await gradesAPI.list()
-      let allGrades = gradesRes.data.results || gradesRes.data || []
-      console.log("[TeacherGrading] fetchGrades - all grades from API:", allGrades.length)
-      console.log("[TeacherGrading] fetchGrades - sample grades:", allGrades.slice(0, 3).map((g: any) => JSON.stringify(g)))
-      
-      // For now, just set all grades without filtering - let backend do the filtering
-      // The filtering is causing issues - let's debug first
+      const allGrades = gradesRes.data.results || gradesRes.data || []
       setGrades(allGrades)
     } catch (error) {
-      console.error("[v0] Failed to fetch grades:", error)
+      console.error("[TeacherGrading] Failed to fetch grades:", error)
     }
   }
 
   const addGrade = async () => {
-    console.log("[TeacherGrading] addGrade called, newGrade:", newGrade)
-    console.log("[TeacherGrading] subjects state:", subjects)
-    console.log("[TeacherGrading] students state:", students)
-    console.log("[TeacherGrading] filterSession:", filterSession)
-    
-    // Debug: Find selected student and subject details
-    // Note: subject in subjects array is the Subject ID (PK), not an object
-    // Student user ID is at s.user_id (explicit) or s.user?.id or s.id
-    const studentIdForGrade = (s: any) => s.user_id ?? s.user?.id ?? s.id
-    const selectedStudent = students.find(s => String(studentIdForGrade(s)) === String(newGrade.student))
-    const selectedSubject = subjects.find(s => String(s.subject) === String(newGrade.subject))
-    console.log("[TeacherGrading] selectedStudent:", selectedStudent)
-    console.log("[TeacherGrading] selectedSubject:", selectedSubject)
-    console.log("[TeacherGrading] student IDs in list:", students.map(s => studentIdForGrade(s)))
-    console.log("[TeacherGrading] subject IDs in list:", subjects.map(s => s.subject))
-    
     if (!newGrade.student || (!newGrade.subject && newGrade.subject !== "0") || !newGrade.score) {
       alert("Please fill all required fields")
       return
@@ -245,25 +246,13 @@ export function TeacherGrading() {
         academic_session: filterSession ? parseInt(filterSession) : null,
       }
 
-      console.log("[v0] Creating grade with data:", JSON.stringify(data))
-      console.log("[v0] newGrade.student type:", typeof newGrade.student, "value:", newGrade.student)
-      console.log("[v0] newGrade.subject type:", typeof newGrade.subject, "value:", newGrade.subject)
-      console.log("[v0] filterSession:", filterSession)
-      console.log("[v0] Parsed values - student:", Number.parseInt(newGrade.student), "subject:", Number.parseInt(newGrade.subject))
-      
-      const response = await gradesAPI.create(data)
-      console.log("[v0] Grade created successfully:", response.data)
+      await gradesAPI.create(data)
       setNewGrade({ student: "", subject: "", assessment_type: "exam", score: "", max_score: "100" })
       setShowForm(false)
-      
-      // Force a complete refetch - reset grades state first to show loading state
       setGrades([])
       await fetchGrades()
     } catch (error: any) {
-      console.error("[v0] Failed to create grade - full error:", error)
-      console.error("[v0] Failed to create grade - response:", error?.response)
-      console.error("[v0] Failed to create grade - response data:", error?.response?.data)
-      console.error("[v0] Failed to create grade - status:", error?.response?.status)
+      console.error("[TeacherGrading] Failed to create grade:", error)
       alert(`Error: ${error?.response?.data?.error || error?.response?.data?.detail || error?.message || "Failed to create grade"}`)
     } finally {
       setSaving(false)
@@ -292,7 +281,7 @@ export function TeacherGrading() {
       alert("Grades locked successfully!")
       await fetchGrades()
     } catch (error: any) {
-      console.error("[v0] Failed to lock grades:", error)
+      console.error("[TeacherGrading] Failed to lock grades:", error)
       alert(`Error: ${error?.response?.data?.error || "Failed to lock grades"}`)
     } finally {
       setSaving(false)
@@ -321,7 +310,7 @@ export function TeacherGrading() {
       alert("Grades unlocked successfully!")
       await fetchGrades()
     } catch (error: any) {
-      console.error("[v0] Failed to unlock grades:", error)
+      console.error("[TeacherGrading] Failed to unlock grades:", error)
       alert(`Error: ${error?.response?.data?.error || "Failed to unlock grades"}`)
     } finally {
       setSaving(false)
@@ -329,7 +318,6 @@ export function TeacherGrading() {
   }
 
   const getStudentName = (id: number, grade?: Grade) => {
-    // First try to use student_name from API if available
     if (grade?.student_name) {
       return grade.student_name
     }
@@ -340,12 +328,10 @@ export function TeacherGrading() {
   }
 
   const getSubjectName = (id: number, grade?: Grade) => {
-    // First try to use subject_name from API if available
     if (grade?.subject_name) {
       return grade.subject_name
     }
     
-    // subject in subjects array is the Subject ID (PK), not an object
     const subject = subjects.find((s) => Number(s.subject) === Number(id))
     if (subject) return subject.subject_name || subject.name
     const assignment = classes.find((c) => getSubjectId(c) === id)
@@ -355,23 +341,27 @@ export function TeacherGrading() {
   const getAssignmentName = (id: string) => {
     const c = classes.find((item) => item.id.toString() === id)
     if (!c) return ""
-    return `${c.class_name || c.name} - ${c.subject_name || "Subject"}`
+    return `${c.class_name || c.class_data?.name || "Class"} - ${c.subject_name || "All Subjects"}`
   }
 
   const getGradeColor = (grade: string) => {
     switch (grade) {
-      case "A":
-        return "bg-green-100 text-green-800"
-      case "B":
-        return "bg-blue-100 text-blue-800"
-      case "C":
-        return "bg-yellow-100 text-yellow-800"
-      case "D":
-        return "bg-orange-100 text-orange-800"
-      case "F":
-        return "bg-red-100 text-red-800"
-      default:
-        return "bg-gray-100 text-gray-800"
+      case "A": return "bg-emerald-100 text-emerald-700 border-emerald-200"
+      case "B": return "bg-blue-100 text-blue-700 border-blue-200"
+      case "C": return "bg-amber-100 text-amber-700 border-amber-200"
+      case "D": return "bg-orange-100 text-orange-700 border-orange-200"
+      case "F": return "bg-red-100 text-red-700 border-red-200"
+      default: return "bg-slate-100 text-slate-700 border-slate-200"
+    }
+  }
+
+  const getAssessmentTypeIcon = (type: string) => {
+    switch (type) {
+      case "exam": return <FileText className="w-3 h-3" />
+      case "test": return <FileText className="w-3 h-3" />
+      case "quiz": return <Calculator className="w-3 h-3" />
+      case "assignment": return <BookOpen className="w-3 h-3" />
+      default: return <FileText className="w-3 h-3" />
     }
   }
 
@@ -389,249 +379,419 @@ export function TeacherGrading() {
       if (!studentIds.includes(grade.student)) return false
     }
     if (filterStudent && grade.student !== Number.parseInt(filterStudent)) return false
+    if (searchQuery) {
+      const studentName = getStudentName(grade.student, grade).toLowerCase()
+      if (!studentName.includes(searchQuery.toLowerCase())) return false
+    }
     return true
   })
 
+  const gradeDistribution = {
+    a: filteredGrades.filter(g => g.grade === "A").length,
+    b: filteredGrades.filter(g => g.grade === "B").length,
+    c: filteredGrades.filter(g => g.grade === "C").length,
+    d: filteredGrades.filter(g => g.grade === "D").length,
+    f: filteredGrades.filter(g => g.grade === "F").length,
+  }
+
+  const stats = {
+    total: filteredGrades.length,
+    average: filteredGrades.length > 0 
+      ? filteredGrades.reduce((sum, g) => sum + g.percentage, 0) / filteredGrades.length 
+      : 0,
+    locked: filteredGrades.filter(g => g.is_locked).length,
+    students: students.length,
+  }
+
   if (loading) {
-    return <div className="text-center py-4">Loading grading system...</div>
+    return (
+      <Card className="border-0 shadow-lg">
+        <CardContent className="flex items-center justify-center min-h-[400px]">
+          <div className="flex flex-col items-center gap-3">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+            <p className="text-muted-foreground">Loading grading system...</p>
+          </div>
+        </CardContent>
+      </Card>
+    )
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex justify-between items-center">
-          <CardTitle>Grading System</CardTitle>
-          <div className="flex gap-2">
-            <Button 
-              size="sm" 
-              variant="outline"
-              onClick={handleLockGrades}
-              disabled={saving || !selectedAssignmentId}
-            >
-              <Lock className="w-4 h-4 mr-1" />
-              Lock All
-            </Button>
-            <Button 
-              size="sm" 
-              variant="outline"
-              onClick={handleUnlockGrades}
-              disabled={saving || !selectedAssignmentId}
-            >
-              <Unlock className="w-4 h-4 mr-1" />
-              Unlock All
-            </Button>
-            <Button 
-              size="sm" 
-              onClick={() => {
-                if (!selectedAssignmentId) {
-                  alert("Please select a Class & Subject first")
-                  return
-                }
-                setShowForm(!showForm)
-              }}
-            >
-              Add Grade
-            </Button>
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="bg-gradient-to-br from-cyan-500 to-cyan-600 text-white border-0">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-cyan-100 text-sm font-medium">Total Grades</p>
+                <p className="text-3xl font-bold">{stats.total}</p>
+              </div>
+              <div className="h-12 w-12 rounded-full bg-white/20 flex items-center justify-center">
+                <Award className="h-6 w-6" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-blue-100 text-sm font-medium">Class Average</p>
+                <p className="text-3xl font-bold">{stats.average.toFixed(1)}%</p>
+              </div>
+              <div className="h-12 w-12 rounded-full bg-white/20 flex items-center justify-center">
+                <TrendingUp className="h-6 w-6" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-amber-500 to-amber-600 text-white border-0">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-amber-100 text-sm font-medium">Locked Grades</p>
+                <p className="text-3xl font-bold">{stats.locked}</p>
+              </div>
+              <div className="h-12 w-12 rounded-full bg-white/20 flex items-center justify-center">
+                <Lock className="h-6 w-6" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white border-0">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-emerald-100 text-sm font-medium">Students</p>
+                <p className="text-3xl font-bold">{stats.students}</p>
+              </div>
+              <div className="h-12 w-12 rounded-full bg-white/20 flex items-center justify-center">
+                <Users className="h-6 w-6" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card className="border-0 shadow-lg">
+        <CardHeader className="pb-4 border-b">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <CardTitle className="text-xl flex items-center gap-2">
+                <Award className="h-5 w-5 text-cyan-600" />
+                Grade Management
+              </CardTitle>
+              <CardDescription>Record and manage student grades</CardDescription>
+            </div>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={handleLockGrades}
+                disabled={saving || !selectedAssignmentId}
+              >
+                <Lock className="w-4 h-4 mr-1" />
+                Lock All
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={handleUnlockGrades}
+                disabled={saving || !selectedAssignmentId}
+              >
+                <Unlock className="w-4 h-4 mr-1" />
+                Unlock
+              </Button>
+              <Button 
+                size="sm"
+                onClick={() => {
+                  if (!selectedAssignmentId) {
+                    alert("Please select a Class & Subject first")
+                    return
+                  }
+                  setShowForm(true)
+                }}
+                className="bg-cyan-600 hover:bg-cyan-700"
+              >
+                <Plus className="w-4 h-4 mr-1" />
+                Add Grade
+              </Button>
+            </div>
           </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {/* Session and Class Selection */}
-          <div className="flex flex-col md:flex-row gap-4 mb-4">
-            <div className="w-full md:w-1/4">
-              <label className="text-sm font-medium mb-1 block">Academic Session</label>
-              <select
-                value={filterSession}
-                onChange={(e) => setFilterSession(e.target.value)}
-                className="w-full px-3 py-2 border rounded-md text-sm"
-              >
-                <option value="">Select Session</option>
-                {sessions.map((s: any) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name} {s.is_current ? '(Current)' : ''}
-                  </option>
-                ))}
-              </select>
+        </CardHeader>
+        <CardContent className="pt-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div>
+              <Label className="text-sm font-medium mb-2 block">Academic Session</Label>
+              <Select value={filterSession} onValueChange={setFilterSession}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Session" />
+                </SelectTrigger>
+                <SelectContent>
+                  {sessions.map((s: any) => (
+                    <SelectItem key={s.id} value={s.id.toString()}>
+                      {s.name} {s.is_current ? '(Current)' : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            <div className="w-full md:w-1/3">
-              <label className="text-sm font-medium mb-1 block">Class & Subject</label>
-              <select
-                value={selectedAssignmentId}
-                onChange={(e) => setSelectedAssignmentId(e.target.value)}
-                className="w-full px-3 py-2 border rounded-md text-sm"
-              >
-                <option value="">Select Class & Subject</option>
-                {classes.length === 0 ? (
-                  <option value="" disabled>No classes assigned to you</option>
-                ) : (
-                  classes.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.class_name || c.name} - {c.subject_name || "Subject"}
-                    </option>
-                  ))
-                )}
-              </select>
+            <div>
+              <Label className="text-sm font-medium mb-2 block">Class & Subject</Label>
+              <Select value={selectedAssignmentId} onValueChange={setSelectedAssignmentId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Class & Subject" />
+                </SelectTrigger>
+                <SelectContent>
+                  {classes.length === 0 ? (
+                    <SelectItem value="none" disabled>No classes assigned</SelectItem>
+                  ) : (
+                    classes.map((c) => (
+                      <SelectItem key={c.id} value={c.id.toString()}>
+                        {c.class_name || c.class_data?.name || "Class"} - {c.subject_name || "All Subjects"}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
             </div>
-            <div className="w-full md:w-1/4">
-              <label className="text-sm font-medium mb-1 block">Filter Student</label>
-              <select
-                value={filterStudent}
-                onChange={(e) => setFilterStudent(e.target.value)}
-                className="w-full px-3 py-2 border rounded-md text-sm"
-                disabled={!selectedAssignmentId}
-              >
-                <option value="">All Students</option>
-                {students.map((s) => {
-                  const sid = s.user_id ?? s.user?.id ?? s.id
-                  return (
-                    <option key={s.id} value={sid}>
-                      {s.user?.first_name ? `${s.user.first_name} ${s.user.last_name}` : s.first_name}
-                    </option>
-                  )
-                })}
-              </select>
+            <div>
+              <Label className="text-sm font-medium mb-2 block">Filter Student</Label>
+              <Select value={filterStudent} onValueChange={setFilterStudent} disabled={!selectedAssignmentId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All Students" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Students</SelectItem>
+                  {students.map((s) => {
+                    const sid = s.user_id ?? s.user?.id ?? s.id
+                    return (
+                      <SelectItem key={s.id} value={sid.toString()}>
+                        {s.user?.first_name ? `${s.user.first_name} ${s.user.last_name}` : s.first_name}
+                      </SelectItem>
+                    )
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-sm font-medium mb-2 block">Search</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input 
+                  placeholder="Search student..." 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
             </div>
           </div>
 
-          {/* Add Grade Form */}
-          {showForm && (
-            <div className="p-4 border rounded-lg space-y-3">
-              <div className="px-3 py-2 border rounded-md text-sm bg-muted font-medium">
-                {getAssignmentName(selectedAssignmentId)}
+          {selectedAssignmentId && filteredGrades.some(g => g.is_locked) && (
+            <div className="flex items-center gap-2 p-4 bg-amber-50 border border-amber-200 rounded-lg mb-6">
+              <AlertCircle className="w-5 h-5 text-amber-600" />
+              <div>
+                <p className="text-amber-800 font-medium">Some grades are locked</p>
+                <p className="text-amber-700 text-sm">Locked grades cannot be edited. Unlock them first to make changes.</p>
               </div>
-              <select
-                value={newGrade.student}
-                onChange={(e) => setNewGrade({ ...newGrade, student: e.target.value })}
-                className="w-full px-3 py-2 border rounded-md text-sm"
+            </div>
+          )}
+
+          <div className="grid grid-cols-5 gap-2 mb-6">
+            {[
+              { label: 'A', count: gradeDistribution.a, color: 'bg-emerald-500' },
+              { label: 'B', count: gradeDistribution.b, color: 'bg-blue-500' },
+              { label: 'C', count: gradeDistribution.c, color: 'bg-amber-500' },
+              { label: 'D', count: gradeDistribution.d, color: 'bg-orange-500' },
+              { label: 'F', count: gradeDistribution.f, color: 'bg-red-500' },
+            ].map((item) => (
+              <div key={item.label} className="text-center p-3 bg-slate-50 rounded-lg">
+                <div className={`w-8 h-8 ${item.color} rounded-full flex items-center justify-center mx-auto mb-1`}>
+                  <span className="text-white font-bold text-sm">{item.label}</span>
+                </div>
+                <p className="text-lg font-bold">{item.count}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="rounded-lg border overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-slate-50 border-b">
+                    <th className="text-left py-3 px-4 font-semibold text-sm text-slate-600">Student</th>
+                    <th className="text-left py-3 px-4 font-semibold text-sm text-slate-600">Subject</th>
+                    <th className="text-left py-3 px-4 font-semibold text-sm text-slate-600">Type</th>
+                    <th className="text-left py-3 px-4 font-semibold text-sm text-slate-600">Score</th>
+                    <th className="text-left py-3 px-4 font-semibold text-sm text-slate-600">Percentage</th>
+                    <th className="text-left py-3 px-4 font-semibold text-sm text-slate-600">Grade</th>
+                    <th className="text-left py-3 px-4 font-semibold text-sm text-slate-600">Status</th>
+                    <th className="text-left py-3 px-4 font-semibold text-sm text-slate-600">Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredGrades.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="text-center py-12 text-muted-foreground">
+                        <div className="flex flex-col items-center gap-2">
+                          <FileText className="h-12 w-12 text-slate-300" />
+                          <p>No grades found</p>
+                          <p className="text-sm">Select a class and subject to view grades</p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredGrades.map((grade) => (
+                      <tr key={grade.id} className="border-b hover:bg-slate-50/50">
+                        <td className="py-3 px-4 font-medium">{getStudentName(grade.student, grade)}</td>
+                        <td className="py-3 px-4 text-slate-600">{getSubjectName(grade.subject, grade)}</td>
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-1.5">
+                            {getAssessmentTypeIcon(grade.assessment_type)}
+                            <span className="capitalize">{grade.assessment_type}</span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className="font-semibold">{grade.score}</span>
+                          <span className="text-slate-400">/{grade.max_score}</span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-2">
+                            <div className="w-16 bg-slate-200 rounded-full h-2">
+                              <div 
+                                className={`h-2 rounded-full ${
+                                  grade.percentage >= 80 ? 'bg-emerald-500' :
+                                  grade.percentage >= 60 ? 'bg-amber-500' :
+                                  'bg-red-500'
+                                }`}
+                                style={{ width: `${Math.min(grade.percentage, 100)}%` }}
+                              />
+                            </div>
+                            <span className="text-sm font-medium">{grade.percentage.toFixed(1)}%</span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className={`px-2.5 py-1 rounded-md text-xs font-bold border ${getGradeColor(grade.grade)}`}>
+                            {grade.grade}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4">
+                          {grade.is_locked ? (
+                            <Badge variant="secondary" className="bg-red-100 text-red-700">
+                              <Lock className="w-3 h-3 mr-1" />
+                              Locked
+                            </Badge>
+                          ) : (
+                            <Badge className="bg-emerald-100 text-emerald-700">
+                              <CheckCircle className="w-3 h-3 mr-1" />
+                              Editable
+                            </Badge>
+                          )}
+                        </td>
+                        <td className="py-3 px-4 text-slate-500 text-sm">{grade.recorded_date}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Dialog open={showForm} onOpenChange={setShowForm}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Plus className="h-5 w-5" />
+              Add New Grade
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="p-3 bg-slate-50 rounded-lg">
+              <p className="text-sm font-medium">{getAssignmentName(selectedAssignmentId)}</p>
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Student</Label>
+              <Select 
+                value={newGrade.student} 
+                onValueChange={(v) => setNewGrade({ ...newGrade, student: v })}
               >
-                <option value="">Select Student</option>
-                {students.map((s) => {
-                  const sid = s.user_id ?? s.user?.id ?? s.id
-                  return (
-                    <option key={s.id} value={sid}>
-                      {s.user?.first_name ? `${s.user.first_name} ${s.user.last_name}` : s.first_name}
-                    </option>
-                  )
-                })}
-              </select>
-              <select
-                value={newGrade.subject}
-                onChange={(e) => setNewGrade({ ...newGrade, subject: e.target.value })}
-                className="w-full px-3 py-2 border rounded-md text-sm"
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Student" />
+                </SelectTrigger>
+                <SelectContent>
+                  {students.map((s) => {
+                    const sid = s.user_id ?? s.user?.id ?? s.id
+                    return (
+                      <SelectItem key={s.id} value={sid.toString()}>
+                        {s.user?.first_name ? `${s.user.first_name} ${s.user.last_name}` : s.first_name}
+                      </SelectItem>
+                    )
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Assessment Type</Label>
+              <Select 
+                value={newGrade.assessment_type} 
+                onValueChange={handleAssessmentTypeChange}
               >
-                <option value="">Select Subject</option>
-                {subjects.map((s) => (
-                  <option key={s.id} value={s.subject}>
-                    {s.subject_name || s.name}
-                  </option>
-                ))}
-              </select>
-              <select
-                value={newGrade.assessment_type}
-                onChange={(e) => handleAssessmentTypeChange(e.target.value)}
-                className="w-full px-3 py-2 border rounded-md text-sm"
-              >
-                <option value="exam">Exam</option>
-                <option value="test">Test</option>
-                <option value="quiz">Quiz</option>
-                <option value="continuous">Continuous Assessment</option>
-                <option value="assignment">Assignment</option>
-              </select>
-              <div className="grid grid-cols-2 gap-4">
-                <input
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="exam">Exam</SelectItem>
+                  <SelectItem value="test">Test</SelectItem>
+                  <SelectItem value="quiz">Quiz</SelectItem>
+                  <SelectItem value="continuous">Continuous Assessment</SelectItem>
+                  <SelectItem value="assignment">Assignment</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Score</Label>
+                <Input
                   type="number"
                   placeholder="Score"
                   value={newGrade.score}
                   onChange={(e) => setNewGrade({ ...newGrade, score: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-md text-sm"
                   step="0.01"
                 />
-                <input
+              </div>
+              <div className="space-y-2">
+                <Label>Max Score</Label>
+                <Input
                   type="number"
                   placeholder="Max Score"
                   value={newGrade.max_score}
                   onChange={(e) => setNewGrade({ ...newGrade, max_score: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-md text-sm"
                   step="0.01"
                 />
               </div>
-              <div className="flex gap-2">
-                <Button size="sm" onClick={addGrade} disabled={saving}>
-                  <Save className="w-4 h-4 mr-1" />
-                  {saving ? "Saving..." : "Save Grade"}
-                </Button>
-                <Button size="sm" variant="outline" onClick={() => setShowForm(false)}>
-                  Cancel
-                </Button>
-              </div>
             </div>
-          )}
-
-          {/* Warning about locked grades */}
-          {selectedAssignmentId && filteredGrades.some(g => g.is_locked) && (
-            <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-md text-amber-700 text-sm">
-              <AlertCircle className="w-4 h-4" />
-              Some grades are locked and cannot be edited. Unlock them first to make changes.
-            </div>
-          )}
-
-          {/* Grades Table */}
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-2 px-2">Student</th>
-                  <th className="text-left py-2 px-2">Subject</th>
-                  <th className="text-left py-2 px-2">Type</th>
-                  <th className="text-left py-2 px-2">Score</th>
-                  <th className="text-left py-2 px-2">%</th>
-                  <th className="text-left py-2 px-2">Grade</th>
-                  <th className="text-left py-2 px-2">Status</th>
-                  <th className="text-left py-2 px-2">Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredGrades.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} className="text-center py-4 text-muted-foreground">
-                      No grades found
-                    </td>
-                  </tr>
-                ) : (
-                  filteredGrades.map((grade) => (
-                    <tr key={grade.id} className="border-b hover:bg-muted/50">
-                      <td className="py-2 px-2 font-medium">{getStudentName(grade.student, grade)}</td>
-                      <td className="py-2 px-2">{getSubjectName(grade.subject, grade)}</td>
-                      <td className="py-2 px-2 capitalize">{grade.assessment_type}</td>
-                      <td className="py-2 px-2">
-                        {grade.score}/{grade.max_score}
-                      </td>
-                      <td className="py-2 px-2">{grade.percentage.toFixed(1)}%</td>
-                      <td className="py-2 px-2">
-                        <span className={`px-2 py-1 rounded text-xs font-bold ${getGradeColor(grade.grade)}`}>
-                          {grade.grade}
-                        </span>
-                      </td>
-                      <td className="py-2 px-2">
-                        {grade.is_locked ? (
-                          <span className="flex items-center gap-1 text-red-500 text-xs">
-                            <Lock className="w-3 h-3" /> Locked
-                          </span>
-                        ) : (
-                          <span className="text-green-500 text-xs">Editable</span>
-                        )}
-                      </td>
-                      <td className="py-2 px-2">{grade.recorded_date}</td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
           </div>
-        </div>
-      </CardContent>
-    </Card>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowForm(false)}>
+              Cancel
+            </Button>
+            <Button onClick={addGrade} disabled={saving} className="bg-cyan-600 hover:bg-cyan-700">
+              <Save className="w-4 h-4 mr-1" />
+              {saving ? "Saving..." : "Save Grade"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   )
 }
 

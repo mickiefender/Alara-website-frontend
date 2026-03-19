@@ -315,28 +315,28 @@ export function TeachersManagement() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b">
-                <th className="text-left py-2 px-2">Name</th>
-                <th className="text-left py-2 px-2">Email</th>
-                <th className="text-left py-2 px-2">Employee ID</th>
-                <th className="text-left py-2 px-2">Qualification</th>
-                <th className="text-left py-2 px-2">Actions</th>
+              <tr className="border-b border-border dark:border-slate-800">
+                <th className="text-left py-2 px-2 text-muted-foreground dark:text-slate-400">Name</th>
+                <th className="text-left py-2 px-2 text-muted-foreground dark:text-slate-400">Email</th>
+                <th className="text-left py-2 px-2 text-muted-foreground dark:text-slate-400">Employee ID</th>
+                <th className="text-left py-2 px-2 text-muted-foreground dark:text-slate-400">Qualification</th>
+                <th className="text-left py-2 px-2 text-muted-foreground dark:text-slate-400">Actions</th>
               </tr>
             </thead>
             <tbody>
               {teachers.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="text-center py-4 text-muted-foreground">
+                  <td colSpan={5} className="text-center py-4 text-muted-foreground dark:text-slate-500">
                     No teachers found. Add your first teacher.
                   </td>
                 </tr>
               ) : (
                 teachers.map((teacher) => (
-                  <tr key={teacher.id} className="border-b hover:bg-muted/50">
-                    <td className="py-2 px-2">{getTeacherName(teacher)}</td>
-                    <td className="py-2 px-2">{getTeacherEmail(teacher)}</td>
-                    <td className="py-2 px-2">{teacher.employee_id || "N/A"}</td>
-                    <td className="py-2 px-2">{teacher.qualification || "N/A"}</td>
+                  <tr key={teacher.id} className="border-b border-border dark:border-slate-800 hover:bg-muted/50 dark:hover:bg-slate-800/50">
+                    <td className="py-2 px-2 text-foreground dark:text-slate-200">{getTeacherName(teacher)}</td>
+                    <td className="py-2 px-2 text-muted-foreground dark:text-slate-400">{getTeacherEmail(teacher)}</td>
+                    <td className="py-2 px-2 text-muted-foreground dark:text-slate-400">{teacher.employee_id || "N/A"}</td>
+                    <td className="py-2 px-2 text-muted-foreground dark:text-slate-400">{teacher.qualification || "N/A"}</td>
                     <td className="py-2 px-2">
                       <div className="flex gap-2">
                         <Button variant="ghost" size="sm" onClick={() => handleEdit(teacher)}>

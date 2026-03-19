@@ -238,7 +238,7 @@ export default function TeacherProfilePage() {
           {/* Edit Button */}
           <div className="flex gap-2 pt-4 border-t">
             {!isEditing ? (
-              <Button className="bg-blue-600" onClick={handleEditClick}>
+              <Button className="bg-cyan-600" onClick={handleEditClick}>
                 <Edit2 className="w-4 h-4 mr-2" />
                 Edit Profile
               </Button>
