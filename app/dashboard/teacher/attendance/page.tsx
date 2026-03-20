@@ -29,7 +29,8 @@ function AttendanceContent() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0])
   
   const [students, setStudents] = useState<any[]>([])
-  const [studentNames, setStudentNames] = useState<Record<number, string>>({})
+const [studentNames, setStudentNames] = useState<Record<number, string>>({})
+  const [studentAvatars, setStudentAvatars] = useState<Record<number, string>>({})
   const [attendance, setAttendance] = useState<Record<number, string>>({})
   
   const [summaryData, setSummaryData] = useState<any[]>([])
@@ -78,7 +79,7 @@ function AttendanceContent() {
     fetchClassSubjects()
   }, [selectedClass])
 
-  // Fetch students for selected class
+// Fetch students for selected class using StudentClass (all students in class)
   useEffect(() => {
     const fetchStudents = async () => {
       if (!selectedClass) {
@@ -86,31 +87,45 @@ function AttendanceContent() {
         return
       }
       try {
-        const res = await academicsAPI.get("/enrollments/", { class_obj: selectedClass })
-        const enrollments = res.data.results || res.data || []
-        setStudents(enrollments)
+        const res = await academicsAPI.get("/student-classes/", { class_obj: selectedClass })
+        const classEnrollments = res.data.results || res.data || []
+        setStudents(classEnrollments)
 
         // Initialize attendance state
         const newAttendance: Record<number, string> = {}
-        enrollments.forEach((enrollment: any) => {
-          newAttendance[enrollment.student] = "present"
+        classEnrollments.forEach((entry: any) => {
+          newAttendance[entry.student] = "present"
         })
         setAttendance(newAttendance)
 
-        // Fetch student names
+        // Fetch student names and profile pictures
         const newStudentNames: Record<number, string> = {}
-        for (const enrollment of enrollments) {
+        const newStudentAvatars: Record<number, string> = {}
+        for (const entry of classEnrollments) {
           try {
-            const userRes = await usersAPI.getById(enrollment.student)
+            const userRes = await usersAPI.getById(entry.student)
             const userData = userRes.data
-            newStudentNames[enrollment.student] = `${userData.first_name} ${userData.last_name}`
+            newStudentNames[entry.student] = `${userData.first_name} ${userData.last_name}`
+
+            // Fetch profile picture
+            try {
+              const picRes = await academicsAPI.profilePictureByUser(entry.student)
+              const pics = picRes.data.results || picRes.data || []
+              if (pics.length > 0) {
+                newStudentAvatars[entry.student] = pics[0].display_url || pics[0].storage_url || pics[0].picture || ''
+              }
+            } catch (picError) {
+              // No profile picture available
+              console.log(`No profile pic for student ${entry.student}`)
+            }
           } catch (error) {
-            newStudentNames[enrollment.student] = `Student ${enrollment.student}`
+            newStudentNames[entry.student] = `Student ${entry.student}`
           }
         }
         setStudentNames(newStudentNames)
+        setStudentAvatars(newStudentAvatars)
       } catch (error) {
-        console.error("Failed to fetch students:", error)
+        console.error("Failed to fetch class students:", error)
       }
     }
     fetchStudents()
@@ -372,9 +387,20 @@ function AttendanceContent() {
                     className="flex items-center justify-between p-3 border border-gray-100 rounded-lg hover:shadow-sm transition-shadow bg-white"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 to-blue-500 flex items-center justify-center text-white font-medium">
-                        {(studentNames[enrollment.student] || "S").charAt(0).toUpperCase()}
-                      </div>
+                      {studentAvatars[enrollment.student] ? (
+                        <img 
+                          src={studentAvatars[enrollment.student]} 
+                          alt={studentNames[enrollment.student] || ''}
+                          className="w-10 h-10 rounded-full object-cover ring-2 ring-gray-200 hover:ring-purple-200"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none'
+                          }}
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 to-blue-500 flex items-center justify-center text-white font-medium text-sm">
+                          {(studentNames[enrollment.student] || "S").charAt(0).toUpperCase()}
+                        </div>
+                      )}
                       <span className="font-medium text-gray-900">
                         {studentNames[enrollment.student] || `Student ${enrollment.student}`}
                       </span>

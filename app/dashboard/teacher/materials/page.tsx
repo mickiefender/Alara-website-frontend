@@ -44,7 +44,27 @@ interface NormalizedQuestions {
   documentTitle?: string
 }
 
-function normalizeResponse(data: any, questionType: string): NormalizedQuestions {
+interface NormalizedSummary {
+  aiName: string
+  summary: string
+  documentTitle?: string
+  wordCount: number
+}
+
+type NormalizedResponse = NormalizedQuestions | NormalizedSummary
+
+function normalizeResponse(data: any, questionType: string): NormalizedResponse {
+  // Handle summary
+  if (questionType === 'summary' && data.summary) {
+    return {
+      aiName: data.ai_name || 'School AI',
+      summary: data.summary,
+      documentTitle: data.document_title,
+      wordCount: data.word_count || 0
+    }
+  }
+  
+  // Handle questions (existing logic)
   if (data?.questions?.questions && Array.isArray(data.questions.questions)) {
     return {
       aiName: data.ai_name || "School AI",
@@ -144,16 +164,17 @@ export default function TeacherDocumentsPage() {
 
   const [selectedDocId, setSelectedDocId] = useState<number | null>(null)
   const [showAIPanel, setShowAIPanel] = useState(false)
-  const [normalized, setNormalized] = useState<NormalizedQuestions | null>(null)
+  const [normalized, setNormalized] = useState<NormalizedResponse | null>(null)
   const [aiLoading, setAiLoading] = useState(false)
   const [aiError, setAiError] = useState<string | null>(null)
   const [aiMode, setAiMode] = useState<"document" | "topic">("document")
   const [aiTopic, setAiTopic] = useState("")
   const [aiSubject, setAiSubject] = useState("")
-  const [aiSettings, setAiSettings] = useState({
+const [aiSettings, setAiSettings] = useState({
     num_questions: 5,
-    question_type: "multiple_choice",
+    question_type: "multiple_choice" as "multiple_choice" | "short_answer" | "essay" | "summary",
     difficulty: "medium",
+    max_words: 300,
   })
   const [formData, setFormData] = useState({
     title: "",
@@ -506,12 +527,25 @@ export default function TeacherDocumentsPage() {
                       <p className="text-xs text-gray-600 mt-1">Between 1 and 20</p>
                     </div>
                     <div>
-                      <Label className="text-gray-700 font-medium block mb-2">Question Type</Label>
-                      <select value={aiSettings.question_type} onChange={(e) => setAiSettings({ ...aiSettings, question_type: e.target.value })} className="w-full border border-gray-300 rounded-lg px-3 py-2">
-                        <option value="multiple_choice">Multiple Choice</option>
-                        <option value="short_answer">Short Answer</option>
-                        <option value="essay">Essay</option>
+                      <Label className="text-gray-700 font-medium block mb-2">Content Type</Label>
+                      <select value={aiSettings.question_type} onChange={(e) => setAiSettings({ ...aiSettings, question_type: e.target.value as any })} className="w-full border border-gray-300 rounded-lg px-3 py-2">
+                        <option value="multiple_choice">Multiple Choice Questions</option>
+                        <option value="short_answer">Short Answer Questions</option>
+                        <option value="essay">Essay Questions</option>
+                        <option value="summary">Summary</option>
                       </select>
+                      {aiSettings.question_type === 'summary' && (
+                        <div className="mt-3">
+                          <Label className="text-gray-700 font-medium block mb-2">Max Words</Label>
+                          <Input
+                            type="number" min="50" max="1000" step="50"
+                            value={aiSettings.max_words}
+                            onChange={(e) => setAiSettings({ ...aiSettings, max_words: parseInt(e.target.value) || 300 })}
+                            className="border border-gray-300 rounded-lg"
+                          />
+                          <p className="text-xs text-gray-600 mt-1">50-1000 words</p>
+                        </div>
+                      )}
                     </div>
                     <div>
                       <Label className="text-gray-700 font-medium block mb-2">Difficulty</Label>
@@ -544,10 +578,12 @@ export default function TeacherDocumentsPage() {
                       {/* Success banner */}
                       <div className="bg-teal-50 border border-teal-200 rounded-lg p-4">
                         <p className="text-teal-900 font-semibold flex items-center gap-2">
-                          <Zap size={16} /> Questions Generated Successfully
+                          <Zap size={16} /> {'summary' in normalized ? 'Summary Generated' : 'Content Generated'} Successfully
                         </p>
                         <p className="text-teal-800 text-sm mt-1">
-                          {normalized.count} question{normalized.count !== 1 ? "s" : ""} created
+                          {'summary' in normalized 
+                            ? `${normalized.wordCount} words` 
+                            : `${normalized.count} item${normalized.count !== 1 ? 's' : ''}` } created
                           {normalized.documentTitle ? ` from "${normalized.documentTitle}"` : ""}
                         </p>
                       </div>
@@ -706,4 +742,3 @@ export default function TeacherDocumentsPage() {
     </div>
   )
 }
-

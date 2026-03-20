@@ -683,7 +683,7 @@ export default function StudentDetailPage() {
                               className="w-24"
                             />
                           ) : (
-                            `$${parseFloat(fee.amount).toFixed(2)}`
+                            `¢${parseFloat(fee.amount).toFixed(2)}`
                           )}
                         </td>
                         <td className="px-4 py-3">

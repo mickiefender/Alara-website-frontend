@@ -115,15 +115,21 @@ export function ManualFeePayment() {
     }
   }
 
-  const fetchStudentFees = async (studentId: number) => {
+const getStudentUserId = (student: Student): number => {
+    return student.user?.id || student.user_data?.id || student.id
+  }
+
+  const fetchStudentFees = async (student: Student) => {
+    const userId = getStudentUserId(student)
     try {
       setFeesLoading(true)
-      const response = await billingAPI.studentFeeAssignmentsByStudent(studentId)
+      console.log(`Fetching fees for student ${student.id} (userId: ${userId})`)
+      const response = await billingAPI.studentFeeAssignmentsByStudent(userId)
       const fees = response.data.results || response.data || []
       setStudentFees(fees)
       
-      // Also fetch payment history
-      const paymentsResponse = await billingAPI.manualPaymentsByStudent(studentId)
+      // Also fetch payment history using same userId
+      const paymentsResponse = await billingAPI.manualPaymentsByStudent(userId)
       const payments = paymentsResponse.data.results || paymentsResponse.data || []
       setStudentPayments(payments)
     } catch (err: any) {
@@ -135,7 +141,7 @@ export function ManualFeePayment() {
 
   const handleStudentSelect = (student: Student) => {
     setSelectedStudent(student)
-    fetchStudentFees(student.id)
+    fetchStudentFees(student)
   }
 
   const handleRecordPayment = async () => {
@@ -157,8 +163,8 @@ export function ManualFeePayment() {
       }
       
       const response = await billingAPI.recordManualPayment({
-        student_id: selectedStudent.id,
-        fee_assignment_id: selectedFee.id,
+        student_id: getStudentUserId(selectedStudent!),
+        fee_assignment_id: selectedFee!.id,
         amount: amount,
         payment_method: paymentMethod,
         notes: paymentNotes
@@ -190,7 +196,7 @@ export function ManualFeePayment() {
       setSelectedFee(null)
       
       // Refresh fees
-      fetchStudentFees(selectedStudent.id)
+      fetchStudentFees(selectedStudent!)
       
     } catch (err: any) {
       console.error("Failed to record payment:", err)

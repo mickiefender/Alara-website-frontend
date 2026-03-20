@@ -1,6 +1,7 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
+import { academicsAPI, usersAPI, billingAPI } from "@/lib/api"
 import {
   Card,
   CardContent,
@@ -27,7 +28,7 @@ import {
 } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { useFetch, assignFee } from "@/lib/api"
+import { billingAPI } from "@/lib/api"
 import { useToast } from "@/hooks/use-toast"
 
 export function AssignFees() {
@@ -37,29 +38,62 @@ export function AssignFees() {
   const [selectedStudent, setSelectedStudent] = useState("")
   const [selectedFeeType, setSelectedFeeType] = useState("")
 
-  const {
-    data: feeTypes,
-    loading: feeTypesLoading,
-    error: feeTypesError,
-  } = useFetch("/fees")
-  const {
-    data: classes,
-    loading: classesLoading,
-    error: classesError,
-  } = useFetch("/classes")
-  const {
-    data: students,
-    loading: studentsLoading,
-    error: studentsError,
-  } = useFetch("/students")
+  const [feeTypesLoading, setFeeTypesLoading] = useState(false)
+  const [classesLoading, setClassesLoading] = useState(false)
+  const [studentsLoading, setStudentsLoading] = useState(false)
+  const [feeTypes, setFeeTypes] = useState<any[]>([])
+  const [classes, setClasses] = useState<any[]>([])
+  const [students, setStudents] = useState<any[]>([])
+
+  useEffect(() => {
+    const loadFeeTypes = async () => {
+      try {
+        setFeeTypesLoading(true)
+        const res = await billingAPI.feeTypes()
+        setFeeTypes(res.data.results || res.data || [])
+      } catch {
+        // error handled in UI
+      } finally {
+        setFeeTypesLoading(false)
+      }
+    }
+
+    const loadClasses = async () => {
+      try {
+        setClassesLoading(true)
+        const res = await academicsAPI.classes()
+        setClasses(res.data.results || res.data || [])
+      } catch {
+        // error handled in UI
+      } finally {
+        setClassesLoading(false)
+      }
+    }
+
+    const loadStudents = async () => {
+      try {
+        setStudentsLoading(true)
+        const res = await usersAPI.students()
+        setStudents(res.data.results || res.data || [])
+      } catch {
+        // error handled in UI
+      } finally {
+        setStudentsLoading(false)
+      }
+    }
+
+    loadFeeTypes()
+    loadClasses()
+    loadStudents()
+  }, [])
 
   const handleAssignFee = async () => {
     try {
-      await assignFee({
-        feeType: selectedFeeType,
-        assignTo,
-        classId: selectedClass,
-        studentId: selectedStudent,
+      await billingAPI.assignFee({
+        fee_type_id: selectedFeeType,
+        assign_to: assignTo,
+        class_id: selectedClass || null,
+        student_id: selectedStudent || null,
       })
       toast({
         title: "Fee assigned successfully",
@@ -107,9 +141,7 @@ export function AssignFees() {
                     <SelectValue placeholder="Select a fee type" />
                   </SelectTrigger>
                   <SelectContent>
-                    {feeTypesLoading && <SelectItem value="loading">Loading...</SelectItem>}
-                    {feeTypesError && <SelectItem value="error">Error loading fees</SelectItem>}
-                    {feeTypes?.map((fee: any) => (
+{feeTypesLoading ? <SelectItem value="loading">Loading...</SelectItem> : feeTypes.map((fee) => (
                       <SelectItem key={fee.id} value={fee.id}>
                         {fee.name}
                       </SelectItem>
@@ -151,8 +183,11 @@ export function AssignFees() {
                       <SelectValue placeholder="Select a class" />
                     </SelectTrigger>
                     <SelectContent>
-                      {classesLoading && <SelectItem value="loading">Loading...</SelectItem>}
-                      {classesError && <SelectItem value="error">Error loading classes</SelectItem>}
+{classesLoading ? <SelectItem value="loading">Loading...</SelectItem> : classes.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
                       {classes?.map((c: any) => (
                         <SelectItem key={c.id} value={c.id}>
                           {c.name}
@@ -176,7 +211,11 @@ export function AssignFees() {
                     </SelectTrigger>
                     <SelectContent>
                       {studentsLoading && <SelectItem value="loading">Loading...</SelectItem>}
-                      {studentsError && <SelectItem value-="error">Error loading students</SelectItem>}
+{studentsLoading ? <SelectItem value="loading">Loading...</SelectItem> : students.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.name}
+                      </SelectItem>
+                    ))}
                       {students?.map((s: any) => (
                         <SelectItem key={s.id} value={s.id}>
                           {s.name}

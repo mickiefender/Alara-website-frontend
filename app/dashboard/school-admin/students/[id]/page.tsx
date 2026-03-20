@@ -191,13 +191,40 @@ export default function StudentDetailPage() {
           }
         } catch { /* no pic */ }
       }
-      // Load fees
+      // Load fees - try both student ID and user ID
       try {
         setFeesLoading(true)
-        const feesRes = await billingAPI.studentFeeAssignmentsByStudent(parseInt(studentId))
-        const sf = (feesRes.data.results || feesRes.data || [])
-        setStudentFees(sf)
-        setDueFees(sf.filter((f: any) => f.status === 'pending' || f.status === 'partial').reduce((s: number, f: any) => s + parseFloat(f.balance || '0'), 0))
+        const possibleIds = []
+        if (student?.user_data?.id) possibleIds.push(student.user_data.id)
+        if (student?.user?.id) possibleIds.push(student.user.id)
+        possibleIds.push(parseInt(studentId))
+        const uniqueIds = [...new Set(possibleIds)]
+        console.log(`Student ${studentId} trying IDs:`, uniqueIds)
+        
+        let feesFound = false
+        for (const id of uniqueIds) {
+          try {
+            console.log(`Fetching fees for ID ${id} (type: ${typeof id})`)
+            const feesRes = await billingAPI.studentFeeAssignmentsByStudent(id)
+            const sf = feesRes.data.results || feesRes.data || []
+            console.log(`Got ${sf.length} fees for ID ${id}`)
+            if (sf.length > 0) {
+              setStudentFees(sf)
+              setDueFees(sf.filter((f: any) => f.status === 'pending' || f.status === 'partial').reduce((s: number, f: any) => s + parseFloat(f.balance || '0'), 0))
+              feesFound = true
+              break
+            }
+          } catch (idErr) {
+            console.log(`No fees for ID ${id}:`, idErr)
+          }
+        }
+        
+        if (!feesFound) {
+          console.log('No fees found for any ID, trying school fees')
+          const schoolFeesRes = await billingAPI.schoolFeeAssignments()
+          const schoolFees = schoolFeesRes.data.results || schoolFeesRes.data || []
+          console.log('School fees:', schoolFees)
+        }
       } catch (err) {
         console.error('Fee load error:', err)
       } finally {
@@ -366,7 +393,8 @@ export default function StudentDetailPage() {
       toast.success('Fee updated successfully!')
       
       // Refresh fees
-      const feesRes = await billingAPI.studentFeeAssignmentsByStudent(parseInt(studentId))
+      const refreshUserId = student?.user_data?.id || student?.user?.id || parseInt(studentId)
+      const feesRes = await billingAPI.studentFeeAssignmentsByStudent(refreshUserId)
       const sf = feesRes.data.results || feesRes.data || []
       setStudentFees(sf)
       setDueFees(sf.filter((f: any) => f.status === 'pending' || f.status === 'partial').reduce((s: number, f: any) => s + parseFloat(f.balance || '0'), 0))

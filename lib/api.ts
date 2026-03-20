@@ -179,6 +179,8 @@ export const academicsAPI = {
   // AI Question Generation
   generateQuestionsFromDocument: (docId: number, settings: any) =>
     apiClient.post(`/academics/documents/${docId}/generate_questions/`, settings),
+  generateSummaryFromDocument: (docId: number, settings: any) =>
+    apiClient.post(`/academics/documents/${docId}/generate_summary/`, settings),
   generateQuestionsFromTopic: (payload: any) =>
     apiClient.post("/academics/documents/generate_questions_from_topic/", payload),
   notices: () => apiClient.get("/academics/notices/"),
