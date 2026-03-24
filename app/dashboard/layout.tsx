@@ -3,11 +3,14 @@
 import type React from "react"
 import { SidebarNav } from "@/components/sidebar-nav"
 import { TopBar } from "@/components/top-bar"
+import { MobileBottomNav } from "@/components/mobile-bottom-nav"
 import { ProtectedRoute } from "@/lib/protected-route"
 import { NotificationProvider } from "@/lib/notifications-context"
+import { MobileToggleProvider } from "@/lib/mobile-toggle-context"
 import { useAuthContext } from "@/lib/auth-context"
 import { useState, useEffect } from "react"
 import { Menu } from "lucide-react"
+
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const { user } = useAuthContext()
@@ -51,42 +54,48 @@ const [mobileOpen, setMobileOpen] = useState(false)
 
   return (
     <NotificationProvider userId={user?.id}>
-      <div className="flex h-screen bg-background dark:bg-slate-950 overflow-hidden">
-        {/* Desktop Sidebar - Flex item that can collapse */}
-        <div 
-          className={`hidden lg:block transition-all duration-300 ease-in-out ${sidebarCollapsed ? "w-20" : "w-72"}`}
-        >
-          <SidebarNav isCollapsed={sidebarCollapsed} />
-        </div>
-
-        {/* Mobile Sidebar - Full screen overlay */}
-        {mobileOpen && (
-          <div className="lg:hidden fixed inset-0 z-50">
-            {/* Backdrop */}
-            <div 
-              className="absolute inset-0 bg-black/50"
-              onClick={() => setMobileOpen(false)}
-            />
-            {/* Sidebar */}
-            <div className="absolute left-0 top-0 h-[100dvh] w-[85%] max-w-[320px] bg-slate-900 shadow-2xl overflow-y-auto overflow-x-hidden">
-              <SidebarNav isMobile={true} onClose={() => setMobileOpen(false)} />
-            </div>
+      <MobileToggleProvider toggleSidebar={toggleUnified}>
+        <div className="flex h-screen bg-background dark:bg-slate-950 overflow-hidden">
+          {/* Desktop Sidebar - Flex item that can collapse */}
+          <div 
+            className={`hidden lg:block transition-all duration-300 ease-in-out ${sidebarCollapsed ? "w-20" : "w-72"}`}
+          >
+            <SidebarNav isCollapsed={sidebarCollapsed} />
           </div>
-        )}
 
-        {/* Main Content - Flexes to fill remaining space */}
-        <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
-          {/* Top Bar - includes hamburger for mobile */}
-          <TopBar onToggle={toggleUnified} />
+          {/* Mobile Sidebar - Full screen overlay */}
+          {mobileOpen && (
+            <div className="lg:hidden fixed inset-0 z-50">
+              {/* Backdrop */}
+              <div 
+                className="absolute inset-0 bg-black/50"
+                onClick={() => setMobileOpen(false)}
+              />
+              {/* Sidebar */}
+              <div className="absolute left-0 top-0 h-[100dvh] w-[85%] max-w-[320px] bg-slate-900 shadow-2xl overflow-y-auto overflow-x-hidden">
+                <SidebarNav isMobile={true} onClose={() => setMobileOpen(false)} />
+              </div>
+            </div>
+          )}
 
-          {/* Main Content */}
-          <main className="flex-1 overflow-auto bg-slate-50 dark:bg-slate-950">
-            {children}
-          </main>
+          {/* Main Content - Flexes to fill remaining space */}
+          <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden lg:pb-0 pb-20">
+            {/* Top Bar - includes hamburger for mobile */}
+            <TopBar onToggle={toggleUnified} />
+
+            {/* Main Content */}
+            <main className="flex-1 overflow-auto bg-slate-50 dark:bg-slate-950">
+              {children}
+            </main>
+
+            {/* Mobile Bottom Nav */}
+            <MobileBottomNav />
+          </div>
         </div>
-      </div>
+      </MobileToggleProvider>
     </NotificationProvider>
   )
+
 }
 
 export default function DashboardLayout({
