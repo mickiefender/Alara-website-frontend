@@ -421,16 +421,16 @@ export default function StudentDetailPage() {
       </div>
     </div>
   )
-
+  
   const studentName = name()
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-gray-600 mb-6">
-        <Link href="/dashboard/school-admin" className="hover:text-gray-900">Home</Link>
+        <Link href="/dashboard/school-admin" className="hover:text-secondary">Home</Link>
         <span>/</span>
-        <Link href="/dashboard/school-admin/students" className="hover:text-gray-900">Students</Link>
+        <Link href="/dashboard/school-admin/students" className="hover:text-secondary">Students</Link>
         <span>/</span>
         <span className="font-medium text-gray-900">{studentName}</span>
       </div>
@@ -447,7 +447,7 @@ export default function StudentDetailPage() {
         <div className="flex gap-3">
           {isEditing ? (
             <>
-              <Button onClick={handleSave} disabled={saving} className="bg-green-600 hover:bg-green-700 text-white gap-2">
+              <Button onClick={handleSave} disabled={saving} className="bg-secondary text-secondary-foreground text-white gap-2">
                 <Save size={16} />{saving ? 'Saving...' : 'Save Changes'}
               </Button>
               <Button variant="outline" onClick={() => setIsEditing(false)} className="gap-2">
@@ -461,7 +461,7 @@ export default function StudentDetailPage() {
                 <MessageSquare size={18} /> Send Message ({email()})
               </Button>
               <Button variant="outline" className="gap-2 bg-transparent"><Download size={18} />Report</Button>
-              <Button variant="outline" className="gap-2 bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100" onClick={() => {
+              <Button variant="outline" className="gap-2 bg-orange-50 border-orange-200 text-secondary hover:bg-orange-100" onClick={() => {
                 const feesSection = document.getElementById('fees-section')
                 feesSection?.scrollIntoView({ behavior: 'smooth' })
               }}>
@@ -509,7 +509,7 @@ export default function StudentDetailPage() {
                           try {
                             setSendingMessage(true)
                             await messagingAPI.sendPersonalNotice(uid, messageForm)
-                            toast.success('✅ Notice created and email sent successfully!')
+                            toast.success('Notice created and email sent successfully!')
                             setMessageForm({ title: '', content: '' })
                             setIsMessageModalOpen(false)
                           } catch (err: any) {
@@ -542,10 +542,10 @@ export default function StudentDetailPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <StatCard label="Upcoming Exams" value={upcomingExams} Icon={BookOpen} color="bg-green-500" />
-        <StatCard label="Due Fees" value={`$${dueFees.toFixed(2)}`} Icon={DollarSign} color="bg-red-500" />
-        <StatCard label="Events" value={eventsCount} Icon={Flag} color="bg-blue-500" />
-        <StatCard label="Documents" value={docsCount} Icon={FileText} color="bg-yellow-500" />
+        <StatCard label="Upcoming Exams" value={upcomingExams} Icon={BookOpen} color="bg-secondary" />
+        <StatCard label="Due Fees" value={`¢${dueFees.toFixed(2)}`} Icon={DollarSign} color="bg-secondary" />
+        <StatCard label="Events" value={eventsCount} Icon={Flag} color="bg-secondary" />
+        <StatCard label="Documents" value={docsCount} Icon={FileText} color="bg-secondary" />
       </div>
 
       {/* Main Grid */}
@@ -556,7 +556,7 @@ export default function StudentDetailPage() {
           {/* Profile Picture Card */}
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
             <h2 className="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <Camera size={16} className="text-purple-600" />Profile Picture
+              <Camera size={16} className="text-secondary" />Profile Picture
             </h2>
             <div className="flex flex-col items-center gap-4">
               <div className="relative w-36 h-36 rounded-xl overflow-hidden bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center shadow-md">
@@ -578,8 +578,9 @@ export default function StudentDetailPage() {
                 </div>
               ) : (
                 <>
+
                   <input ref={fileInputRef} type="file" accept="image/*" onChange={handlePicChange} className="hidden" id="pic-upload" />
-                  <label htmlFor="pic-upload" className="flex items-center justify-center gap-2 w-full px-4 py-2 border-2 border-dashed border-purple-300 rounded-lg text-purple-600 text-sm font-medium cursor-pointer hover:bg-purple-50 transition-colors">
+                  <label htmlFor="pic-upload" className="flex items-center justify-center gap-2 w-full px-4 py-2 border-2 border-dashed border-text-secondary rounded-lg text-text-secondary text-sm font-medium cursor-pointer hover:bg-secondary transition-colors">
                     <Camera size={16} />{profilePic ? 'Change Photo' : 'Upload Photo'}
                   </label>
                 </>
@@ -595,7 +596,7 @@ export default function StudentDetailPage() {
           {/* Personal Info */}
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
             <h2 className="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <User size={16} className="text-purple-600" />Personal Information
+              <User size={16} className="text-secondary" />Personal Information
             </h2>
             {isEditing ? (
               <div className="space-y-3">
@@ -632,7 +633,7 @@ export default function StudentDetailPage() {
           {/* Family Info */}
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
             <h2 className="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <Users size={16} className="text-purple-600" />Family Information
+              <Users size={16} className="text-secondary" />Family Information
             </h2>
             {isEditing ? (
               <div className="space-y-3">
@@ -652,7 +653,7 @@ export default function StudentDetailPage() {
           {/* Academic Info */}
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
             <h2 className="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <BookOpen size={16} className="text-purple-600" />Academic Information
+              <BookOpen size={16} className="text-secondary" />Academic Information
             </h2>
             {isEditing ? (
               <div><Label className="text-xs text-gray-500">Roll Number</Label><Input value={form.roll_number} onChange={(e) => setForm({ ...form, roll_number: e.target.value })} className="mt-1 h-8 text-sm" /></div>
@@ -671,7 +672,7 @@ export default function StudentDetailPage() {
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-base font-semibold text-gray-900 flex items-center gap-2">
-                <Users size={16} className="text-purple-600" />Class Enrollment
+                <Users size={16} className="text-secondary" />Class Enrollment
               </h2>
               <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}>
                 <DialogTrigger asChild>
@@ -764,7 +765,7 @@ export default function StudentDetailPage() {
             <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-base font-semibold text-gray-900 flex items-center gap-2">
-                  <FileText size={16} className="text-purple-600" />Attendance Summary
+                  <FileText size={16} className="text-secondary" />Attendance Summary
                 </h2>
                 <div className="text-sm text-gray-500">
                   Last 30 days
@@ -782,7 +783,7 @@ export default function StudentDetailPage() {
                       stroke="currentColor"
                       strokeWidth="10"
                       fill="none"
-                      className="text-gray-200"
+                      className="text-secondary"
                     />
                     <circle
                       cx="64"
@@ -1044,7 +1045,7 @@ export default function StudentDetailPage() {
       <h2 className="text-base font-semibold text-gray-900">Exam Results ({examResults.length})</h2>
       <div className="flex gap-2">
         <input type="text" placeholder="Search by Exam..." className="px-3 py-1.5 border rounded-lg text-sm" />
-        <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white">Search</Button>
+        <Button size="sm" className="bg-secondary hover:bg-blue-700 text-white">Search</Button>
       </div>
     </div>
             <div className="overflow-x-auto">

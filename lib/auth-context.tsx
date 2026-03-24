@@ -141,7 +141,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 export function useAuthContext() {
   const context = useContext(AuthContext)
   if (!context) {
-    throw new Error("useAuthContext must be used within AuthProvider")
+    console.warn("useAuthContext called outside AuthProvider - using safe defaults during hydration")
+    return {
+      user: null,
+      school: null,
+      loading: true,
+      login: async () => {},
+      logout: () => {},
+      register: async () => {}
+    } as AuthContextType
   }
   return context
 }

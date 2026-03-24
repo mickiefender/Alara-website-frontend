@@ -79,6 +79,13 @@ export function TeacherGrading() {
   const [filterSession, setFilterSession] = useState("")
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
+  const [showBulkForm, setShowBulkForm] = useState(false)
+  const [bulkData, setBulkData] = useState<{studentId: string, score: string}[]>([])
+  const [bulkSaving, setBulkSaving] = useState(false)
+  const [bulkAssessmentType, setBulkAssessmentType] = useState('exam')
+const [bulkMaxScore, setBulkMaxScore] = useState('100')
+  const [bulkSubjectId, setBulkSubjectId] = useState('')
+  const [bulkStudentsWithPhotos, setBulkStudentsWithPhotos] = useState<any[]>([])
   const [selectedAssignmentId, setSelectedAssignmentId] = useState("")
   const [saving, setSaving] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
@@ -107,6 +114,11 @@ export function TeacherGrading() {
     }))
   }
 
+  useEffect(() => {
+    const defaultMax = DEFAULT_MAX_SCORES[bulkAssessmentType] || 100
+    setBulkMaxScore(defaultMax.toString())
+  }, [bulkAssessmentType])
+
   const getClassId = (assignment: ClassAssignment) => {
     return assignment.class_obj || assignment.class_data?.id
   }
@@ -131,8 +143,25 @@ export function TeacherGrading() {
   }, [selectedAssignmentId, classes])
 
   useEffect(() => {
+    if (selectedAssignmentId && filterSession && students.length > 0) {
+      const assignment = classes.find((c) => c.id.toString() === selectedAssignmentId)
+      if (assignment) {
+        const classId = getClassId(assignment)
+        const subjectId = getSubjectId(assignment)
+        const params = {
+          class_id: classId,
+          ...(subjectId && { subject_id: subjectId }),
+          academic_session: parseInt(filterSession),
+          teacher_id: user?.id
+        }
+        fetchGrades(params)
+      }
+    }
+  }, [selectedAssignmentId, filterSession, students.length, classes, user?.id])
+
+  useEffect(() => {
     if (filterSession) {
-      fetchGrades()
+      fetchGrades({ academic_session: filterSession })
     }
   }, [filterSession])
 
@@ -202,7 +231,7 @@ export function TeacherGrading() {
       const classIdNum = typeof classId === 'string' ? parseInt(classId) : classId
       
       const [studentsRes, subjectsRes] = await Promise.all([
-        usersAPI.students({ class_id: classIdNum }),
+        usersAPI.students({ class_id: classIdNum, teacher_id: user?.id }),
         academicsAPI.classSubjects(),
       ])
       
@@ -219,9 +248,9 @@ export function TeacherGrading() {
     }
   }
 
-  const fetchGrades = async () => {
+  const fetchGrades = async (params = {}) => {
     try {
-      const gradesRes = await gradesAPI.list()
+      const gradesRes = await gradesAPI.list(params)
       const allGrades = gradesRes.data.results || gradesRes.data || []
       setGrades(allGrades)
     } catch (error) {
@@ -249,8 +278,18 @@ export function TeacherGrading() {
       await gradesAPI.create(data)
       setNewGrade({ student: "", subject: "", assessment_type: "exam", score: "", max_score: "100" })
       setShowForm(false)
-      setGrades([])
-      await fetchGrades()
+      const assignment = classes.find((c) => c.id.toString() === selectedAssignmentId)
+      if (assignment) {
+        const classId = getClassId(assignment)
+        const subjectId = getSubjectId(assignment)
+        await fetchGrades({ 
+          class_id: classId, 
+          ...(subjectId && { subject_id: subjectId }), 
+          academic_session: filterSession 
+        })
+      } else {
+        await fetchGrades()
+      }
     } catch (error: any) {
       console.error("[TeacherGrading] Failed to create grade:", error)
       alert(`Error: ${error?.response?.data?.error || error?.response?.data?.detail || error?.message || "Failed to create grade"}`)
@@ -279,7 +318,11 @@ export function TeacherGrading() {
         academic_session_id: filterSession,
       })
       alert("Grades locked successfully!")
-      await fetchGrades()
+      await fetchGrades({
+        class_id: classId,
+        ...(subjectId && { subject_id: subjectId }),
+        academic_session: parseInt(filterSession)
+      })
     } catch (error: any) {
       console.error("[TeacherGrading] Failed to lock grades:", error)
       alert(`Error: ${error?.response?.data?.error || "Failed to lock grades"}`)
@@ -308,7 +351,11 @@ export function TeacherGrading() {
         academic_session_id: filterSession,
       })
       alert("Grades unlocked successfully!")
-      await fetchGrades()
+      await fetchGrades({
+        class_id: classId,
+        ...(subjectId && { subject_id: subjectId }),
+        academic_session: parseInt(filterSession)
+      })
     } catch (error: any) {
       console.error("[TeacherGrading] Failed to unlock grades:", error)
       alert(`Error: ${error?.response?.data?.error || "Failed to unlock grades"}`)
@@ -391,6 +438,7 @@ export function TeacherGrading() {
     b: filteredGrades.filter(g => g.grade === "B").length,
     c: filteredGrades.filter(g => g.grade === "C").length,
     d: filteredGrades.filter(g => g.grade === "D").length,
+    e: filteredGrades.filter(g => g.grade === "E").length,
     f: filteredGrades.filter(g => g.grade === "F").length,
   }
 
@@ -419,7 +467,7 @@ export function TeacherGrading() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="bg-gradient-to-br from-cyan-500 to-cyan-600 text-white border-0">
+        <Card className="bg-secondary text-white border-0">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
@@ -433,7 +481,7 @@ export function TeacherGrading() {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0">
+        <Card className="bg-secondary text-white border-0">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
@@ -447,7 +495,7 @@ export function TeacherGrading() {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-amber-500 to-amber-600 text-white border-0">
+        <Card className="bg-secondary text-white border-0">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
@@ -461,7 +509,7 @@ export function TeacherGrading() {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white border-0">
+        <Card className="bg-secondary text-white border-0">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
@@ -481,7 +529,7 @@ export function TeacherGrading() {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <CardTitle className="text-xl flex items-center gap-2">
-                <Award className="h-5 w-5 text-cyan-600" />
+                <Award className="h-5 w-5 text-csecondary" />
                 Grade Management
               </CardTitle>
               <CardDescription>Record and manage student grades</CardDescription>
@@ -507,17 +555,33 @@ export function TeacherGrading() {
               </Button>
               <Button 
                 size="sm"
-                onClick={() => {
+                onClick={async () => {
                   if (!selectedAssignmentId) {
                     alert("Please select a Class & Subject first")
                     return
                   }
-                  setShowForm(true)
-                }}
-                className="bg-cyan-600 hover:bg-cyan-700"
+                  // Fetch students with profile photos
+                  try {
+                    const res = await usersAPI.students({ class_id: getClassId(classes.find(c => c.id.toString() === selectedAssignmentId)!), teacher_id: user?.id })
+                    setBulkStudentsWithPhotos(res.data.results || res.data || [])
+                  } catch (error) {
+                    console.error('[BulkGrade] Failed to fetch students with photos:', error)
+                  }
+                  
+// Initialize bulk data with current students
+  const studentData = students.map((s: any) => {
+    const sid = s.user_id ?? s.user?.id ?? s.id
+    return { studentId: sid.toString(), score: '' }
+  })
+  setBulkData(studentData)
+  const assignment = classes.find((c) => c.id.toString() === selectedAssignmentId)!
+  setBulkSubjectId(assignment.subject ? assignment.subject.toString() : '')
+  setShowBulkForm(true)
+}}
+                className="bg-secondary hover:bg-primary"
               >
-                <Plus className="w-4 h-4 mr-1" />
-                Add Grade
+                <Users className="w-4 h-4 mr-1" />
+                Bulk Grade Entry
               </Button>
             </div>
           </div>
@@ -568,9 +632,24 @@ export function TeacherGrading() {
                   <SelectItem value="all">All Students</SelectItem>
                   {students.map((s) => {
                     const sid = s.user_id ?? s.user?.id ?? s.id
+                    const name = s.user?.first_name ? `${s.user.first_name} ${s.user.last_name}` : s.first_name || `Student ${sid}`
+                    const profilePic = s.profile_picture?.storage_url || (s.user?.profile_picture?.storage_url)
                     return (
                       <SelectItem key={s.id} value={sid.toString()}>
-                        {s.user?.first_name ? `${s.user.first_name} ${s.user.last_name}` : s.first_name}
+                        <div className="flex items-center gap-2 p-1">
+                          <div className="w-6 h-6 rounded-full overflow-hidden bg-slate-100 flex items-center justify-center flex-shrink-0">
+                            {profilePic ? (
+                              <img 
+                                src={profilePic} 
+                                alt={name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <span className="text-xs font-medium text-slate-500">P</span>
+                            )}
+                          </div>
+                          <span className="truncate max-w-[150px]">{name}</span>
+                        </div>
                       </SelectItem>
                     )
                   })}
@@ -728,9 +807,24 @@ export function TeacherGrading() {
                 <SelectContent>
                   {students.map((s) => {
                     const sid = s.user_id ?? s.user?.id ?? s.id
+                    const name = s.user?.first_name ? `${s.user.first_name} ${s.user.last_name}` : s.first_name || `Student ${sid}`
+                    const profilePic = s.profile_picture?.storage_url || (s.user?.profile_picture?.storage_url)
                     return (
                       <SelectItem key={s.id} value={sid.toString()}>
-                        {s.user?.first_name ? `${s.user.first_name} ${s.user.last_name}` : s.first_name}
+                        <div className="flex items-center gap-2 p-1">
+                          <div className="w-6 h-6 rounded-full overflow-hidden bg-slate-100 flex items-center justify-center flex-shrink-0">
+                            {profilePic ? (
+                              <img 
+                                src={profilePic} 
+                                alt={name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <span className="text-xs font-medium text-slate-500">P</span>
+                            )}
+                          </div>
+                          <span className="truncate max-w-[150px]">{name}</span>
+                        </div>
                       </SelectItem>
                     )
                   })}
@@ -787,6 +881,194 @@ export function TeacherGrading() {
             <Button onClick={addGrade} disabled={saving} className="bg-cyan-600 hover:bg-cyan-700">
               <Save className="w-4 h-4 mr-1" />
               {saving ? "Saving..." : "Save Grade"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Grade Entry Modal */}
+      <Dialog open={showBulkForm} onOpenChange={setShowBulkForm}>
+        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Bulk Grade Entry - {getAssignmentName(selectedAssignmentId)}
+            </DialogTitle>
+          </DialogHeader>
+          
+<div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 p-4 bg-slate-50 rounded-lg">
+            <div className="space-y-2">
+              <Label>Subject</Label>
+              <Select value={bulkSubjectId} onValueChange={setBulkSubjectId} disabled={subjects.length === 0}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Subject" />
+                </SelectTrigger>
+                <SelectContent>
+                  {subjects.map((s: any) => (
+                    <SelectItem key={s.id} value={s.id.toString()}>
+                      {s.subject_name || s.name || s.code}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Assessment Type</Label>
+              <Select value={bulkAssessmentType} onValueChange={setBulkAssessmentType}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="exam">Exam</SelectItem>
+                  <SelectItem value="test">Test</SelectItem>
+                  <SelectItem value="quiz">Quiz</SelectItem>
+                  <SelectItem value="continuous">Continuous Assessment</SelectItem>
+                  <SelectItem value="assignment">Assignment</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Max Score ({DEFAULT_MAX_SCORES[bulkAssessmentType] || 100})</Label>
+              <Input
+                type="number"
+                value={bulkMaxScore}
+                onChange={(e) => setBulkMaxScore(e.target.value)}
+                placeholder={DEFAULT_MAX_SCORES[bulkAssessmentType]?.toString() || '100'}
+                step="0.01"
+              />
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-auto">
+            <div className="rounded-md border overflow-hidden">
+              <table className="w-full">
+                <thead className="bg-slate-50 sticky top-0">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Student</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-32">Score</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200">
+                  {bulkData.map((row, index) => {
+                    const baseStudent = students.find((s: any) => {
+                      const sid = s.user_id ?? s.user?.id ?? s.id
+                      return sid.toString() === row.studentId
+                    })
+                    const photoStudent = bulkStudentsWithPhotos.find((s: any) => {
+                      const sid = s.user_id ?? s.user?.id ?? s.id
+                      return sid.toString() === row.studentId
+                    })
+                    
+                    // Use photoStudent first for full data
+                    const finalStudent = photoStudent || baseStudent
+                    const studentName = finalStudent?.first_name && finalStudent?.last_name 
+                      ? `${finalStudent.first_name} ${finalStudent.last_name}` 
+                      : finalStudent?.first_name || finalStudent?.student_id || finalStudent?.user_id || `Student ${row.studentId}`
+                    
+                    const profilePic = finalStudent?.profile_picture_url || finalStudent?.profile_picture?.storage_url || finalStudent?.user?.profile_picture?.storage_url
+                    
+                    return (
+                      <tr key={row.studentId} className="hover:bg-slate-50">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-100 flex items-center justify-center">
+                              {profilePic ? (
+                                <img 
+                                  src={profilePic} 
+                                  alt={studentName}
+                                  className="w-full h-full object-cover rounded-full"
+                                  onError={(e) => {
+                                    const img = e.target as HTMLImageElement
+                                    img.style.display = 'none'
+                                    const fallback = img.nextSibling as HTMLElement
+                                    if (fallback) fallback.style.display = 'flex'
+                                  }} 
+                                />
+                              ) : null}
+                              <div className="text-slate-400 text-xs font-medium">PIC</div>
+                            </div>
+                            <div className="font-medium text-slate-900 min-w-0 truncate">
+                              {studentName}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <Input
+                            type="number"
+                            value={row.score}
+                            onChange={(e) => {
+                              const newData = [...bulkData]
+                              newData[index].score = e.target.value
+                              setBulkData(newData)
+                            }}
+                            placeholder="0"
+                            className="w-24"
+                            step="0.01"
+                            min="0"
+                            max={parseFloat(bulkMaxScore) || 100}
+                          />
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          
+          <DialogFooter className="pt-4">
+            <Button variant="outline" onClick={() => setShowBulkForm(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={async () => {
+                const validGrades = bulkData.filter(row => row.score && parseFloat(row.score) > 0)
+                if (validGrades.length === 0) {
+                  alert('Please enter at least one score')
+                  return
+                }
+                
+                setBulkSaving(true)
+                try {
+                  const promises = validGrades.map(async (row) => {
+                    const data = {
+                      student: parseInt(row.studentId),
+                      subject: bulkSubjectId ? parseInt(bulkSubjectId) : getSubjectId(classes.find((c) => c.id.toString() === selectedAssignmentId)!),
+                      assessment_type: bulkAssessmentType,
+                      score: parseFloat(row.score),
+                      max_score: parseFloat(bulkMaxScore),
+                      academic_session: filterSession ? parseInt(filterSession) : null,
+                    }
+                    return gradesAPI.create(data)
+                  })
+                  
+                  await Promise.all(promises)
+                  alert(`${validGrades.length} grades saved successfully!`)
+                  setShowBulkForm(false)
+                  setBulkData([])
+                  const assignment = classes.find((c) => c.id.toString() === selectedAssignmentId)
+                  if (assignment) {
+                    const classId = getClassId(assignment)
+                    const subjectId = getSubjectId(assignment)
+                    await fetchGrades({ 
+                      class_id: classId, 
+                      ...(subjectId && { subject_id: subjectId }), 
+                      academic_session: filterSession 
+                    })
+                  } else {
+                    await fetchGrades()
+                  }
+                } catch (error: any) {
+                  console.error('Bulk save error:', error)
+                  alert(`Error: ${error?.response?.data?.error || 'Failed to save grades'}`)
+                } finally {
+                  setBulkSaving(false)
+                }
+              }} 
+              disabled={bulkSaving}
+              className="bg-emerald-600 hover:bg-emerald-700"
+            >
+              {bulkSaving ? 'Saving...' : `Save ${bulkData.filter(row => row.score).length} Grades`}
             </Button>
           </DialogFooter>
         </DialogContent>

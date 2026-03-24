@@ -244,7 +244,7 @@ const [studentNames, setStudentNames] = useState<Record<number, string>>({})
           onClick={() => setActiveTab('mark')}
           className={`px-4 py-2 font-medium transition-colors ${
             activeTab === 'mark'
-              ? 'text-purple-600 border-b-2 border-purple-600'
+              ? 'text-secondary border-b-2 border-secondary'
               : 'text-gray-500 hover:text-gray-700'
           }`}
         >
@@ -255,7 +255,7 @@ const [studentNames, setStudentNames] = useState<Record<number, string>>({})
           onClick={() => setActiveTab('summary')}
           className={`px-4 py-2 font-medium transition-colors ${
             activeTab === 'summary'
-              ? 'text-purple-600 border-b-2 border-purple-600'
+              ? 'text-secondary border-b-2 border-secondary'
               : 'text-gray-500 hover:text-gray-700'
           }`}
         >
@@ -279,7 +279,7 @@ const [studentNames, setStudentNames] = useState<Record<number, string>>({})
                   <select
                     value={selectedClass}
                     onChange={(e) => setSelectedClass(e.target.value)}
-                    className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-purple-500"
+                    className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-secondary"
                   >
                     <option value="">Choose a class</option>
                     {classes.map((cls) => (
@@ -295,7 +295,7 @@ const [studentNames, setStudentNames] = useState<Record<number, string>>({})
                   <select
                     value={selectedSubject}
                     onChange={(e) => setSelectedSubject(e.target.value)}
-                    className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
+                    className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-secondary disabled:opacity-50"
                     disabled={!selectedClass}
                   >
                     <option value="">Choose a subject</option>
@@ -313,7 +313,7 @@ const [studentNames, setStudentNames] = useState<Record<number, string>>({})
                     type="date"
                     value={selectedDate}
                     onChange={(e) => setSelectedDate(e.target.value)}
-                    className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-purple-500"
+                    className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-secondary"
                   />
                 </div>
               </div>
@@ -391,13 +391,13 @@ const [studentNames, setStudentNames] = useState<Record<number, string>>({})
                         <img 
                           src={studentAvatars[enrollment.student]} 
                           alt={studentNames[enrollment.student] || ''}
-                          className="w-10 h-10 rounded-full object-cover ring-2 ring-gray-200 hover:ring-purple-200"
+                          className="w-10 h-10 rounded-full object-cover ring-2 ring-gray-200 hover:ring-secondary"
                           onError={(e) => {
                             (e.target as HTMLImageElement).style.display = 'none'
                           }}
                         />
                       ) : (
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 to-blue-500 flex items-center justify-center text-white font-medium text-sm">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-secondary to-primary flex items-center justify-center text-white font-medium text-sm">
                           {(studentNames[enrollment.student] || "S").charAt(0).toUpperCase()}
                         </div>
                       )}
@@ -433,7 +433,7 @@ const [studentNames, setStudentNames] = useState<Record<number, string>>({})
               <Button 
                 onClick={handleSubmit} 
                 disabled={submitting} 
-                className="w-full gap-2 bg-purple-600 hover:bg-purple-700"
+                className="w-full gap-2 bg-secondary hover:bg-primary"
                 size="lg"
               >
                 {submitting ? (
@@ -519,7 +519,7 @@ const [studentNames, setStudentNames] = useState<Record<number, string>>({})
                 </div>
               </div>
               <div className="mt-4 flex gap-2">
-                <Button onClick={fetchSummary} className="bg-purple-600 hover:bg-purple-700">
+                <Button onClick={fetchSummary} className="bg-secondary hover:bg-primary">
                   Apply Filters
                 </Button>
                 <Button 

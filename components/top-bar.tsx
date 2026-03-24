@@ -9,10 +9,20 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { Bell, Menu } from "lucide-react"
 
 interface TopBarProps {
-  onMenuClick?: () => void
+  onToggle?: () => void
 }
 
-export function TopBar({ onMenuClick }: TopBarProps) {
+import { AuthBoundary } from "@/components/auth-boundary"
+
+export function TopBar({ onToggle }: TopBarProps) {
+  return (
+    <AuthBoundary>
+      <TopBarContent onToggle={onToggle} />
+    </AuthBoundary>
+  )
+}
+
+function TopBarContent({ onToggle }: TopBarProps) {
   const { user, logout, school } = useAuthContext()
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications()
   const [showProfileMenu, setShowProfileMenu] = useState(false)
@@ -20,6 +30,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
   const [profilePic, setProfilePic] = useState<string>("")
   const notifRef = useRef<HTMLDivElement>(null)
   const profileRef = useRef<HTMLDivElement>(null)
+
 
   // Get school logo
   const schoolLogo = school?.logo_url || school?.logo_url_computed
@@ -67,11 +78,11 @@ export function TopBar({ onMenuClick }: TopBarProps) {
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case "payment":
-        return "💰"
+        return ""
       case "withdrawal":
-        return "🏦"
+        return ""
       default:
-        return "📢"
+        return ""
     }
   }
 
@@ -90,27 +101,29 @@ export function TopBar({ onMenuClick }: TopBarProps) {
   }
 
   return (
-    <header className="bg-slate-900 h-16 flex items-center justify-between px-4 md:px-8 border-b border-slate-800">
+    <header className="bg-sidebar h-16 flex items-center justify-between px-4 md:px-8 border-b-0 relative">
       {/* Left side - Hamburger menu for mobile */}
       <div className="flex items-center gap-3">
-        {onMenuClick && (
-          <button 
-            onClick={onMenuClick}
-            className="lg:hidden p-2 hover:bg-slate-800 rounded-lg transition-colors"
+
+        <button 
+            onClick={onToggle}
+            className="p-2 hover:bg-sidebar-accent rounded-lg transition-all duration-200 text-sidebar-foreground-computed/80 hover:text-sidebar-foreground-computed hover:bg-sidebar-accent/80"
+            aria-label="Toggle menu"
           >
-            <Menu size={24} className="text-slate-200" />
+            <Menu size={20} />
           </button>
-        )}
+
       </div>
 
       {/* Right side - Language, theme toggle, notifications, profile */}
       <div className="flex items-center gap-4 md:gap-6">
         {/* Language Selector */}
-        <select className="bg-transparent text-sm text-slate-400 font-medium outline-none cursor-pointer hover:text-slate-200">
-          <option className="dark:bg-slate-800">English</option>
-          <option className="dark:bg-slate-800">Bangla</option>
-          <option className="dark:bg-slate-800">Arabic</option>
+        <select className="bg-transparent text-sm text-sidebar-foreground-computed/80 font-medium outline-none cursor-pointer hover:text-sidebar-foreground-computed">
+          <option className="dark:bg-sidebar-accent">English</option>
+          <option className="dark:bg-sidebar-accent">Bangla</option>
+          <option className="dark:bg-sidebar-accent">Arabic</option>
         </select>
+
 
         {/* Theme Toggle */}
         <ThemeToggle />
@@ -122,10 +135,11 @@ export function TopBar({ onMenuClick }: TopBarProps) {
               setShowNotifications(!showNotifications)
               setShowProfileMenu(false)
             }}
-            className="relative text-slate-400 hover:text-slate-200 transition-colors"
+            className="relative text-sidebar-foreground-computed/80 hover:text-sidebar-foreground-computed transition-colors"
           >
             <Bell size={22} />
             {unreadCount > 0 && (
+
               <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium">
                 {unreadCount > 9 ? "9+" : unreadCount}
               </span>
@@ -133,11 +147,13 @@ export function TopBar({ onMenuClick }: TopBarProps) {
           </button>
 
           {/* Notifications Dropdown */}
-          {showNotifications && (
-            <div className="absolute right-0 mt-2 bg-slate-900 border border-slate-700 rounded-lg shadow-xl w-96 max-h-[480px] overflow-hidden z-50">
+{showNotifications && (
+            <div className="absolute right-0 mt-2 bg-sidebar border-sidebar-border rounded-lg shadow-xl w-96 max-h-[480px] overflow-hidden z-50">
+
               {/* Header */}
-              <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700 bg-slate-800/50">
-                <h3 className="font-semibold text-slate-200 text-sm">Notifications</h3>
+              <div className="flex items-center justify-between px-4 py-3 border-b border-sidebar-border bg-white">
+                <h3 className="font-semibold text-sidebar-foreground text-sm">Notifications</h3>
+
                 <div className="flex items-center gap-3">
                   {unreadCount > 0 && (
                     <span className="text-xs bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-2 py-0.5 rounded-full font-medium">
@@ -159,7 +175,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
               <div className="overflow-y-auto max-h-[380px]">
                 {notifications.length === 0 ? (
                   <div className="py-12 text-center">
-                    <span className="text-4xl block mb-2">🔔</span>
+                    <span className="text-4xl block mb-2"></span>
                     <p className="text-sm text-slate-400">No notifications yet</p>
                   </div>
                 ) : (
@@ -167,9 +183,10 @@ export function TopBar({ onMenuClick }: TopBarProps) {
                     <button
                       key={notif.id}
                       onClick={() => markAsRead(notif.id)}
-                      className={`w-full text-left px-4 py-3 border-b border-slate-800 hover:bg-slate-800 transition-colors ${
-                        !notif.read ? "bg-cyan-900/20" : ""
+                      className={`w-full text-left px-4 py-3 border-b border-white hover:bg-sidebar-accent transition-colors ${
+                        !notif.read ? "bg-sidebar-primary/10" : ""
                       }`}
+
                     >
                       <div className="flex gap-3">
                         <span className="text-lg flex-shrink-0 mt-0.5">
@@ -177,15 +194,17 @@ export function TopBar({ onMenuClick }: TopBarProps) {
                         </span>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-2">
-                            <p className={`text-sm ${!notif.read ? "font-semibold text-slate-200" : "text-slate-400"}`}>
+                            <p className={`text-sm ${!notif.read ? "font-semibold text-sidebar-foreground" : "text-sidebar-foreground/80"}`}>
                               {notif.title}
                             </p>
+
                             {!notif.read && (
                               <span className="w-2 h-2 bg-cyan-500 rounded-full flex-shrink-0 mt-1.5" />
                             )}
                           </div>
-                          <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{notif.message}</p>
-                          <p className="text-xs text-slate-500 mt-1">{formatTimeAgo(notif.created_at)}</p>
+                          <p className="text-xs text-sidebar-foreground/70 mt-0.5 line-clamp-2">{notif.message}</p>
+                          <p className="text-xs text-sidebar-foreground/70 mt-1">{formatTimeAgo(notif.created_at)}</p>
+
                         </div>
                       </div>
                     </button>
@@ -203,9 +222,10 @@ export function TopBar({ onMenuClick }: TopBarProps) {
               setShowProfileMenu(!showProfileMenu)
               setShowNotifications(false)
             }}
-            className="flex items-center gap-3 hover:bg-slate-800 px-3 py-2 rounded-lg transition-colors"
+            className="flex items-center gap-3 hover:bg-sidebar-accent px-3 py-2 rounded-lg transition-colors"
           >
-            <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-slate-900 overflow-hidden bg-white">
+            <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-sidebar-primary-foreground overflow-hidden bg-white">
+
               {profilePic ? (
                 <Image src={profilePic} alt="Profile" width={32} height={32} className="w-full h-full object-cover" />
               ) : schoolLogo ? (
@@ -215,25 +235,27 @@ export function TopBar({ onMenuClick }: TopBarProps) {
               )}
             </div>
             <div className="text-left hidden md:block">
-              <p className="text-sm font-medium text-slate-200">
+              <p className="text-sm font-medium text-sidebar-foreground-computed">
                 {user.first_name} {user.last_name}
               </p>
-              <p className="text-xs text-slate-400">{roleLabels[user.role as keyof typeof roleLabels]}</p>
+              <p className="text-xs text-sidebar-foreground-computed/80">{roleLabels[user.role as keyof typeof roleLabels]}</p>
             </div>
+
           </button>
 
           {/* Profile Dropdown */}
-          {showProfileMenu && (
-            <div className="absolute right-0 mt-2 bg-slate-900 border border-slate-700 rounded-lg shadow-lg w-48">
-              <button className="w-full text-left px-4 py-2 text-sm text-slate-300 hover:bg-slate-800">My Profile</button>
-              <button className="w-full text-left px-4 py-2 text-sm text-slate-300 hover:bg-slate-800">Settings</button>
-              <hr className="my-2 border-slate-700" />
+{showProfileMenu && (
+            <div className="absolute right-0 mt-2 bg-sidebar border-sidebar-border rounded-lg shadow-lg w-48">
+              <button className="w-full text-left px-4 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent">My Profile</button>
+              <button className="w-full text-left px-4 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent">Settings</button>
+              <hr className="my-2 border-sidebar-border" />
+
               <button
                 onClick={() => {
                   setShowProfileMenu(false)
                   logout()
                 }}
-                className="w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
+                className="w-full text-left px-4 py-2 text-sm text-destructive hover:bg-destructive/10"
               >
                 Logout
               </button>

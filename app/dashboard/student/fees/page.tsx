@@ -161,12 +161,12 @@ export default function StudentFeesPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
-            <DollarSign className="w-8 h-8 text-green-600" />
+            <DollarSign className="w-8 h-8 text-secondary" />
             My Fees & Expenses
           </h1>
           <p className="text-gray-600 mt-1">View your fee status and payment history</p>
         </div>
-        <Button className="bg-blue-600">
+        <Button className="bg-secondary">
           <Download className="w-4 h-4 mr-2" />
           Download Statement
         </Button>

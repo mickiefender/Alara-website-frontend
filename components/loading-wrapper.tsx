@@ -1,23 +1,21 @@
-'use client'
+"use client"
 
 import React from 'react'
-import Loader from '@/components/loader'
+import { CircularLoader, FullScreenLoader } from '@/components/circular-loader'
 
 interface LoadingWrapperProps {
   isLoading: boolean
   children: React.ReactNode
-  color?: string
 }
 
 export const LoadingWrapper: React.FC<LoadingWrapperProps> = ({ 
   isLoading, 
-  children, 
-  color = '#f5c607' 
+  children 
 }) => {
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
-        <Loader size="md" color={color} />
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-secondary/10 to-secondary/5">
+        <FullScreenLoader />
       </div>
     )
   }
@@ -26,3 +24,4 @@ export const LoadingWrapper: React.FC<LoadingWrapperProps> = ({
 }
 
 export default LoadingWrapper
+

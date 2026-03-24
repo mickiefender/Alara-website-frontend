@@ -2,10 +2,10 @@
 
 export function RecentActivities() {
   const activities = [
-    { icon: "👤", action: "You followed Olivia Williamson", time: "0 minutes ago" },
-    { icon: "📝", action: "You Subscribed to Harold Fuller", time: "20 minutes ago" },
-    { icon: "🖼️", action: "You updated your profile picture", time: "30 minutes ago" },
-    { icon: "📄", action: "You deleted homepage.psd", time: "35 minutes ago" },
+    { icon: "", action: "You followed Olivia Williamson", time: "0 minutes ago" },
+    { icon: "", action: "You Subscribed to Harold Fuller", time: "20 minutes ago" },
+    { icon: "", action: "You updated your profile picture", time: "30 minutes ago" },
+    { icon: "", action: "You deleted homepage.psd", time: "35 minutes ago" },
   ]
 
   return (

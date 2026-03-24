@@ -153,10 +153,10 @@ function SubjectsPageContent() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-purple-700">Subject List</h1>
+        <h1 className="text-3xl font-bold text-secondary">Subject List</h1>
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-purple-600 hover:bg-purple-700">+ Add Subject</Button>
+            <Button className="bg-secondary hover:bg-primary">+ Add Subject</Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
@@ -169,6 +169,7 @@ function SubjectsPageContent() {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   required
+                  autoComplete="name"
                 />
               </div>
               <div>
@@ -176,6 +177,7 @@ function SubjectsPageContent() {
                 <Input
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  autoComplete="off"
                 />
               </div>
               <div>
@@ -186,9 +188,10 @@ function SubjectsPageContent() {
                   onChange={(e) => setFormData({ ...formData, credit_hours: e.target.value })}
                   min="1"
                   max="10"
+                  autoComplete="off"
                 />
               </div>
-              <Button type="submit" className="w-full bg-purple-600">
+              <Button type="submit" className="w-full bg-secondary">
                 {editingSubject ? "Update" : "Create"}
               </Button>
             </form>
@@ -203,6 +206,7 @@ function SubjectsPageContent() {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="pl-10"
+          autoComplete="off"
         />
       </div>
 
@@ -253,7 +257,7 @@ function SubjectsPageContent() {
               variant={currentPage === page ? "default" : "outline"}
               size="sm"
               onClick={() => setCurrentPage(page)}
-              className={currentPage === page ? "bg-purple-600" : ""}
+              className={currentPage === page ? "bg-secondary" : ""}
             >
               {page}
             </Button>

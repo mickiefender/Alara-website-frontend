@@ -81,39 +81,39 @@ function ClassesPageContent() {
       
       // Use authAPI.me() to get current user
       const userRes = await authAPI.me()
-      console.log("[v0] User data from authAPI.me():", userRes.data)
+      console.log(" User data from authAPI.me():", userRes.data)
       
       if (!userRes.data.school) {
-        console.log("[v0] WARNING: User has no school assigned")
+        console.log(" WARNING: User has no school assigned")
         setError("Your account is not associated with a school. Contact your administrator.")
         setLoading(false)
         return
       }
       
       setSchoolId(userRes.data.school)
-      console.log("[v0] School ID set to:", userRes.data.school)
+      console.log(" School ID set to:", userRes.data.school)
       
       // Fetch classes
       const classesResponse = await academicsAPI.classes()
-      console.log("[v0] Classes response:", classesResponse.data)
+      console.log("Classes response:", classesResponse.data)
       setClasses(classesResponse.data.results || classesResponse.data || [])
       
       // Fetch levels - try with error handling
       try {
         const levelsResponse = await academicsAPI.levels()
-        console.log("[v0] Levels response:", levelsResponse.data)
+        console.log(" Levels response:", levelsResponse.data)
         setLevels(levelsResponse.data.results || levelsResponse.data || [])
       } catch (levelsErr) {
-        console.log("[v0] Could not fetch levels, continuing without them:", levelsErr)
+        console.log(" Could not fetch levels, continuing without them:", levelsErr)
         setLevels([])
       }
       
       setError(null)
     } catch (err: any) {
-      console.log("[v0] Full error object:", err)
-      console.log("[v0] Error status:", err?.response?.status)
-      console.log("[v0] Error data:", err?.response?.data)
-      console.log("[v0] Error message:", err?.message)
+      console.log(" Full error object:", err)
+      console.log(" Error status:", err?.response?.status)
+      console.log(" Error data:", err?.response?.data)
+      console.log(" Error message:", err?.message)
       
       if (err?.response?.status === 401) {
         setError("You are not authenticated. Please log in again.")
@@ -220,12 +220,12 @@ function ClassesPageContent() {
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-bold text-gray-900">Classes Management</h1>
+          <h1 className="text-4xl font-bold text-secondary">Classes Management</h1>
           <p className="text-gray-600 mt-1">Manage all your school classes, assignments, and settings</p>
         </div>
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white gap-2">
+            <Button className="bg-secondary hover:bg-primary text-white gap-2">
               <Plus size={20} />
               Add Class
             </Button>
@@ -241,7 +241,7 @@ function ClassesPageContent() {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   required
-                  placeholder="e.g., Senior 1A"
+                  placeholder="e.g., Primary 1A"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -414,7 +414,7 @@ function ClassesPageContent() {
                               setSelectedClassName(cls.name)
                               setSheetOpen(true)
                             }}
-                            className="ml-1 border-green-200 text-green-700 hover:bg-green-50 h-8 px-2 text-xs"
+                            className="ml-1 border-green-200 text-secondary hover:bg-secondary h-8 px-2 text-xs"
                           >
                             Manage
                           </Button>
@@ -454,7 +454,7 @@ function ClassesPageContent() {
                   variant={currentPage === page ? "default" : "outline"}
                   size="sm"
                   onClick={() => setCurrentPage(page)}
-                  className={currentPage === page ? "bg-blue-600 text-white" : ""}
+                  className={currentPage === page ? "bg-secondary text-white" : ""}
                 >
                   {page}
                 </Button>
@@ -479,35 +479,35 @@ function ClassesPageContent() {
         <SheetContent side="right" className="w-full md:w-3/4 lg:w-2/3 overflow-y-auto bg-gray-50">
           <SheetHeader className="border-b pb-4 mb-6">
             <SheetTitle className="text-2xl">
-              Manage Class: <span className="text-blue-600">{selectedClassName}</span>
+              Manage Class: <span className="text-secondary">{selectedClassName}</span>
             </SheetTitle>
             <p className="text-sm text-gray-600 mt-2">Configure students, teachers, subjects, and schedule for this class</p>
           </SheetHeader>
           <div className="space-y-6">
             <div className="bg-white p-6 rounded-lg border border-gray-200">
               <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <BookOpen size={20} className="text-blue-600" />
+                <BookOpen size={20} className="text-secondary" />
                 Subjects
               </h3>
               <ClassSubjectsManagement classId={selectedClassId || 0} className={selectedClassName} />
             </div>
             <div className="bg-white p-6 rounded-lg border border-gray-200">
               <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <Users size={20} className="text-green-600" />
+                <Users size={20} className="text-secondary" />
                 Enroll Students
               </h3>
               <EnrollStudentsInClass classId={selectedClassId || 0} className={selectedClassName} />
             </div>
             <div className="bg-white p-6 rounded-lg border border-gray-200">
               <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <UserCheck size={20} className="text-purple-600" />
+                <UserCheck size={20} className="text-secondary" />
                 Assign Teachers
               </h3>
               <AssignTeachersToClass classId={selectedClassId || 0} className={selectedClassName} />
             </div>
             <div className="bg-white p-6 rounded-lg border border-gray-200">
               <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <Users2 size={20} className="text-orange-600" />
+                <Users2 size={20} className="text-secondary" />
                 Subject Teachers
               </h3>
               <AssignSubjectTeachers classId={selectedClassId || 0} className={selectedClassName} />

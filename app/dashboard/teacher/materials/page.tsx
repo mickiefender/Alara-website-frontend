@@ -264,7 +264,7 @@ const [aiSettings, setAiSettings] = useState({
       }
       console.log("[v0] Raw AI response:", data)
       const norm = normalizeResponse(data, aiSettings.question_type)
-      if (norm.count === 0) {
+      if ('count' in norm && norm.count === 0) {
         setAiError("The AI returned 0 questions. Please check that the document has readable text, or try a different topic.")
       } else {
         setNormalized(norm)
@@ -300,7 +300,7 @@ const [aiSettings, setAiSettings] = useState({
       </div>
 
       <Tabs defaultValue="file-manager" className="w-full">
-        <TabsList className="grid w-full max-w-md grid-cols-2">
+        <TabsList className="grid w-full max-w-md grid-cols-2 bg-secondary">
           <TabsTrigger value="file-manager" className="flex items-center gap-2">
             <FolderOpen className="w-4 h-4" /> File Manager
           </TabsTrigger>
@@ -389,7 +389,7 @@ const [aiSettings, setAiSettings] = useState({
                         <Button
                           size="sm" variant="outline"
                           onClick={() => { setSelectedDocId(doc.id); setAiMode("document"); setShowAIPanel(true); setNormalized(null); setAiError(null) }}
-                          className="flex items-center gap-1 bg-gradient-to-r from-cyan-50 to-cyan-50 border-cyan-300 text-cyan-700 hover:bg-cyan-100"
+                          className="flex items-center gap-1 bg-secondary text-cyan-700 hover:bg-cyan-100"
                         >
                           <Sparkles className="w-4 h-4" /> Generate Questions
                         </Button>
@@ -418,7 +418,7 @@ const [aiSettings, setAiSettings] = useState({
             {/* Modal Header */}
             <div className="bg-gradient-to-r from-teal-50 to-purple-50 px-6 py-4 border-b border-teal-200 flex justify-between items-center flex-shrink-0">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-teal-500 rounded-lg flex items-center justify-center text-white font-bold">◆</div>
+                <div className="w-8 h-8 bg-secondary rounded-lg flex items-center justify-center text-white font-bold">◆</div>
                 <h2 className="text-lg font-semibold text-gray-900">AI Question Generator</h2>
               </div>
               <button onClick={() => setShowAIPanel(false)} className="text-gray-500 hover:text-gray-700">
@@ -471,13 +471,13 @@ const [aiSettings, setAiSettings] = useState({
                     <div className="flex gap-3">
                       <Button
                         onClick={() => { setAiMode("document"); setNormalized(null); setAiError(null) }}
-                        className={aiMode === "document" ? "bg-teal-500 text-white hover:bg-teal-600" : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-100"}
+                        className={aiMode === "document" ? "bg-secondary text-white hover:bg-primary" : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-100"}
                       >
                         From Document
                       </Button>
                       <Button
                         onClick={() => { setAiMode("topic"); setNormalized(null); setAiError(null) }}
-                        className={aiMode === "topic" ? "bg-teal-500 text-white hover:bg-teal-600" : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-100"}
+                        className={aiMode === "topic" ? "bg-secondary text-white hover:bg-primary" : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-100"}
                       >
                         From Topic
                       </Button>
@@ -558,7 +558,7 @@ const [aiSettings, setAiSettings] = useState({
                     <Button
                       onClick={() => handleGenerateQuestions()}
                       disabled={aiLoading}
-                      className="w-full bg-teal-500 hover:bg-teal-600 text-white font-medium rounded-lg py-2"
+                      className="w-full bg-secondary hover:bg-primary text-white font-medium rounded-lg py-2"
                     >
                       {aiLoading ? "Generating..." : <><Zap className="w-4 h-4 mr-2" />Generate Questions</>}
                     </Button>
@@ -573,7 +573,7 @@ const [aiSettings, setAiSettings] = useState({
                   )}
 
                   {/* Questions Display */}
-                  {normalized && normalized.count > 0 && (
+                  {normalized && 'count' in normalized && normalized.count > 0 && (
                     <div className="space-y-4">
                       {/* Success banner */}
                       <div className="bg-teal-50 border border-teal-200 rounded-lg p-4">
@@ -591,14 +591,14 @@ const [aiSettings, setAiSettings] = useState({
                       {/* Print Buttons */}
                       <div className="flex gap-3 flex-wrap">
                         <Button
-                          onClick={() => printQuestions(normalized, "questions")}
+                          onClick={() => printQuestions(normalized as NormalizedQuestions, "questions")}
                           variant="outline"
                           className="flex items-center gap-2 border-teal-300 text-teal-700 hover:bg-teal-50"
                         >
                           <Printer className="w-4 h-4" /> Print Questions
                         </Button>
                         <Button
-                          onClick={() => printQuestions(normalized, "answers")}
+                          onClick={() => printQuestions(normalized as NormalizedQuestions, "answers")}
                           variant="outline"
                           className="flex items-center gap-2 border-purple-300 text-purple-700 hover:bg-purple-50"
                         >
@@ -606,6 +606,7 @@ const [aiSettings, setAiSettings] = useState({
                         </Button>
                         <Button
                           onClick={() => {
+                            if (!('questions' in normalized)) return
                             const text = normalized.questions
                               .map((q, i) => {
                                 let str = `Q${i + 1}. ${q.question}\n`

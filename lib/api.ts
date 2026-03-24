@@ -23,10 +23,14 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      sessionStorage.removeItem("authToken")
-      sessionStorage.removeItem("user")
-      if (typeof window !== "undefined") {
-        window.location.href = "/auth/login"
+      // Don't clear token or redirect on auth pages to prevent loops
+      const currentPath = typeof window !== "undefined" ? window.location.pathname : ""
+      if (!currentPath.startsWith("/auth/") && !currentPath.startsWith("/dashboard/")) {
+        sessionStorage.removeItem("authToken")
+        sessionStorage.removeItem("user")
+        if (typeof window !== "undefined") {
+          window.location.href = "/auth/login"
+        }
       }
     }
     return Promise.reject(error)
@@ -53,13 +57,11 @@ export const schoolsAPI = {
     apiClient.post("/schools/schools/upload_logo/", formData, {
       headers: { "Content-Type": "multipart/form-data" },
     }),
-  // Dashboard stats with caching
   getDashboardStats: () => apiClient.get("/schools/schools/dashboard_stats/"),
   invalidateCache: () => apiClient.post("/schools/schools/invalidate_cache/"),
 }
 
 export const academicsAPI = {
-  // Generic methods for flexible API calls
   get: (endpoint: string, params?: any) => apiClient.get(`/academics${endpoint}`, { params }),
   post: (endpoint: string, data: any, config?: any) => apiClient.post(`/academics${endpoint}`, data, config),
   put: (endpoint: string, data: any, config?: any) => apiClient.put(`/academics${endpoint}`, data, config),
@@ -75,19 +77,16 @@ export const academicsAPI = {
   updateTimetable: (id: number, data: any) => apiClient.put(`/academics/timetables/${id}/`, data),
   deleteTimetable: (id: number) => apiClient.delete(`/academics/timetables/${id}/`),
   
-  // Class Teachers (assignment of teachers to classes)
   classTeachers: () => apiClient.get("/academics/class-teachers/"),
   createClassTeacher: (data: any) => apiClient.post("/academics/class-teachers/", data),
   updateClassTeacher: (id: number, data: any) => apiClient.put(`/academics/class-teachers/${id}/`, data),
   deleteClassTeacher: (id: number) => apiClient.delete(`/academics/class-teachers/${id}/`),
   
-  // Student Classes (student enrollment in classes)
   studentClasses: () => apiClient.get("/academics/student-classes/"),
   createStudentClass: (data: any) => apiClient.post("/academics/student-classes/", data),
   updateStudentClass: (id: number, data: any) => apiClient.put(`/academics/student-classes/${id}/`, data),
   deleteStudentClass: (id: number) => apiClient.delete(`/academics/student-classes/${id}/`),
   
-  // Class Subject Teachers (subject assignment for teachers in classes)
   classSubjectTeachers: () => apiClient.get("/academics/class-subject-teachers/"),
   createClassSubjectTeacher: (data: any) => apiClient.post("/academics/class-subject-teachers/", data),
   updateClassSubjectTeacher: (id: number, data: any) => apiClient.put(`/academics/class-subject-teachers/${id}/`, data),
@@ -111,7 +110,6 @@ export const academicsAPI = {
   deleteClass: (id: number) => apiClient.delete(`/academics/classes/${id}/`),
   deleteSubject: (id: number) => apiClient.delete(`/academics/subjects/${id}/`),
   classPerformance: () => {
-    // Mock data for class performance
     const mockData = {
       results: [
         { className: "Class A", averageScore: 85 },
@@ -123,11 +121,7 @@ export const academicsAPI = {
     }
     return Promise.resolve({ data: mockData })
   },
-
-  // Class performance with attendance and grades combined - uses real API
-  classPerformanceWithAttendance: () => {
-    return apiClient.get("/academics/classes/performance/")
-  },
+  classPerformanceWithAttendance: () => apiClient.get("/academics/classes/performance/"),
   calendarEvents: () => apiClient.get("/academics/calendar-events/"),
   createCalendarEvent: (data: any) => apiClient.post("/academics/calendar-events/", data),
   updateCalendarEvent: (id: number, data: any) => apiClient.put(`/academics/calendar-events/${id}/`, data),
@@ -152,65 +146,49 @@ export const academicsAPI = {
   createEvent: (data: any) => apiClient.post("/academics/events/", data),
   updateEvent: (id: number, data: any) => apiClient.put(`/academics/events/${id}/`, data),
   deleteEvent: (id: number) => apiClient.delete(`/academics/events/${id}/`),
-  // Document Folders
   documentFolders: (params?: any) => apiClient.get("/academics/document-folders/", { params }),
   createDocumentFolder: (data: any) => apiClient.post("/academics/document-folders/", data),
   updateDocumentFolder: (id: number, data: any) => apiClient.put(`/academics/document-folders/${id}/`, data),
   deleteDocumentFolder: (id: number) => apiClient.delete(`/academics/document-folders/${id}/`),
   getFolderChildren: (id: number) => apiClient.get(`/academics/document-folders/${id}/children/`),
   getFolderBreadcrumb: (id: number) => apiClient.get(`/academics/document-folders/${id}/breadcrumb/`),
-  
-  // Documents
   documents: (params?: any) => apiClient.get("/academics/documents/", { params }),
-  uploadDocument: (data: FormData) =>
-    apiClient.post("/academics/documents/", data, { headers: { "Content-Type": "multipart/form-data" } }),
-  updateDocument: (id: number, data: FormData) =>
-    apiClient.put(`/academics/documents/${id}/`, data, { headers: { "Content-Type": "multipart/form-data" } }),
+  uploadDocument: (data: FormData) => apiClient.post("/academics/documents/", data, { headers: { "Content-Type": "multipart/form-data" } }),
+  updateDocument: (id: number, data: FormData) => apiClient.put(`/academics/documents/${id}/`, data, { headers: { "Content-Type": "multipart/form-data" } }),
   deleteDocument: (id: number) => apiClient.delete(`/academics/documents/${id}/`),
-  moveDocumentToFolder: (id: number, folderId: number | null) =>
-    apiClient.patch(`/academics/documents/${id}/move_to_folder/`, { folder_id: folderId }),
-  shareDocumentWithClasses: (id: number, classIds: number[]) =>
-    apiClient.post(`/academics/documents/${id}/share_with_classes/`, { class_ids: classIds }),
+  moveDocumentToFolder: (id: number, folderId: number | null) => apiClient.patch(`/academics/documents/${id}/move_to_folder/`, { folder_id: folderId }),
+  shareDocumentWithClasses: (id: number, classIds: number[]) => apiClient.post(`/academics/documents/${id}/share_with_classes/`, { class_ids: classIds }),
   getDocumentSharedClasses: (id: number) => apiClient.get(`/academics/documents/${id}/shared_classes/`),
   searchDocuments: (query: string) => apiClient.get(`/academics/documents/search/?q=${query}`),
-  bulkDeleteDocuments: (documentIds: number[]) =>
-    apiClient.post("/academics/documents/bulk_delete/", { document_ids: documentIds }),
-  
-  // AI Question Generation
-  generateQuestionsFromDocument: (docId: number, settings: any) =>
-    apiClient.post(`/academics/documents/${docId}/generate_questions/`, settings),
-  generateSummaryFromDocument: (docId: number, settings: any) =>
-    apiClient.post(`/academics/documents/${docId}/generate_summary/`, settings),
-  generateQuestionsFromTopic: (payload: any) =>
-    apiClient.post("/academics/documents/generate_questions_from_topic/", payload),
+  bulkDeleteDocuments: (documentIds: number[]) => apiClient.post("/academics/documents/bulk_delete/", { document_ids: documentIds }),
+  generateQuestionsFromDocument: (docId: number, settings: any) => apiClient.post(`/academics/documents/${docId}/generate_questions/`, settings),
+  generateSummaryFromDocument: (docId: number, settings: any) => apiClient.post(`/academics/documents/${docId}/generate_summary/`, settings),
+  generateQuestionsFromTopic: (payload: any) => apiClient.post("/academics/documents/generate_questions_from_topic/", payload),
   notices: () => apiClient.get("/academics/notices/"),
   createNotice: (data: any) => apiClient.post("/academics/notices/", data),
   updateNotice: (id: number, data: any) => apiClient.put(`/academics/notices/${id}/`, data),
   deleteNotice: (id: number) => apiClient.delete(`/academics/notices/${id}/`),
   profilePictures: () => apiClient.get("/academics/profile-pictures/"),
   profilePictureByUser: (userId: number) => apiClient.get(`/academics/profile-pictures/?user=${userId}`),
-  createProfilePicture: (data: FormData) =>
-    apiClient.post("/academics/profile-pictures/", data, { headers: { "Content-Type": "multipart/form-data" } }),
-  updateProfilePicture: (id: number, data: FormData) =>
-    apiClient.put(`/academics/profile-pictures/${id}/`, data, { headers: { "Content-Type": "multipart/form-data" } }),
+  createProfilePicture: (data: FormData) => apiClient.post("/academics/profile-pictures/", data, { headers: { "Content-Type": "multipart/form-data" } }),
+  updateProfilePicture: (id: number, data: FormData) => apiClient.put(`/academics/profile-pictures/${id}/`, data, { headers: { "Content-Type": "multipart/form-data" } }),
   deleteProfilePicture: (id: number) => apiClient.delete(`/academics/profile-pictures/${id}/`),
-  
-  // Academic Sessions
   academicSessions: () => apiClient.get("/academics/academic-sessions/"),
   academicSessionsCurrent: () => apiClient.get("/academics/academic-sessions/current/"),
   createAcademicSession: (data: any) => apiClient.post("/academics/academic-sessions/", data),
   updateAcademicSession: (id: number, data: any) => apiClient.put(`/academics/academic-sessions/${id}/`, data),
   deleteAcademicSession: (id: number) => apiClient.delete(`/academics/academic-sessions/${id}/`),
-  
-  // Grading Policies
   gradingPolicies: (params?: any) => apiClient.get("/academics/grading-policies/", { params }),
   gradingPoliciesBySession: (sessionId: number) => apiClient.get(`/academics/grading-policies/by_session/?session_id=${sessionId}`),
   createGradingPolicy: (data: any) => apiClient.post("/academics/grading-policies/", data),
   updateGradingPolicy: (id: number, data: any) => apiClient.put(`/academics/grading-policies/${id}/`, data),
   deleteGradingPolicy: (id: number) => apiClient.delete(`/academics/grading-policies/${id}/`),
   bulkCreateGradingPolicies: (data: any) => apiClient.post("/academics/grading-policies/bulk_create/", data),
-  
-  // Terminal Reports
+  terminalReportTemplates: () => apiClient.get("/academics/terminal-report-templates/"),
+  createTerminalReportTemplate: (data: any) => apiClient.post("/academics/terminal-report-templates/", data),
+  updateTerminalReportTemplate: (id: number, data: any) => apiClient.put(`/academics/terminal-report-templates/${id}/`, data),
+  deleteTerminalReportTemplate: (id: number) => apiClient.delete(`/academics/terminal-report-templates/${id}/`),
+  setTemplateDefault: (id: number) => apiClient.post(`/academics/terminal-report-templates/${id}/set_default/`),
   terminalReports: (params?: any) => apiClient.get("/academics/terminal-reports/", { params }),
   terminalReportDetail: (id: number) => apiClient.get(`/academics/terminal-reports/${id}/`),
   generateTerminalReport: (data: any) => apiClient.post("/academics/terminal-reports/generate_report/", data),
@@ -231,12 +209,8 @@ export const attendanceAPI = {
   create: (data: any) => apiClient.post("/attendance/", data),
   bulkCreate: (data: any) => apiClient.post("/attendance/bulk_mark/", data),
   studentReport: (studentId: number) => apiClient.get(`/attendance/student_report/?student_id=${studentId}`),
-  // Enhanced endpoints
-  studentReportByDateRange: (studentId: number, startDate: string, endDate: string) => 
-    apiClient.get(`/attendance/student_report/?student_id=${studentId}&start_date=${startDate}&end_date=${endDate}`),
-  classAttendance: (classId: number, date: string) => 
-    apiClient.get(`/attendance/?class_obj=${classId}&date=${date}`),
-  // Class analytics
+  studentReportByDateRange: (studentId: number, startDate: string, endDate: string) => apiClient.get(`/attendance/student_report/?student_id=${studentId}&start_date=${startDate}&end_date=${endDate}`),
+  classAttendance: (classId: number, date: string) => apiClient.get(`/attendance/?class_obj=${classId}&date=${date}`),
   classReport: (classId?: number, startDate?: string, endDate?: string) => {
     const params = new URLSearchParams()
     if (classId) params.append('class_id', classId.toString())
@@ -244,14 +218,12 @@ export const attendanceAPI = {
     if (endDate) params.append('end_date', endDate)
     return apiClient.get(`/attendance/class_report/?${params.toString()}`)
   },
-  // Overall analytics
   overallReport: (startDate?: string, endDate?: string) => {
     const params = new URLSearchParams()
     if (startDate) params.append('start_date', startDate)
     if (endDate) params.append('end_date', endDate)
     return apiClient.get(`/attendance/overall_report/?${params.toString()}`)
   },
-  // Subject analytics
   subjectReport: (classId?: number, startDate?: string, endDate?: string) => {
     const params = new URLSearchParams()
     if (classId) params.append('class_id', classId.toString())
@@ -259,7 +231,6 @@ export const attendanceAPI = {
     if (endDate) params.append('end_date', endDate)
     return apiClient.get(`/attendance/subject_report/?${params.toString()}`)
   },
-  // Teacher's students attendance summary
   myStudentsSummary: (classId?: number, startDate?: string, endDate?: string) => {
     const params = new URLSearchParams()
     if (classId) params.append('class_id', classId.toString())
@@ -281,31 +252,24 @@ export const gradesAPI = {
 }
 
 export const messagingAPI = {
-  // Messages
   messages: () => apiClient.get("/messaging/messages/"),
   sentMessages: () => apiClient.get("/messaging/messages/sent/"),
   createMessage: (data: any) => apiClient.post("/messaging/messages/", data),
   markMessageAsRead: (id: number) => apiClient.post(`/messaging/messages/${id}/mark_as_read/`),
-  
-  // Announcements
   announcements: () => apiClient.get("/messaging/announcements/"),
   getAnnouncement: (id: number) => apiClient.get(`/messaging/announcements/${id}/`),
   createAnnouncement: (data: any) => apiClient.post("/messaging/announcements/", data),
-  updateAnnouncement: (id: number, data: any) => apiClient.put(`/messaging/announcements/${id}/`, data),
+  updateAnnouncement: (id: number, data: any) => apiClient.post(`/messaging/announcements/${id}/publish/`),
   deleteAnnouncement: (id: number) => apiClient.delete(`/messaging/announcements/${id}/`),
-  publishAnnouncement: (id: number) => apiClient.post(`/messaging/announcements/${id}/publish/`),
   markAnnouncementAsRead: (id: number) => apiClient.post(`/messaging/announcements/${id}/mark_as_read/`),
   getAnnouncementReadBy: (id: number) => apiClient.get(`/messaging/announcements/${id}/read_by/`),
-  
-  // Notices
   notices: () => apiClient.get("/messaging/notices/"),
   getNotice: (id: number) => apiClient.get(`/messaging/notices/${id}/`),
   createNotice: (data: any) => apiClient.post("/messaging/notices/", data),
   updateNotice: (id: number, data: any) => apiClient.put(`/messaging/notices/${id}/`, data),
   deleteNotice: (id: number) => apiClient.delete(`/messaging/notices/${id}/`),
   pinNotice: (id: number) => apiClient.post(`/messaging/notices/${id}/pin/`),  
-  sendPersonalNotice: (studentId: number, data: { title: string; content: string }) => 
-    apiClient.post("/messaging/notices/send_personal_notice/", { student_id: studentId, ...data }),  
+  sendPersonalNotice: (studentId: number, data: { title: string; content: string }) => apiClient.post("/messaging/notices/send_personal_notice/", { student_id: studentId, ...data }),  
   personalNotices: () => apiClient.get("/messaging/notices/my_personal_notices/"),  
 }
 
@@ -316,15 +280,11 @@ export const usersAPI = {
   getTeacherById: (id: number) => apiClient.get(`/users/teachers/${id}/`),
   students: (params?: any) => apiClient.get("/users/students/", { params }),
   getStudentById: (id: number) => apiClient.get(`/users/students/${id}/`),
-  // Get students enrolled in the teacher's classes
   myStudents: () => apiClient.get("/users/students/my_students/"),
-  // Get classes assigned to the teacher
   teacherClasses: () => apiClient.get("/users/students/my_classes/"),
   create: (data: any) => apiClient.post("/users/users/", data),
-
   createTeacher: async (data: any) => {
     try {
-      // Step 1: Create User with role='teacher'
       const userData = {
         username: data.username,
         email: data.email,
@@ -336,18 +296,11 @@ export const usersAPI = {
         phone: data.phone || "",
         school: data.school_id,
       }
-
       console.log("[v0] Creating teacher user with data:", JSON.stringify(userData, null, 2))
-
       const userResponse = await apiClient.post("/users/auth/register/", userData)
       console.log("[v0] Teacher user created:", userResponse.data)
-
       const userId = userResponse.data.user?.id
-      if (!userId) {
-        throw new Error("User creation succeeded but no user ID returned")
-      }
-
-      // Step 2: Create TeacherProfile linked to the user
+      if (!userId) throw new Error("User creation succeeded but no user ID returned")
       const profileData = {
         user: userId,
         employee_id: data.employee_id || `EMP${userId}`,
@@ -356,12 +309,9 @@ export const usersAPI = {
         department: data.department || null,
         bio: data.bio || "",
       }
-
       console.log("[v0] Creating teacher profile with data:", JSON.stringify(profileData, null, 2))
-
       const profileResponse = await apiClient.post("/users/teachers/", profileData)
       console.log("[v0] Teacher profile created:", profileResponse.data)
-
       return profileResponse
     } catch (error: any) {
       console.error("[v0] Teacher creation error details:", {
@@ -373,10 +323,8 @@ export const usersAPI = {
       throw error
     }
   },
-
   createStudent: async (data: any) => {
     try {
-      // Step 1: Create User with role='student'
       const userData = {
         username: data.username,
         email: data.email,
@@ -388,30 +336,19 @@ export const usersAPI = {
         phone: data.phone || "",
         school: data.school_id,
       }
-
       console.log("[v0] Creating student user with data:", JSON.stringify(userData, null, 2))
-
       const userResponse = await apiClient.post("/users/auth/register/", userData)
       console.log("[v0] Student user created:", userResponse.data)
-
       const userId = userResponse.data.user?.id
-      if (!userId) {
-        throw new Error("User creation succeeded but no user ID returned")
-      }
-
-      // Step 2: Create StudentProfile linked to the user
-      // Note: student_id will be auto-generated in the backend model's save() method
+      if (!userId) throw new Error("User creation succeeded but no user ID returned")
       const profileData = {
         user: userId,
         level: data.level || null,
         department: data.department || null,
       }
-
       console.log("[v0] Creating student profile with data:", JSON.stringify(profileData, null, 2))
-
       const profileResponse = await apiClient.post("/users/students/", profileData)
       console.log("[v0] Student profile created:", profileResponse.data)
-
       return profileResponse
     } catch (error: any) {
       console.error("[v0] Student creation error details:", {
@@ -423,7 +360,6 @@ export const usersAPI = {
       throw error
     }
   },
-
   update: (id: number, data: any) => apiClient.put(`/users/users/${id}/`, data),
   updateTeacher: (id: number, data: any) => apiClient.put(`/users/teachers/${id}/`, data),
   updateStudent: (id: number, data: any) => apiClient.put(`/users/students/${id}/`, data),
@@ -445,13 +381,11 @@ export const assignmentAPI = {
   update: (id: number, data: any) => apiClient.put(`/assignments/${id}/`, data),
   delete: (id: number) => apiClient.delete(`/assignments/${id}/`),
   submissions: () => apiClient.get("/assignments/submissions/"),
-  submitAssignment: (data: FormData) =>
-    apiClient.post("/assignments/submissions/", data, { headers: { "Content-Type": "multipart/form-data" } }),
+  submitAssignment: (data: FormData) => apiClient.post("/assignments/submissions/", data, { headers: { "Content-Type": "multipart/form-data" } }),
   gradeSubmission: (id: number, data: any) => apiClient.post(`/assignments/submissions/${id}/grade/`, data),
 }
 
 export const billingAPI = {
-  // Fee Types Management
   fees: () => apiClient.get("/billing/fees/"),
   feeTypes: () => apiClient.get("/billing/fees/"),
   createFee: (data: any) => apiClient.post("/billing/fees/", data),
@@ -460,22 +394,16 @@ export const billingAPI = {
   updateFeeType: (id: number, data: any) => apiClient.put(`/billing/fees/${id}/`, data),
   deleteFee: (id: number) => apiClient.delete(`/billing/fees/${id}/`),
   deleteFeeType: (id: number) => apiClient.delete(`/billing/fees/${id}/`),
-  
-  // School-wide Fee Assignments
   schoolFeeAssignments: () => apiClient.get("/billing/school-fee-assignments/"),
   createSchoolFeeAssignment: (data: any) => apiClient.post("/billing/school-fee-assignments/", data),
   updateSchoolFeeAssignment: (id: number, data: any) => apiClient.put(`/billing/school-fee-assignments/${id}/`, data),
   deleteSchoolFeeAssignment: (id: number) => apiClient.delete(`/billing/school-fee-assignments/${id}/`),
   applySchoolFeeToStudents: (id: number) => apiClient.post(`/billing/school-fee-assignments/${id}/apply_to_students/`),
-  
-  // Class Fee Assignments
   classFeeAssignments: () => apiClient.get("/billing/class-fee-assignments/"),
   createClassFeeAssignment: (data: any) => apiClient.post("/billing/class-fee-assignments/", data),
   updateClassFeeAssignment: (id: number, data: any) => apiClient.put(`/billing/class-fee-assignments/${id}/`, data),
   deleteClassFeeAssignment: (id: number) => apiClient.delete(`/billing/class-fee-assignments/${id}/`),
   applyClassFeeToStudents: (id: number) => apiClient.post(`/billing/class-fee-assignments/${id}/apply_to_students/`),
-  
-  // Individual Student Fee Assignments
   studentFeeAssignments: () => apiClient.get("/billing/student-fee-assignments/"),
   studentFeeAssignmentsByStudent: (studentId: number) => apiClient.get(`/billing/student-fee-assignments/?student=${studentId}`),
   createStudentFeeAssignment: (data: any) => apiClient.post("/billing/student-fee-assignments/", data),
@@ -483,28 +411,58 @@ export const billingAPI = {
   deleteStudentFeeAssignment: (id: number) => apiClient.delete(`/billing/student-fee-assignments/${id}/`),
   myFees: () => apiClient.get("/billing/student-fee-assignments/my_fees/"),
   markFeePaid: (id: number) => apiClient.post(`/billing/student-fee-assignments/${id}/mark_paid/`),
-  
-  // Manual Payments (NEW)
   manualPayments: () => apiClient.get("/billing/manual-payments/"),
   manualPaymentsByStudent: (studentId: number) => apiClient.get(`/billing/manual-payments/by_student/?student_id=${studentId}`),
   manualPaymentsBySchool: () => apiClient.get("/billing/manual-payments/by_school/"),
   recordManualPayment: (data: any) => apiClient.post("/billing/manual-payments/", data),
-  
-  // Online Payments (Paystack)
   onlinePayments: () => apiClient.get("/billing/online-payments/"),
   onlinePaymentsByStudent: (studentId: number) => apiClient.get(`/billing/online-payments/by_student/?student_id=${studentId}`),
   onlinePaymentsBySchool: () => apiClient.get("/billing/online-payments/by_school/"),
   recordOnlinePayment: (data: any) => apiClient.post("/billing/online-payments/", data),
-  
-  // Invoices
   invoices: () => apiClient.get("/billing/invoices/"),
   createInvoice: (data: any) => apiClient.post("/billing/invoices/", data),
   updateInvoice: (id: number, data: any) => apiClient.put(`/billing/invoices/${id}/`, data),
   deleteInvoice: (id: number) => apiClient.delete(`/billing/invoices/${id}/`),
-  
-  // Payments
   payments: () => apiClient.get("/billing/payments/"),
   createPayment: (data: any) => apiClient.post("/billing/payments/", data),
   updatePayment: (id: number, data: any) => apiClient.put(`/billing/payments/${id}/`, data),
   deletePayment: (id: number) => apiClient.delete(`/billing/payments/${id}/`),
+  getSchoolFeesStats: async () => {
+    try {
+      const [assignmentsRes, manualRes, onlineRes] = await Promise.all([
+        apiClient.get("/billing/student-fee-assignments/?school=my_school"),
+        apiClient.get("/billing/manual-payments/by_school/"),
+        apiClient.get("/billing/online-payments/by_school/")
+      ]);
+      const assignments = assignmentsRes.data?.results || assignmentsRes.data || [];
+      const manualPayments = manualRes.data?.results || manualRes.data || [];
+      const onlinePayments = onlineRes.data?.results || onlineRes.data || [];
+      const totalExpected = assignments.reduce((sum: number, assignment: any) => sum + (parseFloat(assignment.amount) || 0), 0);
+      const totalCollected = [...manualPayments, ...onlinePayments].reduce((sum: number, payment: any) => sum + (parseFloat(payment.amount) || 0), 0);
+      return {
+        total_expected: totalExpected,
+        total_collected: totalCollected,
+        pending_fees: Math.max(0, totalExpected - totalCollected),
+        collection_rate: totalExpected > 0 ? Math.round((totalCollected / totalExpected) * 100) : 0,
+      };
+    } catch (error) {
+      console.error('Failed to fetch fees stats:', error);
+      return { total_expected: 0, total_collected: 0, pending_fees: 0, collection_rate: 0 };
+    }
+  },
 }
+
+export default {
+  authAPI,
+  schoolsAPI,
+  academicsAPI,
+  announcementsAPI,
+  attendanceAPI,
+  gradesAPI,
+  messagingAPI,
+  usersAPI,
+  timetableAPI,
+  assignmentAPI,
+  billingAPI
+}
+

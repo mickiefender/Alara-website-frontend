@@ -350,7 +350,7 @@ const getStudentUserId = (student: Student): number => {
                           {parseFloat(fee.balance) > 0 && (
                             <Button
                               size="sm"
-                              className="ml-4 bg-green-600 hover:bg-green-700"
+                              className="ml-4 bg-secondary hover:bg-primary"
                               onClick={() => {
                                 setSelectedFee(fee)
                                 setPaymentAmount(fee.balance)

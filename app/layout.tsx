@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { AuthProvider } from "@/lib/auth-context"
 import { ThemeProvider } from "@/components/theme-provider"
+import { SchoolThemeProvider } from "@/components/school-theme-provider"
 import "./globals.css"
 
 const _geist = Geist({ subsets: ["latin"] })
@@ -30,7 +31,9 @@ export default function RootLayout({
           disableTransitionOnChange={false}
           storageKey="school-management-theme"
         >
-          <AuthProvider>{children}</AuthProvider>
+          <SchoolThemeProvider>
+            <AuthProvider>{children}</AuthProvider>
+          </SchoolThemeProvider>
         </ThemeProvider>
         <Analytics />
       </body>

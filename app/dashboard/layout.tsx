@@ -6,16 +6,47 @@ import { TopBar } from "@/components/top-bar"
 import { ProtectedRoute } from "@/lib/protected-route"
 import { NotificationProvider } from "@/lib/notifications-context"
 import { useAuthContext } from "@/lib/auth-context"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Menu } from "lucide-react"
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const { user } = useAuthContext()
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const [mobileOpen, setMobileOpen] = useState(false)
+const [mobileOpen, setMobileOpen] = useState(false)
+  const [isDesktop, setIsDesktop] = useState(() => typeof window !== "undefined" ? window.innerWidth >= 1024 : false);
+
+  // Sync body class with mobileOpen state
+
+  useEffect(() => {
+    const checkSize = () => {
+      setIsDesktop(window.innerWidth >= 1024);
+    };
+    checkSize();
+    window.addEventListener("resize", checkSize);
+    return () => window.removeEventListener("resize", checkSize);
+  }, []);
 
   const toggleSidebar = () => {
+    console.log("Toggling sidebar collapse");
     setSidebarCollapsed(!sidebarCollapsed)
+  }
+
+  const toggleUnified = () => {
+    console.log("Hamburger clicked", { isDesktop });
+    if (isDesktop) {
+      toggleSidebar()
+    } else {
+      const newOpen = !mobileOpen
+      setMobileOpen(newOpen)
+      // Toggle body class for global mobile sidebar state
+      if (typeof document !== 'undefined') {
+        if (newOpen) {
+          document.body.classList.add('mobile-sidebar-open')
+        } else {
+          document.body.classList.remove('mobile-sidebar-open')
+        }
+      }
+    }
   }
 
   return (
@@ -25,10 +56,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         <div 
           className={`hidden lg:block transition-all duration-300 ease-in-out ${sidebarCollapsed ? "w-20" : "w-72"}`}
         >
-          <SidebarNav 
-            isCollapsed={sidebarCollapsed} 
-            onToggleCollapse={toggleSidebar}
-          />
+          <SidebarNav isCollapsed={sidebarCollapsed} />
         </div>
 
         {/* Mobile Sidebar - Full screen overlay */}
@@ -49,7 +77,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         {/* Main Content - Flexes to fill remaining space */}
         <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
           {/* Top Bar - includes hamburger for mobile */}
-          <TopBar onMenuClick={() => setMobileOpen(true)} />
+          <TopBar onToggle={toggleUnified} />
 
           {/* Main Content */}
           <main className="flex-1 overflow-auto bg-slate-50 dark:bg-slate-950">

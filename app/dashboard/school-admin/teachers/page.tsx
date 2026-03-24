@@ -82,7 +82,7 @@ function TeachersPageContent() {
       if (editingTeacher) {
         await usersAPI.updateTeacher(editingTeacher.id, formData)
       } else {
-        const schoolId = user?.school_id || user?.school
+        const schoolId = user?.school_id
         if (!schoolId) {
           setError("No school associated with your account")
           return
@@ -176,11 +176,11 @@ function TeachersPageContent() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-purple-700">Teachers List</h1>
+        <h1 className="text-3xl font-bold text-secondary">Teachers List</h1>
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
             <Button
-              className="bg-purple-600 hover:bg-purple-700 text-white"
+              className="bg-secondary hover:bg-blue-700 text-white"
               onClick={() => {
                 setEditingTeacher(null)
                 setFormData({
@@ -303,7 +303,7 @@ function TeachersPageContent() {
                   />
                 </div>
               )}
-              <Button type="submit" className="w-full bg-purple-600 hover:bg-purple-700">
+              <Button type="submit" className="w-full bg-secondary hover:bg-blue-700 text-white">
                 {editingTeacher ? "Update Teacher" : "Create Teacher"}
               </Button>
             </form>
@@ -370,7 +370,7 @@ function TeachersPageContent() {
                   <td className="px-6 py-3">
                     <div className="flex gap-2">
                       <Link href={`/dashboard/school-admin/teachers/${teacher.id}`}>
-                        <button className="text-purple-600 hover:text-purple-700" title="View Details">
+                        <button className="text-secondary hover:text-blue-700" title="View Details">
                           <Eye size={18} />
                         </button>
                       </Link>
@@ -407,7 +407,7 @@ function TeachersPageContent() {
               variant={currentPage === page ? "default" : "outline"}
               size="sm"
               onClick={() => setCurrentPage(page)}
-              className={currentPage === page ? "bg-purple-600 text-white" : ""}
+              className={currentPage === page ? "bg-secondary text-white" : ""}
             >
               {page}
             </Button>

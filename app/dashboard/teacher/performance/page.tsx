@@ -38,7 +38,7 @@ function PerformanceContent() {
  return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-red-600 mb-2">Student Performance</h1>
+        <h1 className="text-3xl font-bold text-secondary">Student Performance</h1>
         <p className="text-gray-600">Track and analyze student progress</p>
       </div>
 

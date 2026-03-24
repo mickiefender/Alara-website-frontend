@@ -73,12 +73,12 @@ if (loading) {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-red-600 mb-2">Assignments</h1>
+          <h1 className="text-3xl font-bold text-secondary">Assignments</h1>
           <p className="text-gray-600">Create and manage class assignments</p>
         </div>
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-red-600 hover:bg-red-700 gap-2">
+            <Button className="bg-secondary hover:bg-primary gap-2">
               <Plus size={20} /> New Assignment
             </Button>
           </DialogTrigger>
@@ -145,7 +145,7 @@ if (loading) {
                   required
                 />
               </div>
-              <Button type="submit" className="w-full bg-red-600 hover:bg-red-700">
+              <Button type="submit" className="w-full bg-secondary hover:bg-primary">
                 Create Assignment
               </Button>
             </form>
@@ -169,7 +169,7 @@ if (loading) {
             <div key={a.id} className="border rounded-lg p-4 hover:shadow-lg transition-shadow">
               <div className="flex justify-between items-start mb-2">
                 <h3 className="font-semibold text-lg text-gray-900">{a.title}</h3>
-                <span className="bg-red-100 text-red-800 px-3 py-1 rounded text-sm">
+                <span className="bg-secondary text-white px-3 py-1 rounded text-sm">
                   Class {a.class_name} - {a.subject_name}
                 </span>
               </div>

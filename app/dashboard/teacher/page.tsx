@@ -275,7 +275,7 @@ export default function TeacherPage() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <div>
             <h1 className="text-3xl font-bold text-foreground dark:text-white">
-              Welcome back, {user?.first_name || "Teacher"}! 👋
+              Welcome back, {user?.first_name || "Teacher"}! 
             </h1>
             <p className="text-muted-foreground dark:text-slate-400 mt-1">
               Here&apos;s your teaching overview and quick stats
@@ -351,7 +351,7 @@ export default function TeacherPage() {
           <Card className="border-0 shadow-md">
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-lg">
-                <PieChartIcon className="h-5 w-5 text-purple-600" />
+                <PieChartIcon className="h-5 w-5 text-secondary" />
                 Assignment Status
               </CardTitle>
             </CardHeader>
@@ -413,7 +413,7 @@ export default function TeacherPage() {
           <Card className="border-0 shadow-md">
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-lg">
-                <Activity className="h-5 w-5 text-green-600" />
+                <Activity className="h-5 w-5 text-secondary" />
                 Attendance Overview
               </CardTitle>
             </CardHeader>
@@ -434,8 +434,8 @@ export default function TeacherPage() {
                 <div className="h-64 flex items-center justify-center text-muted-foreground">No attendance data</div>
               )}
               <div className="mt-4 flex justify-center gap-4 text-sm">
-                <span className="flex items-center gap-1 text-green-600"><UserCheck className="w-4 h-4" /> {stats.attendancePresent} Present</span>
-                <span className="flex items-center gap-1 text-red-600"><UserX className="w-4 h-4" /> {stats.attendanceAbsent} Absent</span>
+                <span className="flex items-center gap-1 text-secondary"><UserCheck className="w-4 h-4" /> {stats.attendancePresent} Present</span>
+                <span className="flex items-center gap-1 text-secondary"><UserX className="w-4 h-4" /> {stats.attendanceAbsent} Absent</span>
               </div>
             </CardContent>
           </Card>
@@ -450,8 +450,8 @@ export default function TeacherPage() {
                 Student Performance
               </CardTitle>
               <div className="flex gap-4 text-sm">
-                <span className="flex items-center gap-1 text-green-600"><TrendingUp className="w-4 h-4" /> Top 5</span>
-                <span className="flex items-center gap-1 text-orange-600"><AlertTriangle className="w-4 h-4" /> Need Attention</span>
+                <span className="flex items-center gap-1 text-secondary"><TrendingUp className="w-4 h-4" /> Top 5</span>
+                <span className="flex items-center gap-1 text-secondary"><AlertTriangle className="w-4 h-4" /> Need Attention</span>
               </div>
             </div>
           </CardHeader>
@@ -483,11 +483,11 @@ export default function TeacherPage() {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground dark:text-slate-400">Submitted</p>
-                  <p className="text-2xl font-bold text-green-600 dark:text-green-400">{stats.assignmentsSubmitted}</p>
+                  <p className="text-sm text-muted-foreground dark:text-secondary">Submitted</p>
+                  <p className="text-2xl font-bold text-green-600 dark:text-secondary">{stats.assignmentsSubmitted}</p>
                 </div>
-                <div className="h-10 w-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                  <CheckSquare className="h-5 w-5 text-green-600 dark:text-green-400" />
+                <div className="h-10 w-10 rounded-full bg-green-100 dark:bg-secondary flex items-center justify-center">
+                  <CheckSquare className="h-5 w-5 text-green-600 dark:text-secondary" />
                 </div>
               </div>
             </CardContent>
@@ -498,10 +498,10 @@ export default function TeacherPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground dark:text-slate-400">Reviewed</p>
-                  <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">{stats.assignmentsReviewed}</p>
+                  <p className="text-2xl font-bold text-purple-600 dark:text-secondary">{stats.assignmentsReviewed}</p>
                 </div>
                 <div className="h-10 w-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-                  <Award className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                  <Award className="h-5 w-5 text-secondary dark:text-purple-400" />
                 </div>
               </div>
             </CardContent>
@@ -549,7 +549,7 @@ export default function TeacherPage() {
           <Card className="border-0 shadow-md">
             <CardHeader className="pb-4 border-b border-border dark:border-slate-800">
               <CardTitle className="flex items-center gap-2 text-foreground dark:text-white">
-                <TrendingUp className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
+                <TrendingUp className="h-5 w-5 text-secondary dark:text-cyan-400" />
                 Quick Actions
               </CardTitle>
             </CardHeader>
@@ -557,18 +557,18 @@ export default function TeacherPage() {
               <a href="/dashboard/teacher/my-classes" className="block p-4 rounded-lg hover:bg-muted dark:hover:bg-slate-800 transition-all border border-border dark:border-slate-800 hover:border-primary/30">
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-lg bg-cyan-100 dark:bg-cyan-900/30 flex items-center justify-center">
-                    <BookOpen className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
+                    <BookOpen className="h-5 w-5 text-secondary dark:text-csecondary" />
                   </div>
                   <div>
                     <p className="font-medium text-foreground dark:text-white">View My Classes</p>
-                    <p className="text-sm text-muted-foreground dark:text-slate-400">Manage your assigned classes</p>
+                    <p className="text-sm text-muted-foreground dark:text-ssecondary">Manage your assigned classes</p>
                   </div>
                 </div>
               </a>
               <a href="/dashboard/teacher/attendance" className="block p-4 rounded-lg hover:bg-muted dark:hover:bg-slate-800 transition-all border border-border dark:border-slate-800 hover:border-primary/30">
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                    <CheckSquare className="h-5 w-5 text-green-600 dark:text-green-400" />
+                    <CheckSquare className="h-5 w-5 text-secondary dark:text-green-400" />
                   </div>
                   <div>
                     <p className="font-medium text-foreground dark:text-white">Mark Attendance</p>
@@ -579,7 +579,7 @@ export default function TeacherPage() {
               <a href="/dashboard/teacher/assignments" className="block p-4 rounded-lg hover:bg-muted dark:hover:bg-slate-800 transition-all border border-border dark:border-slate-800 hover:border-primary/30">
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-                    <ClipboardList className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                    <ClipboardList className="h-5 w-5 text-secondary dark:text-purple-400" />
                   </div>
                   <div>
                     <p className="font-medium text-foreground dark:text-white">Create Assignment</p>
@@ -593,7 +593,7 @@ export default function TeacherPage() {
           <Card className="border-0 shadow-md">
             <CardHeader className="pb-4 border-b border-border dark:border-slate-800">
               <CardTitle className="flex items-center gap-2 text-foreground dark:text-white">
-                <Award className="h-5 w-5 text-green-600 dark:text-green-400" />
+                <Award className="h-5 w-5 text-secondary dark:text-green-400" />
                 Teaching Resources
               </CardTitle>
             </CardHeader>
@@ -601,7 +601,7 @@ export default function TeacherPage() {
               <a href="/dashboard/teacher/grades" className="block p-4 rounded-lg hover:bg-muted dark:hover:bg-slate-800 transition-all border border-border dark:border-slate-800 hover:border-primary/30">
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-lg bg-cyan-100 dark:bg-cyan-900/30 flex items-center justify-center">
-                    <FileText className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
+                    <FileText className="h-5 w-5 text-secondary dark:text-cyan-400" />
                   </div>
                   <div>
                     <p className="font-medium text-foreground dark:text-white">Record Grades</p>
@@ -612,7 +612,7 @@ export default function TeacherPage() {
               <a href="/dashboard/teacher/materials" className="block p-4 rounded-lg hover:bg-muted dark:hover:bg-slate-800 transition-all border border-border dark:border-slate-800 hover:border-primary/30">
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                    <BookOpen className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                    <BookOpen className="h-5 w-5 text-secondary dark:text-amber-400" />
                   </div>
                   <div>
                     <p className="font-medium text-foreground dark:text-white">Learning Materials</p>
@@ -623,7 +623,7 @@ export default function TeacherPage() {
               <a href="/dashboard/teacher/messages" className="block p-4 rounded-lg hover:bg-muted dark:hover:bg-slate-800 transition-all border border-border dark:border-slate-800 hover:border-primary/30">
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-lg bg-pink-100 dark:bg-pink-900/30 flex items-center justify-center">
-                    <Users className="h-5 w-5 text-pink-600 dark:text-pink-400" />
+                    <Users className="h-5 w-5 text-secondary dark:text-pink-400" />
                   </div>
                   <div>
                     <p className="font-medium text-foreground dark:text-white">Messages</p>
@@ -644,7 +644,7 @@ export default function TeacherPage() {
           <CardHeader className="pb-4">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <CardTitle className="flex items-center gap-2 text-xl">
-                <GraduationCap className="h-6 w-6 text-cyan-600" />
+                <GraduationCap className="h-6 w-6 text-secondary" />
                 My Students ({teacherStudents.length})
               </CardTitle>
               <div className="flex flex-col sm:flex-row gap-3">
@@ -715,7 +715,7 @@ export default function TeacherPage() {
                                   />
                                 ) : (
                                   <div className="h-8 w-8 rounded-full bg-cyan-100 dark:bg-cyan-900/30 flex items-center justify-center">
-                                    <User className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
+                                    <User className="h-4 w-4 text-secondary dark:text-cyan-400" />
                                   </div>
                                 )}
                                 <span className="font-medium">{student.user?.first_name} {student.user?.last_name}</span>

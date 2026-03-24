@@ -60,7 +60,7 @@ if (loading) {
   return (
     <div className="space-y-6 h-[600px]">
       <div>
-        <h1 className="text-3xl font-bold text-red-600 mb-2">Messages</h1>
+        <h1 className="text-3xl font-bold text-rsecondary">Messages</h1>
         <p className="text-gray-600">Communicate with students</p>
       </div>
 
@@ -101,7 +101,7 @@ if (loading) {
                   value={messageText}
                   onChange={(e) => setMessageText(e.target.value)}
                 />
-                <Button type="submit" className="bg-red-600 hover:bg-red-700 gap-2">
+                <Button type="submit" className="bg-secondary hover:bg-red-700 gap-2">
                   <Send size={18} />
                 </Button>
               </form>

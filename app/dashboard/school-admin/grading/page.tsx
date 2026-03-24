@@ -177,12 +177,12 @@ export default function GradingPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-start">
         <div>
-          <h1 className="text-3xl font-bold text-purple-700">Student Grades Overview</h1>
+          <h1 className="text-3xl font-bold text-secondary">Student Grades Overview</h1>
           <p className="text-gray-600 mt-1">View overall student performance and drill down into details</p>
         </div>
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-purple-600 hover:bg-purple-700">+ Add New Grade</Button>
+            <Button className="bg-secondary hover:bg-primary">+ Add New Grade</Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
@@ -319,6 +319,9 @@ export default function GradingPage() {
         <TabsList>
           <TabsTrigger value="overview">Student Overview</TabsTrigger>
           <TabsTrigger value="policy">Grading Policy</TabsTrigger>
+          <TabsTrigger value="templates">
+            Templates
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
@@ -359,7 +362,7 @@ export default function GradingPage() {
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <Link 
                         href={`/dashboard/school-admin/grading/${summary.studentId}`}
-                        className="flex items-center gap-1 text-purple-600 hover:text-purple-900 font-semibold"
+                        className="flex items-center gap-1 text-secondary hover:text-primary font-semibold"
                       >
                         View Details
                         <ArrowRight className="w-4 h-4" />

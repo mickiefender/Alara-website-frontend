@@ -23,6 +23,8 @@ interface School {
   logo_url_computed: string | null
   website: string
   status: string
+  primary_color?: string
+  secondary_color?: string
 }
 
 export function SchoolProfileSetup() {
@@ -114,8 +116,13 @@ export function SchoolProfileSetup() {
       const { logo_url, logo_url_computed, ...schoolData } = school
       await schoolsAPI.update(school.id, schoolData)
 
-      // Refresh school data
+      // Refresh school data & trigger theme update
       await fetchSchool()
+      
+      // Trigger theme provider refetch
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('schoolThemeUpdated'))
+      }
       
       setEditing(false)
       setSelectedLogo(null)
@@ -176,6 +183,9 @@ export function SchoolProfileSetup() {
     { key: 'country', label: 'Country', type: 'text' },
     { key: 'postal_code', label: 'Postal Code', type: 'text' },
     { key: 'website', label: 'Website', type: 'url' },
+    { key: 'primary_color', label: 'Primary Color', type: 'color' },
+    { key: 'secondary_color', label: 'Secondary Color', type: 'color' },
+    { key: 'sidebar_color', label: 'Sidebar Color', type: 'color' },
   ]
 
   return (

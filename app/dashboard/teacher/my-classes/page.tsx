@@ -75,7 +75,7 @@ function MyClassesContent() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {classes.map((cls) => (
-            <Card key={cls.id} className="hover:shadow-lg transition-shadow border-l-4 border-l-purple-500">
+            <Card key={cls.id} className="hover:shadow-lg transition-shadow border-l-4 border-l-secondary">
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <CardTitle className="text-xl">{cls.name}</CardTitle>
@@ -107,7 +107,7 @@ function MyClassesContent() {
                       {cls.subjects_taught.map((subject: any) => (
                         <span 
                           key={subject.id} 
-                          className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-purple-100 text-purple-700"
+                          className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-secondary text-secondary"
                         >
                           {subject.name}
                         </span>
@@ -118,7 +118,7 @@ function MyClassesContent() {
                 
                 <div className="flex gap-2 pt-2">
                   <Link href={`/dashboard/teacher/attendance?class=${cls.id}`} className="flex-1">
-                    <Button className="w-full bg-purple-600 hover:bg-purple-700" size="sm">
+                    <Button className="w-full bg-secondary hover:bg-primary" size="sm">
                       Take Attendance
                     </Button>
                   </Link>

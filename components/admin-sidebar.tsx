@@ -53,12 +53,12 @@ export function AdminSidebar({ open, onToggle, activeTab, setActiveTab }: AdminS
 
       {/* Sidebar */}
       <aside
-        className={`fixed lg:static left-0 top-0 h-screen w-[168px] bg-akkhor-dark text-white z-50 transform transition-transform duration-300 ${
+        className={`fixed lg:static left-0 top-0 h-screen w-[280px] bg-sidebar text-sidebar-foreground z-50 transform transition-transform duration-300 ${
           open ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
-        }`}
+        } lg:w-[260px]`}
       >
-        <div className="p-4 border-b border-akkhor-border flex items-center justify-between">
-          <div className="text-2xl font-bold text-akkhor-yellow">Akkhor</div>
+        <div className="p-4 border-b border-sidebar-border flex items-center justify-between">
+          <div className="text-2xl font-bold text-sidebar-primary">Sch.sys</div>
           <button onClick={onToggle} className="lg:hidden">
             <X size={20} />
           </button>
@@ -78,7 +78,7 @@ export function AdminSidebar({ open, onToggle, activeTab, setActiveTab }: AdminS
                     if (item.submenu) toggleMenu(item.id)
                   }}
                   className={`w-full flex items-center gap-3 px-3 py-2 rounded text-sm transition-colors ${
-                    isActive ? "bg-akkhor-yellow text-akkhor-dark" : "text-akkhor-text hover:bg-akkhor-border"
+                    isActive ? "bg-sidebar-primary text-sidebar-primary-foreground" : "text-sidebar-foreground/80 hover:bg-sidebar-accent"
                   }`}
                 >
                   <Icon size={18} />
@@ -91,7 +91,7 @@ export function AdminSidebar({ open, onToggle, activeTab, setActiveTab }: AdminS
         </nav>
 
         <div className="absolute bottom-4 left-2 right-2">
-          <button className="w-full flex items-center gap-3 px-3 py-2 rounded text-sm text-akkhor-text hover:bg-akkhor-border transition-colors">
+          <button className="w-full flex items-center gap-3 px-3 py-2 rounded text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent transition-colors">
             <LogOut size={18} />
             <span>Logout</span>
           </button>

@@ -161,6 +161,7 @@ export default function StudentDashboard() {
       case "B": return "bg-blue-100 text-blue-800"
       case "C": return "bg-yellow-100 text-yellow-800"
       case "D": return "bg-orange-100 text-orange-800"
+      case "E": return "bg-pink-100 text-pink-800"
       case "F": return "bg-red-100 text-red-800"
       default: return "bg-gray-100 text-gray-800"
     }
@@ -189,7 +190,7 @@ export default function StudentDashboard() {
       title: "Upcoming Exams",
       count: data?.upcomingExams?.length || 0,
       icon: BookOpen,
-      bgColor: "bg-green-500",
+      bgColor: "bg-secondary",
     },
     {
       title: "Due Fees",
@@ -253,17 +254,7 @@ export default function StudentDashboard() {
                 <CardTitle>My Information</CardTitle>
                 <CardDescription>Your personal and academic details</CardDescription>
               </div>
-              <div className="flex gap-2">
-                <Button size="sm" variant="outline">
-                  <Edit2 className="w-4 h-4" />
-                </Button>
-                <Button size="sm" variant="outline">
-                  <Download className="w-4 h-4" />
-                </Button>
-                <Button size="sm" variant="outline">
-                  <Share2 className="w-4 h-4" />
-                </Button>
-              </div>
+              
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -362,7 +353,7 @@ export default function StudentDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="flex items-center gap-2">
-                  <UserCheck className="w-5 h-5 text-blue-500" />
+                  <UserCheck className="w-5 h-5 text-secondary" />
                   My Attendance
                 </CardTitle>
                 <CardDescription>Your attendance record and statistics</CardDescription>
@@ -557,12 +548,12 @@ export default function StudentDashboard() {
           <div className="flex justify-between items-center">
             <div>
               <CardTitle className="flex items-center gap-2">
-                <DollarSign className="w-5 h-5 text-red-500" />
+                <DollarSign className="w-5 h-5 text-secondary" />
                 My Fees & Expenses
               </CardTitle>
               <CardDescription>Your fee status and payment history</CardDescription>
             </div>
-            <Button className="bg-blue-600">Download Statement</Button>
+            <Button className="bg-secondary">Download Statement</Button>
           </div>
         </CardHeader>
         <CardContent>
@@ -659,7 +650,7 @@ export default function StudentDashboard() {
               <p className="text-sm text-blue-800 mt-1">
                 Contact your school admin or visit the payment portal to pay your outstanding fees online.
               </p>
-              <Button className="mt-3 bg-blue-600 hover:bg-blue-700">Go to Payment Portal</Button>
+              <Button className="mt-3 bg-secondary hover:bg-primary">Go to Payment Portal</Button>
             </div>
           </div>
         </CardContent>

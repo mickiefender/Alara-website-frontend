@@ -66,7 +66,7 @@ export default function TeacherAssignmentsPage() {
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-bold text-gray-900">Teacher Assignments</h1>
+          <h1 className="text-4xl font-bold text-secondary">Teacher Assignments</h1>
           <p className="text-gray-600 mt-1">Assign teachers to classes and subjects</p>
         </div>
       </div>
@@ -96,7 +96,7 @@ export default function TeacherAssignmentsPage() {
       {/* Classes Grid */}
       {loading ? (
         <div className="text-center py-12">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-secondary"></div>
           <p className="text-gray-600 mt-4">Loading classes...</p>
         </div>
       ) : filteredClasses.length === 0 ? (
@@ -116,13 +116,13 @@ export default function TeacherAssignmentsPage() {
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <CardTitle className="text-lg group-hover:text-blue-600 transition-colors">
+                    <CardTitle className="text-lg group-hover:text-secondary transition-colors">
                       {classItem.name}
                     </CardTitle>
                     <p className="text-sm text-gray-500 mt-1">Code: #{classItem.code}</p>
                   </div>
-                  <div className="bg-purple-100 p-2 rounded-lg">
-                    <Users size={20} className="text-purple-600" />
+                  <div className="bg-gray-100 p-2 rounded-lg">
+                    <Users size={20} className="text-secondary" />
                   </div>
                 </div>
               </CardHeader>
@@ -139,7 +139,7 @@ export default function TeacherAssignmentsPage() {
                   <DialogTrigger asChild>
                     <Button
                       onClick={() => handleSelectClass(classItem)}
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-white gap-2"
+                      className="w-full bg-secondary hover:bg-blue-700 text-white gap-2"
                     >
                       Manage Teachers
                       <ArrowRight size={16} />
@@ -148,7 +148,7 @@ export default function TeacherAssignmentsPage() {
                   <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
                     <DialogHeader>
                       <DialogTitle className="text-2xl">
-                        Teacher Management for <span className="text-blue-600">{selectedClassName}</span>
+                        Teacher Management for <span className="text-secondary">{selectedClassName}</span>
                       </DialogTitle>
                     </DialogHeader>
                     {selectedClassId && (

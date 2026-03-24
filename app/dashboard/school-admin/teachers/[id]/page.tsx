@@ -267,9 +267,9 @@ export default function TeacherDetailPage() {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="flex items-center gap-2 text-sm text-gray-600 mb-6">
-        <Link href="/dashboard/school-admin" className="hover:text-gray-900">Home</Link>
+        <Link href="/dashboard/school-admin" className="hover:text-secondary">Home</Link>
         <span>/</span>
-        <Link href="/dashboard/school-admin/teachers" className="hover:text-gray-900">Teachers</Link>
+        <Link href="/dashboard/school-admin/teachers" className="hover:text-secondary">Teachers</Link>
         <span>/</span>
         <span className="font-medium text-gray-900">{teacherName}</span>
       </div>
@@ -285,33 +285,33 @@ export default function TeacherDetailPage() {
         <div className="flex gap-3">
           {isEditing ? (
             <>
-              <Button onClick={handleSave} disabled={saving} className="bg-green-600 hover:bg-green-700 text-white gap-2">
+              <Button onClick={handleSave} disabled={saving} className="bg-secondary hover:bg-blue-700 text-white gap-2">
                 <Save size={16} />{saving ? 'Saving...' : 'Save Changes'}
               </Button>
               <Button variant="outline" onClick={() => setIsEditing(false)} className="gap-2"><X size={16} />Cancel</Button>
             </>
           ) : (
             <>
-              <Button variant="outline" className="gap-2 bg-transparent" onClick={() => setIsEditing(true)}><Edit2 size={18} />Edit Profile</Button>
-              <Button variant="outline" className="gap-2 bg-transparent"><MessageSquare size={18} />Message</Button>
-              <Button variant="outline" className="gap-2 bg-transparent"><Download size={18} />Report</Button>
+              <Button variant="outline" className="gap-2 bg-transparent hover:bg-secondary" onClick={() => setIsEditing(true)}><Edit2 size={18} />Edit Profile</Button>
+              <Button variant="outline" className="gap-2 bg-transparent hover:bg-secondary"><MessageSquare size={18} />Message</Button>
+              <Button variant="outline" className="gap-2 bg-transparent hover:bg-secondary"><Download size={18} />Report</Button>
             </>
           )}
         </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <StatCard label="Classes Assigned" value={classes.length} Icon={BookOpen} color="bg-blue-500" />
-        <StatCard label="Subjects" value={subjects.length} Icon={FileText} color="bg-purple-500" />
-        <StatCard label="Experience" value={`${teacher.experience_years || 0} yrs`} Icon={Clock} color="bg-green-500" />
-        <StatCard label="Employee ID" value={teacher.employee_id || 'N/A'} Icon={Award} color="bg-orange-500" />
+        <StatCard label="Classes Assigned" value={classes.length} Icon={BookOpen} color="bg-secondary" />
+        <StatCard label="Subjects" value={subjects.length} Icon={FileText} color="bg-secondary" />
+        <StatCard label="Experience" value={`${teacher.experience_years || 0} yrs`} Icon={Clock} color="bg-secondary" />
+        <StatCard label="Employee ID" value={teacher.employee_id || 'N/A'} Icon={Award} color="bg-secondary" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="space-y-5">
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
             <h2 className="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <Camera size={16} className="text-purple-600" />Profile Picture
+              <Camera size={16} className="text-secondary" />Profile Picture
             </h2>
             <div className="flex flex-col items-center gap-4">
               <div className="relative w-36 h-36 rounded-xl overflow-hidden bg-gradient-to-br from-purple-400 to-indigo-500 flex items-center justify-center shadow-md">
@@ -334,7 +334,7 @@ export default function TeacherDetailPage() {
               ) : (
                 <>
                   <input ref={fileInputRef} type="file" accept="image/*" onChange={handlePicChange} className="hidden" id="teacher-pic-upload" />
-                  <label htmlFor="teacher-pic-upload" className="flex items-center justify-center gap-2 w-full px-4 py-2 border-2 border-dashed border-purple-300 rounded-lg text-purple-600 text-sm font-medium cursor-pointer hover:bg-purple-50 transition-colors">
+                  <label htmlFor="teacher-pic-upload" className="flex items-center justify-center gap-2 w-full px-4 py-2 border-2 border-dashed border-secondary rounded-lg text-secondary text-sm font-medium cursor-pointer hover:bg-secondary hover:text-white transition-colors">
                     <Camera size={16} />{profilePic ? 'Change Photo' : 'Upload Photo'}
                   </label>
                 </>
@@ -349,7 +349,7 @@ export default function TeacherDetailPage() {
 
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
             <h2 className="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <User size={16} className="text-purple-600" />Personal Information
+              <User size={16} className="text-secondary" />Personal Information
             </h2>
             {isEditing ? (
               <div className="space-y-3">
@@ -383,7 +383,7 @@ export default function TeacherDetailPage() {
 
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
             <h2 className="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <Briefcase size={16} className="text-purple-600" />Professional Information
+              <Briefcase size={16} className="text-secondary" />Professional Information
             </h2>
             {isEditing ? (
               <div className="space-y-3">
@@ -418,7 +418,7 @@ export default function TeacherDetailPage() {
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-base font-semibold text-gray-900 flex items-center gap-2">
-                <BookOpen size={16} className="text-purple-600" />Classes Assigned
+                <BookOpen size={16} className="text-secondary" />Classes Assigned
               </h2>
               <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}>
                 <DialogTrigger asChild>
@@ -511,7 +511,7 @@ export default function TeacherDetailPage() {
 
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
             <h2 className="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <FileText size={16} className="text-purple-600" />Subjects Teaching
+              <FileText size={16} className="text-secondary" />Subjects Teaching
             </h2>
             {subjectsLoading ? (
               <div className="flex items-center justify-center py-8">
@@ -533,7 +533,7 @@ export default function TeacherDetailPage() {
 
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
             <h2 className="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <Users size={16} className="text-purple-600" />Quick Actions
+              <Users size={16} className="text-secondary" />Quick Actions
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               <Link href="/dashboard/school-admin/teacher-assignment">

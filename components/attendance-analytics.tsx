@@ -222,7 +222,7 @@ export function AttendanceAnalytics() {
                     <Calendar
                       mode="range"
                       selected={dateRange}
-                      onSelect={(range) => setDateRange(range || { from: undefined, to: undefined })}
+                      onSelect={(range) => setDateRange({ from: range?.from, to: range?.to })}
                       numberOfMonths={2}
                     />
                   </PopoverContent>
@@ -441,7 +441,7 @@ export function AttendanceAnalytics() {
                             <span
                               className={
                                 day.percentage >= 75
-                                  ? "text-green-600"
+                                  ? "text-secondary"
                                   : day.percentage >= 50
                                   ? "text-yellow-600"
                                   : "text-red-600"

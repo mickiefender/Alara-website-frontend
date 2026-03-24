@@ -64,7 +64,7 @@ export default function StudentAssignmentsPage() {
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-bold text-gray-900">Student Enrollment</h1>
+          <h1 className="text-4xl font-bold text-secondary">Student Enrollment</h1>
           <p className="text-gray-600 mt-1">Manage student assignments to classes</p>
         </div>
       </div>
@@ -113,13 +113,13 @@ export default function StudentAssignmentsPage() {
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <CardTitle className="text-lg group-hover:text-blue-600 transition-colors">
+                    <CardTitle className="text-lg group-hover:text-secondary transition-colors">
                       {classItem.name}
                     </CardTitle>
                     <p className="text-sm text-gray-500 mt-1">Code: #{classItem.code}</p>
                   </div>
                   <div className="bg-blue-100 p-2 rounded-lg">
-                    <Users size={20} className="text-blue-600" />
+                    <Users size={20} className="text-secondary" />
                   </div>
                 </div>
               </CardHeader>
@@ -136,7 +136,7 @@ export default function StudentAssignmentsPage() {
                   <DialogTrigger asChild>
                     <Button
                       onClick={() => handleSelectClass(classItem)}
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-white gap-2"
+                      className="w-full bg-secondary hover:bg-blue-700 text-white gap-2"
                     >
                       Manage Students
                       <ArrowRight size={16} />
@@ -145,7 +145,7 @@ export default function StudentAssignmentsPage() {
                   <DialogContent className="max-w-2xl">
                     <DialogHeader>
                       <DialogTitle className="text-2xl">
-                        Enroll Students in <span className="text-blue-600">{selectedClassName}</span>
+                        Enroll Students in <span className="text-secondary">{selectedClassName}</span>
                       </DialogTitle>
                     </DialogHeader>
                     {selectedClassId && (

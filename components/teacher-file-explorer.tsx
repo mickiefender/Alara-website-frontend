@@ -467,7 +467,7 @@ export default function TeacherFileExplorer({ onGenerateQuestions }: TeacherFile
                   className={viewMode === "grid" ? "flex flex-col items-center" : "flex items-center gap-3 flex-1"}
                   onDoubleClick={() => navigateToFolder(folder.id)}
                 >
-                  <FolderOpen className="w-12 h-12 text-yellow-500" />
+                  <FolderOpen className="w-12 h-12 text-secondary" />
                   <div className={viewMode === "grid" ? "text-center" : ""}>
                     <p className="font-medium text-sm truncate">{folder.name}</p>
                     <p className="text-xs text-gray-500">

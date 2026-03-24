@@ -9,7 +9,8 @@ import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Plus, Edit2, Trash2, Search, Shield, AlertCircle } from "lucide-react"
-import Loader from "@/components/loader"
+import { CircularLoader } from "@/components/circular-loader"
+
 
 const ADMIN_ROLES = [
   { id: "academic_admin", label: "Academic Admin", icon: "📚" },
@@ -204,8 +205,8 @@ export default function ManageAdminStaffPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
-        <Loader size="md" color="#3b82f6" />
+      <div className="fixed inset-0 bg-gradient-to-br from-secondary/10 to-secondary/5 flex items-center justify-center z-50">
+        <CircularLoader size="md" />
       </div>
     )
   }

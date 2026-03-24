@@ -308,7 +308,7 @@ export function ModernTimetable() {
   if (loading) {
     return (
       <Card className="border-0 shadow-lg">
-      <CardHeader className="bg-gradient-to-r from-cyan-600 to-cyan-600 text-white rounded-t-lg">
+      <CardHeader className="bg-secondary text-white rounded-t-lg">
           <CardTitle className="flex items-center gap-2">
             <Calendar className="w-5 h-5" />
             Timetable Management
@@ -473,6 +473,7 @@ export function ModernTimetable() {
                         placeholder="e.g., Room 101, Lab A"
                         value={formData.venue}
                         onChange={(e) => setFormData({ ...formData, venue: e.target.value })}
+                        autoComplete="off"
                       />
                     </div>
                   </div>
@@ -502,6 +503,7 @@ export function ModernTimetable() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 bg-white"
+              autoComplete="off"
             />
           </div>
 

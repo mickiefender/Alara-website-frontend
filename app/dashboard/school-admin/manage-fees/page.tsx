@@ -321,7 +321,7 @@ setError(err?.message || err?.response?.data?.detail || "Failed to assign fee to
       const errorMsg = err?.response?.data?.error || 
                       err?.response?.data?.detail || 
                       (err?.response?.data as any)?.student?.[0] ||
-                      Object.values(err?.response?.data || {})[0]?.[0] || // Handle DRF field errors
+                      (Object.values(err?.response?.data || {}) as any[])[0]?.[0] || // Handle DRF field errors
                       err?.message || 
                       "Failed to assign fee to student - check console for details"
       setError(errorMsg)
@@ -337,7 +337,7 @@ setError(err?.message || err?.response?.data?.detail || "Failed to assign fee to
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-3xl font-bold flex items-center gap-2">
-                <DollarSign className="w-8 h-8 text-green-600" />
+                <DollarSign className="w-8 h-8 text-secondary" />
                 School Fees Management
               </h1>
               <p className="text-gray-600 mt-1">Manage fee types and assignments at all levels</p>
@@ -372,7 +372,7 @@ setError(err?.message || err?.response?.data?.detail || "Failed to assign fee to
                         setEditingFee(null)
                         setFeeForm({ name: "", description: "", amount: "", fee_type: "academic", is_active: true, is_mandatory: true })
                       }}
-                      className="bg-purple-600"
+                      className="bg-secondary hover:bg-primary"
                     >
                       <Plus className="w-4 h-4 mr-2" />
                       Create Fee Type
@@ -534,7 +534,7 @@ setError(err?.message || err?.response?.data?.detail || "Failed to assign fee to
                       onClick={() => {
                         setSchoolForm({ fee: "", amount: "", due_date: "" })
                       }}
-                      className="bg-orange-600"
+                      className="bg-secondary hover:bg-primary"
                     >
                       <Plus className="w-4 h-4 mr-2" />
                       Assign to School
@@ -584,7 +584,7 @@ setError(err?.message || err?.response?.data?.detail || "Failed to assign fee to
                         <Input type="date" value={schoolForm.due_date} onChange={(e) => setSchoolForm({ ...schoolForm, due_date: e.target.value })} />
                       </div>
 
-                      <Button type="submit" className="w-full bg-orange-600">
+                      <Button type="submit" className="w-full bg-secondary">
                         Assign to All Students
                       </Button>
                     </form>
@@ -658,7 +658,7 @@ setError(err?.message || err?.response?.data?.detail || "Failed to assign fee to
                       onClick={() => {
                         setClassForm({ fee: "", class_obj: "", amount: "", due_date: "" })
                       }}
-                      className="bg-blue-600"
+                      className="bg-secondary hover:bg-primary"
                     >
                       <Plus className="w-4 h-4 mr-2" />
                       Assign to Class
@@ -724,7 +724,7 @@ setError(err?.message || err?.response?.data?.detail || "Failed to assign fee to
                         <Input type="date" value={classForm.due_date} onChange={(e) => setClassForm({ ...classForm, due_date: e.target.value })} />
                       </div>
 
-                      <Button type="submit" className="w-full bg-blue-600">
+                      <Button type="submit" className="w-full bg-secondary">
                         Assign to Class
                       </Button>
                     </form>
@@ -800,7 +800,7 @@ setError(err?.message || err?.response?.data?.detail || "Failed to assign fee to
                       onClick={() => {
                         setStudentForm({ fee: "", student: "", amount: "", due_date: "" })
                       }}
-                      className="bg-green-600"
+                      className="bg-secondary"
                     >
                       <Plus className="w-4 h-4 mr-2" />
                       Assign to Student
@@ -877,7 +877,7 @@ setError(err?.message || err?.response?.data?.detail || "Failed to assign fee to
                         <Input type="date" value={studentForm.due_date} onChange={(e) => setStudentForm({ ...studentForm, due_date: e.target.value })} />
                       </div>
 
-                      <Button type="submit" className="w-full bg-green-600">
+                      <Button type="submit" className="w-full bg-secondary">
                         Assign to Student
                       </Button>
                     </form>
@@ -910,7 +910,7 @@ setError(err?.message || err?.response?.data?.detail || "Failed to assign fee to
                               <td className="py-3 px-4">
                                 <span
                                   className={`px-3 py-1 rounded text-xs font-semibold ${
-                                    assignment.paid ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"
+                                    assignment.paid ? "bg-green-100 text-secondary" : "bg-gray-100 text-gray-800"
                                   }`}
                                 >
                                   {assignment.paid ? "Paid" : "Pending"}

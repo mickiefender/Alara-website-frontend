@@ -160,11 +160,11 @@ function StudentsPageContent() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-purple-700">Students List</h1>
+        <h1 className="text-3xl font-bold text-secondary">Students List</h1>
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
             <Button
-              className="bg-purple-600 hover:bg-purple-700 text-white"
+              className="bg-secondary text-secondary-foreground text-white"
               onClick={() => {
                 setEditingStudent(null)
                 setFormData({
@@ -325,7 +325,7 @@ function StudentsPageContent() {
                   <td className="px-6 py-3">
                     <div className="flex gap-2">
                       <Link href={`/dashboard/school-admin/students/${student.id}`}>
-                        <button className="text-purple-600 hover:text-purple-700" title="View Details">
+                        <button className="text-secondary hover:text-purple-700" title="View Details">
                           <Eye size={18} />
                         </button>
                       </Link>
@@ -362,7 +362,7 @@ function StudentsPageContent() {
               variant={currentPage === page ? "default" : "outline"}
               size="sm"
               onClick={() => setCurrentPage(page)}
-              className={currentPage === page ? "bg-purple-600 text-white" : ""}
+              className={currentPage === page ? "bg-secondary text-secondary-foreground text-white" : ""}
             >
               {page}
             </Button>
