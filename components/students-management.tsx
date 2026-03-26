@@ -54,6 +54,9 @@ export function StudentsManagement() {
     student_id: "",
   })
   const [generatedStudentId, setGeneratedStudentId] = useState<string | null>(null)
+  const [resetDialogOpen, setResetDialogOpen] = useState(false)
+  const [resettingStudentId, setResettingStudentId] = useState<number | null>(null)
+  const [newPassword, setNewPassword] = useState("")
 
   const fetchStudents = async () => {
     try {
@@ -142,6 +145,22 @@ export function StudentsManagement() {
       student_id: student.student_id || "",
     })
     setIsOpen(true)
+  }
+
+  const handleResetPassword = async (id: number) => {
+    try {
+      await usersAPI.updateStudent(id, { password: newPassword })
+      setResetDialogOpen(false)
+      setResettingStudentId(null)
+      setNewPassword("")
+      setError(null)
+      fetchStudents()
+      // Optional: use toast notification here
+      alert("Password reset successfully!")
+    } catch (err: any) {
+      console.error("[v0] Failed to reset password:", err)
+      setError(err?.response?.data?.detail || err?.message || "Failed to reset password")
+    }
   }
 
   const handleDelete = async (id: number) => {
@@ -241,7 +260,44 @@ export function StudentsManagement() {
                   </Button>
                 </div>
               )}
-              {!generatedStudentId && (
+              {resetDialogOpen && (
+                <div className="space-y-4">
+                  <div>
+                    <Label>Reset Password for Student ID: {resettingStudentId}</Label>
+                    <Input
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="Enter new password (min 8 chars)"
+                      required
+                      minLength={8}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">This will immediately update the student&apos;s password.</p>
+                  </div>
+                  <div className="flex gap-2 justify-end">
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={() => {
+                        setResetDialogOpen(false)
+                        setResettingStudentId(null)
+                        setNewPassword("")
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button 
+                      type="button"
+                      onClick={() => handleResetPassword(resettingStudentId!)}
+                      disabled={newPassword.length < 8}
+                    >
+                      Reset Password
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {!generatedStudentId && !resetDialogOpen && (
                 <>
                   {error && <div className="bg-destructive/15 text-destructive px-4 py-2 rounded-md text-sm">{error}</div>}
                   <form onSubmit={handleSubmit} className="space-y-4">
@@ -282,18 +338,22 @@ export function StudentsManagement() {
                         required
                       />
                     </div>
-                    {!editingStudent && (
-                      <div>
-                        <Label htmlFor="password">Password</Label>
-                        <Input
-                          id="password"
-                          type="password"
-                          value={formData.password}
-                          onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                          required
-                        />
-                      </div>
-                    )}
+                    <div>
+                      <Label htmlFor="password">Password {editingStudent && "(Leave blank to keep current)"}</Label>
+                      <Input
+                        id="password"
+                        type="password"
+                        value={formData.password}
+                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                        placeholder={editingStudent ? "Enter new password or leave blank" : "Required for new students"}
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {editingStudent 
+                          ? "Leave empty to keep current password. Minimum 8 characters for reset." 
+                          : "Minimum 8 characters required for new students."
+                        }
+                      </p>
+                    </div>
                     <Button type="submit" className="w-full">
                       {editingStudent ? "Update Student" : "Create Student"}
                     </Button>
@@ -332,9 +392,19 @@ export function StudentsManagement() {
                     <td className="py-2 px-2 text-muted-foreground dark:text-slate-400">{getStudentEmail(student)}</td>
                     <td className="py-2 px-2 text-muted-foreground dark:text-slate-400">{student.student_id || "N/A"}</td>
                     <td className="py-2 px-2">
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 flex-wrap">
                         <Button variant="ghost" size="sm" onClick={() => handleEdit(student)}>
                           Edit
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => {
+                            setResettingStudentId(student.id)
+                            setResetDialogOpen(true)
+                          }}
+                        >
+                          Reset Password
                         </Button>
                         <Button variant="ghost" size="sm" onClick={() => handleDelete(student.id)}>
                           Delete

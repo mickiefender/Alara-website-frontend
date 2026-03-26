@@ -94,15 +94,15 @@ export default function SchoolAdminPage() {
               Dashboard
             </button>
             <button 
-              onClick={() => setActiveTab('analytics')}
+              onClick={() => setActiveTab('password reset')}
               className={`group flex items-center gap-2 px-6 py-3 rounded-xl font-semibold shadow-lg transition-all border ring-1 
-                ${activeTab === 'analytics'
+                ${activeTab === 'password reset'
                   ? 'bg-secondary text-secondary-foreground shadow-xl ring-secondary/50 scale-105'
                   : 'bg-card hover:bg-secondary/5 hover:border-secondary/50 hover:shadow-lg hover:shadow-secondary/20 text-foreground border-border'
                 }`}
             >
               <Users className="w-5 h-5 group-hover:text-sidebar-primary text-sidebar-foreground-computed" />
-              Analytics
+              Password Reset
             </button>
           </div>
         </div>

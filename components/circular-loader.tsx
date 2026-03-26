@@ -1,6 +1,6 @@
 "use client"
 
-import React from "react"
+import React, { useState, useEffect } from "react"
 import { Loader2 } from "lucide-react"
 
 interface CircularLoaderProps {
@@ -104,14 +104,27 @@ export function TableLoader({ rows = 5, className = "" }: { rows?: number; class
  * Full screen loader with branding
  */
 export function FullScreenLoader() {
+  const [show, setShow] = useState(true)
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShow(false), 2000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (!show) return null;
+
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-br from-cyan-50 to-cyan-100">
-      <div className="relative mb-6">
-        <Loader2 className="h-16 w-16 text-cyan-600 animate-spin" />
-        <div className="absolute inset-0 h-16 w-16 animate-pulse rounded-full bg-cyan-400 opacity-20" />
-      </div>
-      <h2 className="text-xl font-bold text-gray-800 mb-2">School Management System</h2>
-      <p className="text-gray-600">Loading your dashboard...</p>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/95 backdrop-blur-xl">
+      <video 
+        autoPlay 
+        loop 
+        muted 
+        playsInline
+        className="w-28 h-28 md:w-48 md:h-32 lg:w-56 lg:h-56  object-cover "
+        src="/loader.mp4"
+      >
+        <source src="/loader.mp4" type="video/mp4" />
+      </video>
     </div>
   )
 }

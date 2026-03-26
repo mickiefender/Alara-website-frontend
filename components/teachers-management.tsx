@@ -56,6 +56,9 @@ export function TeachersManagement() {
     qualification: "",
     experience_years: 0,
   })
+  const [resetDialogOpen, setResetDialogOpen] = useState(false)
+  const [resettingTeacherId, setResettingTeacherId] = useState<number | null>(null)
+  const [newPassword, setNewPassword] = useState("")
 
   const fetchTeachers = async () => {
     try {
@@ -85,7 +88,7 @@ export function TeachersManagement() {
       if (editingTeacher) {
         await usersAPI.updateTeacher(editingTeacher.id, formData)
       } else {
-        const schoolId = user?.school_id || user?.school
+        const schoolId = user?.school_id
         if (!schoolId) {
           setError("No school associated with your account. Please contact support.")
           return
@@ -141,6 +144,21 @@ export function TeachersManagement() {
       experience_years: teacher.experience_years || 0,
     })
     setIsOpen(true)
+  }
+
+  const handleResetPassword = async (id: number) => {
+    try {
+      await usersAPI.updateTeacher(id, { password: newPassword })
+      setResetDialogOpen(false)
+      setResettingTeacherId(null)
+      setNewPassword("")
+      setError(null)
+      fetchTeachers()
+      alert("Password reset successfully!")
+    } catch (err: any) {
+      console.error("[v0] Failed to reset password:", err)
+      setError(err?.response?.data?.detail || err?.message || "Failed to reset password")
+    }
   }
 
   const handleDelete = async (id: number) => {
@@ -222,19 +240,58 @@ export function TeachersManagement() {
               <DialogHeader>
                 <DialogTitle>{editingTeacher ? "Edit Teacher" : "Add New Teacher"}</DialogTitle>
               </DialogHeader>
-              {error && <div className="bg-destructive/15 text-destructive px-4 py-2 rounded-md text-sm">{error}</div>}
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <Label htmlFor="username">Username</Label>
-                  <Input
-                    id="username"
-                    value={formData.username}
-                    onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                    required
-                  />
+              {resetDialogOpen && (
+                <div className="space-y-4">
+                  <div>
+                    <Label>Reset Password for Teacher ID: {resettingTeacherId}</Label>
+                    <Input
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="Enter new password (min 8 chars)"
+                      required
+                      minLength={8}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">This will immediately update the teacher&apos;s password.</p>
+                  </div>
+                  <div className="flex gap-2 justify-end">
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={() => {
+                        setResetDialogOpen(false)
+                        setResettingTeacherId(null)
+                        setNewPassword("")
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button 
+                      type="button"
+                      onClick={() => handleResetPassword(resettingTeacherId!)}
+                      disabled={newPassword.length < 8}
+                    >
+                      Reset Password
+                    </Button>
+                  </div>
                 </div>
-                <div>
-                  <Label htmlFor="email">Email</Label>
+              )}
+
+              {!resetDialogOpen && (
+                <>
+                  {error && <div className="bg-destructive/15 text-destructive px-4 py-2 rounded-md text-sm">{error}</div>}
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                      <Label htmlFor="username">Username</Label>
+                      <Input
+                        id="username"
+                        value={formData.username}
+                        onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="email">Email</Label>
                   <Input
                     id="email"
                     type="email"
@@ -289,22 +346,28 @@ export function TeachersManagement() {
                     }
                   />
                 </div>
-                {!editingTeacher && (
-                  <div>
-                    <Label htmlFor="password">Password</Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      required
-                    />
-                  </div>
-                )}
-                <Button type="submit" className="w-full">
-                  {editingTeacher ? "Update Teacher" : "Create Teacher"}
-                </Button>
-              </form>
+                <div>
+                  <Label htmlFor="password">Password {editingTeacher && "(Leave blank to keep current)"}</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    placeholder={editingTeacher ? "Enter new password or leave blank" : "Required for new teachers"}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {editingTeacher 
+                      ? "Leave empty to keep current password. Minimum 8 characters for reset." 
+                      : "Minimum 8 characters required for new teachers."
+                    }
+                  </p>
+                </div>
+                    <Button type="submit" className="w-full">
+                      {editingTeacher ? "Update Teacher" : "Create Teacher"}
+                    </Button>
+                  </form>
+                </>
+              )}
             </DialogContent>
           </Dialog>
         </div>
@@ -339,9 +402,19 @@ export function TeachersManagement() {
                     <td className="py-2 px-2 text-muted-foreground dark:text-slate-400">{teacher.employee_id || "N/A"}</td>
                     <td className="py-2 px-2 text-muted-foreground dark:text-slate-400">{teacher.qualification || "N/A"}</td>
                     <td className="py-2 px-2">
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 flex-wrap">
                         <Button variant="ghost" size="sm" onClick={() => handleEdit(teacher)}>
                           Edit
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => {
+                            setResettingTeacherId(teacher.id)
+                            setResetDialogOpen(true)
+                          }}
+                        >
+                          Reset Password
                         </Button>
                         <Button variant="ghost" size="sm" onClick={() => handleDelete(teacher.id)}>
                           Delete

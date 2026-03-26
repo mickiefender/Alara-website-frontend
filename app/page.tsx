@@ -3,6 +3,7 @@
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useAuthContext } from "@/lib/auth-context"
+import { FullScreenLoader } from "@/components/circular-loader"
 
 export default function Home() {
   const router = useRouter()
