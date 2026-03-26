@@ -59,21 +59,37 @@ export interface PaystackVerifyResponse {
   }
 }
 
+// Enhanced PaymentRecord for Receipts - supports manual + online
 export interface PaymentRecord {
   id: string
+  receipt_id?: string
   student_id: string
   student_name: string
-  email: string
+  email?: string
+  student_email?: string
+  school_id?: string
+  school_name?: string
   amount: number
+  amount_paid?: number
+  balance?: number
   fee_type: string
-  academic_year: string
-  term: string
-  reference: string
-  status: "pending" | "success" | "failed" | "abandoned"
+  fee_name?: string
+  reference?: string
+  receipt_number?: string
+  status: "pending" | "success" | "failed" | "abandoned" | "partial"
   payment_channel?: string
+  payment_method?: string
+  payment_method_display?: string
+  payment_source?: "manual" | "online"
   paid_at?: string
   created_at: string
-  updated_at: string
+  updated_at?: string
+  transaction_reference?: string
+  paystack_reference?: string
+  academic_year?: string
+  term?: string
+  fee_assignment_id?: string | number
+  notes?: string
 }
 
 export interface FeeStructure {
@@ -105,3 +121,33 @@ export interface WebhookEvent {
   event: string
   data: PaystackVerifyResponse["data"]
 }
+
+// New interfaces for receipts
+export interface ReceiptsSummary {
+  school_id: number
+  school_name: string
+  total_receipts: number
+  successful_payments: number
+  online_payments: number
+  manual_payments: number
+  total_collected: number
+  total_online: number
+  total_manual: number
+  cash_payments: number
+  bank_payments: number
+  mobile_payments: number
+  payments_last_30d: number
+}
+
+export interface ReceiptExportRow {
+  receipt_id: string
+  receipt_number: string
+  student_name: string
+  fee_type: string
+  amount: number
+  payment_method: string
+  paid_at: string
+  payment_source: string
+  status: string
+}
+

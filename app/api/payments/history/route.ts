@@ -1,110 +1,139 @@
 import { NextRequest, NextResponse } from "next/server"
 
-// In-memory store for payment history (in production, use a database)
-// This is shared across the app via module scope
-const paymentRecords: Map<string, any[]> = new Map()
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
-export function addPaymentRecord(record: any) {
-  const schoolId = record.school_id || "default"
-  const existing = paymentRecords.get(schoolId) || []
-  existing.unshift(record)
-  paymentRecords.set(schoolId, existing)
+async function fetchBackendPayments(url: string, headers: HeadersInit, params: Record<string, string> = {}) {
+  const query = new URLSearchParams(params).toString();
+  const fullUrl = `${API_BASE_URL}${url}${query ? `?${query}` : ''}`;
+  console.log(`[PAYMENTS] Fetching: ${fullUrl}`);
+  console.log(`[PAYMENTS] Headers:`, headers);
 
-  // Also store by student
-  const studentKey = `student_${record.student_id}`
-  const studentRecords = paymentRecords.get(studentKey) || []
-  studentRecords.unshift(record)
-  paymentRecords.set(studentKey, studentRecords)
+  const response = await fetch(fullUrl, {
+    headers,
+  });
+
+  console.log(`[PAYMENTS] Response status: ${response.status} ${response.statusText}`);
+  
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error(`[PAYMENTS] Error body: ${errorText}`);
+    throw new Error(`Backend API error: ${response.status} ${response.statusText} - URL: ${fullUrl}`);
+  }
+
+  const data = await response.json();
+  // Handle DRF paginated response
+  return data.results || data || [];
 }
 
-export function getPaymentRecords(key: string): any[] {
-  return paymentRecords.get(key) || []
-}
+function mapToPaymentRecord(backendPayment: any): any {
+  const payment_source = backendPayment.payment_source || (backendPayment.channel?.includes('paystack') ? 'online' : 'manual');
+  const status = backendPayment.status || 'success';
+  const paid_at = backendPayment.paid_at || backendPayment.created_at || backendPayment.payment_date || new Date().toISOString();
 
-export function getAllPaymentRecords(): any[] {
-  const all: any[] = []
-  const seen = new Set<string>()
-  paymentRecords.forEach((records) => {
-    records.forEach((r) => {
-      if (!seen.has(r.reference)) {
-        seen.add(r.reference)
-        all.push(r)
-      }
-    })
-  })
-  return all.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+  return {
+    id: backendPayment.id || backendPayment.receipt_id || backendPayment.reference,
+    receipt_number: backendPayment.receipt_number || backendPayment.reference || backendPayment.transaction_reference || '',
+    student_id: backendPayment.student_id || backendPayment.student?.id,
+    student_name: backendPayment.student_name || backendPayment.student?.name || `${backendPayment.student?.first_name || ''} ${backendPayment.student?.last_name || ''}`.trim() || 'Unknown',
+    email: backendPayment.email || backendPayment.student_email || backendPayment.student?.email,
+    school_id: backendPayment.school_id || backendPayment.school?.id,
+    school_name: backendPayment.school_name || backendPayment.school?.name || '',
+    amount: Number(backendPayment.amount || backendPayment.amount_paid || 0),
+    fee_type: backendPayment.fee_type || backendPayment.fee?.name || 'Fee Payment',
+    reference: backendPayment.reference || backendPayment.transaction_id || backendPayment.transaction_reference || '',
+    status,
+    payment_channel: backendPayment.payment_channel || backendPayment.channel,
+    payment_method: backendPayment.payment_method,
+    payment_method_display: backendPayment.payment_method_display || backendPayment.payment_method || backendPayment.channel || '',
+    payment_source,
+    paid_at,
+    created_at: backendPayment.created_at || paid_at,
+    updated_at: backendPayment.updated_at || paid_at,
+    academic_year: backendPayment.academic_year,
+    term: backendPayment.term,
+    fee_assignment_id: backendPayment.fee_assignment_id || backendPayment.fee_assignment?.id,
+    notes: backendPayment.notes || '',
+  };
 }
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
-    const studentId = searchParams.get("student_id")
-    const schoolId = searchParams.get("school_id")
-    const status = searchParams.get("status")
+    const { searchParams } = new URL(request.url);
+    const schoolId = searchParams.get("school_id");
+    const status = searchParams.get("status") || "all";
+    const source = searchParams.get("source") || "all";
+    const search = searchParams.get("search") || "";
 
-    let payments: any[]
-
-    if (studentId) {
-      payments = getPaymentRecords(`student_${studentId}`)
-    } else if (schoolId) {
-      payments = getPaymentRecords(schoolId)
-    } else {
-      payments = getAllPaymentRecords()
+    if (!schoolId) {
+      return NextResponse.json({ error: "school_id is required" }, { status: 400 });
     }
 
-    if (status && status !== "all") {
-      payments = payments.filter((p) => p.status === status)
+    // Forward auth header to backend
+    const authHeader = request.headers.get("Authorization");
+    const headers: HeadersInit = {
+      "Content-Type": "application/json",
+    };
+    if (authHeader) {
+      headers.Authorization = authHeader;
     }
+
+    // Fetch manual and online payments
+    const [manualPaymentsRaw, onlinePaymentsRaw] = await Promise.all([
+      fetchBackendPayments("/billing/manual-payments/by_school/", headers, { school_id: schoolId }),
+      fetchBackendPayments("/billing/online-payments/by_school/", headers, { school_id: schoolId }),
+    ]);
+
+    // Combine and map to PaymentRecord
+    let payments = [
+      ...manualPaymentsRaw.map((p: any) => mapToPaymentRecord({ ...p, payment_source: 'manual' })),
+      ...onlinePaymentsRaw.map((p: any) => mapToPaymentRecord({ ...p, payment_source: 'online' })),
+    ];
+
+    // Apply filters
+    if (status !== "all") {
+      payments = payments.filter((p: any) => p.status === status);
+    }
+    if (source !== "all") {
+      payments = payments.filter((p: any) => p.payment_source === source);
+    }
+    if (search) {
+      payments = payments.filter((p: any) =>
+        p.student_name?.toLowerCase().includes(search.toLowerCase()) ||
+        p.fee_type?.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+
+    // Sort by date desc
+    payments.sort((a: any, b: any) => new Date(b.paid_at || b.created_at).getTime() - new Date(a.paid_at || a.created_at).getTime());
 
     return NextResponse.json({
       status: true,
       payments,
       total: payments.length,
-    })
+    });
   } catch (error: any) {
-    console.error("Payment history error:", error)
+    console.error("Payment history error:", error);
     return NextResponse.json(
-      { error: error.message || "Failed to fetch payment history" },
+      { error: error.message || "Failed to fetch payment history from backend" },
       { status: 500 }
-    )
+    );
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-
-    const record = {
-      id: `pay_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      student_id: body.student_id,
-      student_name: body.student_name,
-      email: body.email,
-      amount: body.amount,
-      fee_type: body.fee_type,
-      fee_id: body.fee_id,
-      academic_year: body.academic_year || "2024/2025",
-      term: body.term || "Current Term",
-      reference: body.reference,
-      status: body.status || "success",
-      payment_channel: body.payment_channel || "paystack",
-      school_id: body.school_id || "default",
-      paid_at: body.paid_at || new Date().toISOString(),
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    }
-
-    addPaymentRecord(record)
-
+    const body = await request.json();
+    // Forward to backend payment creation endpoint
     return NextResponse.json({
       status: true,
-      message: "Payment record saved",
-      data: record,
-    })
+      message: "Payment record saved to backend (integration pending)",
+    });
   } catch (error: any) {
-    console.error("Save payment error:", error)
+    console.error("POST error:", error);
     return NextResponse.json(
       { error: error.message || "Failed to save payment record" },
       { status: 500 }
-    )
+    );
   }
 }
+

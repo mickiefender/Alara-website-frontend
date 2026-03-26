@@ -10,6 +10,9 @@ export const apiClient = axios.create({
 })
 
 apiClient.interceptors.request.use((config) => {
+  if (typeof window !== "undefined" && process.env.NODE_ENV === 'development') {
+    console.log('[API Request]', config.method?.toUpperCase(), config.url)
+  }
   if (typeof window !== "undefined") {
     const token = sessionStorage.getItem("authToken")
     if (token) {
@@ -22,17 +25,27 @@ apiClient.interceptors.request.use((config) => {
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      // Don't clear token or redirect on auth pages to prevent loops
+    const status = error.response?.status
+    const url = error.config?.url
+    const details = error.response?.data
+    
+    if (status === 401) {
+      console.error('[API 401] Auth failed:', { url, details })
       const currentPath = typeof window !== "undefined" ? window.location.pathname : ""
       if (!currentPath.startsWith("/auth/") && !currentPath.startsWith("/dashboard/")) {
+        console.warn('[API] Clearing invalid token, redirecting to login')
         sessionStorage.removeItem("authToken")
         sessionStorage.removeItem("user")
         if (typeof window !== "undefined") {
           window.location.href = "/auth/login"
         }
+      } else {
+        console.warn('[API] 401 on protected path, not redirecting')
       }
+    } else if (status >= 500) {
+      console.error('[API Error]', { status, url, details })
     }
+    
     return Promise.reject(error)
   },
 )
@@ -465,4 +478,3 @@ export default {
   assignmentAPI,
   billingAPI
 }
-

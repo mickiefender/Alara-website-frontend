@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useAuthContext } from "@/lib/auth-context"
+import { billingAPI } from "@/lib/api"
 import { 
   Wallet, 
   TrendingUp, 
@@ -33,10 +34,32 @@ export function RecentPayments() {
 
   const fetchRecentPayments = async () => {
     try {
+      setLoading(true)
       const schoolId = user?.school_id || "default"
-      const response = await fetch(`/api/payments/history?school_id=${schoolId}`)
-      const data = await response.json()
-      const apiPayments = (data.payments || []).slice(0, 6)
+      
+      // Fetch using authenticated billingAPI (same endpoints as receipts page)
+      const [manualRes, onlineRes] = await Promise.all([
+        billingAPI.manualPaymentsBySchool(),
+        billingAPI.onlinePaymentsBySchool()
+      ])
+      
+      let apiPayments = [
+        ...(manualRes.data?.results || manualRes.data || []),
+        ...(onlineRes.data?.results || onlineRes.data || [])
+      ].slice(0, 6)
+
+      // Map to consistent format
+      apiPayments = apiPayments.map((p: any) => ({
+        id: p.id,
+        student_name: p.student_name || p.student?.name || 'Student',
+        amount: Number(p.amount),
+        fee_type: p.fee_type || 'Fee Payment',
+        reference: p.reference || p.receipt_number || '',
+        status: p.status || 'success',
+        payment_channel: p.payment_channel || p.channel || '',
+        paid_at: p.paid_at || p.created_at,
+        created_at: p.created_at || p.paid_at,
+      }))
 
       // Also check localStorage for school payment notifications
       if (typeof window !== "undefined") {
@@ -79,8 +102,6 @@ export function RecentPayments() {
 
   useEffect(() => {
     fetchRecentPayments()
-    const interval = setInterval(fetchRecentPayments, 30000)
-    return () => clearInterval(interval)
   }, [])
 
   const getStatusConfig = (status: string) => {
@@ -117,17 +138,19 @@ export function RecentPayments() {
 
   return (
     <div className="space-y-4">
-      {/* Header with summary */}
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-          <Receipt className="w-4 h-4 text-slate-500" />
-          Recent Transactions
-        </h3>
+        <div className="flex items-center gap-3">
+          <h3 className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+            <Receipt className="w-4 h-4 text-slate-500" />
+            Recent Receipts
+          </h3>
+        </div>
         <a
-          href="/dashboard/school-admin/payments"
+          href="/dashboard/school-admin/receipts"
           className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex items-center gap-1"
         >
-          View All
+          View All Receipts
           <ArrowRight className="w-3 h-3" />
         </a>
       </div>

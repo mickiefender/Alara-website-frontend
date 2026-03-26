@@ -39,6 +39,7 @@ interface AuthContextType {
   user: User | null
   school: School | null
   loading: boolean
+  isAuthenticated: boolean
   login: (credential: string, password:string, loginType?: "email" | "student_id") => Promise<void>
   logout: () => void
   register: (data: any) => Promise<void>
@@ -50,6 +51,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [school, setSchool] = useState<School | null>(null)
   const [loading, setLoading] = useState(true)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
   const router = useRouter()
 
   const fetchSchool = async (schoolId: number) => {
@@ -70,23 +72,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  useEffect(() => {
+  const validateToken = async () => {
     const token = sessionStorage.getItem("authToken")
     const storedUser = sessionStorage.getItem("user")
+    if (!token || !storedUser) return false
 
-    if (token && storedUser) {
-      try {
-        const parsedUser: User = JSON.parse(storedUser)
-        setUser(parsedUser)
-        if (parsedUser.school_id) {
-          fetchSchool(parsedUser.school_id)
-        }
-      } catch (error) {
-        sessionStorage.removeItem("authToken")
-        sessionStorage.removeItem("user")
+    try {
+      const parsedUser: User = JSON.parse(storedUser)
+      // Test token validity
+      await authAPI.me()
+      setUser(parsedUser)
+      if (parsedUser.school_id) {
+        await fetchSchool(parsedUser.school_id)
       }
+      setIsAuthenticated(!!parsedUser.school_id)
+      return true
+    } catch (error: any) {
+      console.warn("Invalid/expired token:", error.response?.status)
+      sessionStorage.removeItem("authToken")
+      sessionStorage.removeItem("user")
+      setUser(null)
+      setSchool(null)
+      setIsAuthenticated(false)
+      return false
     }
-    setLoading(false)
+  }
+
+  useEffect(() => {
+    validateToken().finally(() => setLoading(false))
   }, [])
 
   const login = async (credential: string, password: string, loginType: "email" | "student_id" = "email") => {
@@ -135,7 +148,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  return <AuthContext.Provider value={{ user, school, loading, login, logout, register }}>{children}</AuthContext.Provider>
+  return <AuthContext.Provider value={{ user, school, loading, isAuthenticated, login, logout, register }}>{children}</AuthContext.Provider>
 }
 
 export function useAuthContext() {
@@ -146,6 +159,7 @@ export function useAuthContext() {
       user: null,
       school: null,
       loading: true,
+      isAuthenticated: false,
       login: async () => {},
       logout: () => {},
       register: async () => {}

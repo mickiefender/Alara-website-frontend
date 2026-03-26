@@ -256,11 +256,12 @@ function TeachersPageContent() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="employee_id">Employee ID</Label>
+                  <Label htmlFor="employee_id">Employee ID (Auto-generated)</Label>
                   <Input
                     id="employee_id"
                     value={formData.employee_id}
-                    onChange={(e) => setFormData({ ...formData, employee_id: e.target.value })}
+                    readOnly
+                    className="bg-muted"
                   />
                 </div>
               </div>

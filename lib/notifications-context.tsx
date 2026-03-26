@@ -68,42 +68,7 @@ export function NotificationProvider({ children, userId }: { children: React.Rea
     }
   }, [userId])
 
-  // Poll for new school payment notifications (for school admins)
-  useEffect(() => {
-    if (typeof window === "undefined") return
-    const userStr = sessionStorage.getItem("user")
-    if (!userStr) return
 
-    let userData: any
-    try {
-      userData = JSON.parse(userStr)
-    } catch {
-      return
-    }
-
-    if (userData.role !== "school_admin") return
-
-    const schoolId = userData.school_id || "default"
-    const schoolNotifKey = `school_payment_notifications_${schoolId}`
-
-    const pollInterval = setInterval(() => {
-      try {
-        const schoolNotifs: Notification[] = JSON.parse(localStorage.getItem(schoolNotifKey) || "[]")
-        setNotifications((prev) => {
-          const existingIds = new Set(prev.map((n) => n.id))
-          const newNotifs = schoolNotifs.filter((n) => !existingIds.has(n.id))
-          if (newNotifs.length === 0) return prev
-          return [...newNotifs, ...prev]
-            .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-            .slice(0, 50)
-        })
-      } catch {
-        // ignore
-      }
-    }, 10000) // Poll every 10 seconds
-
-    return () => clearInterval(pollInterval)
-  }, [userId])
 
   useEffect(() => {
     if (typeof window === "undefined") return

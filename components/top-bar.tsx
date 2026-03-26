@@ -7,6 +7,7 @@ import { academicsAPI } from "@/lib/api"
 import Image from "next/image"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Bell, Menu } from "lucide-react"
+import { ProfileAvatar } from "@/components/profile-avatar"
 
 interface TopBarProps {
   onToggle?: () => void
@@ -51,6 +52,15 @@ function TopBarContent({ onToggle }: TopBarProps) {
     }
     fetchProfilePic()
   }, [user?.id])
+
+  // Log API response for debugging
+  useEffect(() => {
+    if (profilePic) {
+      console.log('Profile picture loaded:', profilePic)
+    } else {
+      console.log('No profile picture found for user:', user?.id)
+    }
+  }, [profilePic, user?.id])
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -224,16 +234,13 @@ function TopBarContent({ onToggle }: TopBarProps) {
             }}
             className="flex items-center gap-3 hover:bg-sidebar-accent px-3 py-2 rounded-lg transition-colors"
           >
-            <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-sidebar-primary-foreground overflow-hidden bg-white">
-
-              {profilePic ? (
-                <Image src={profilePic} alt="Profile" width={32} height={32} className="w-full h-full object-cover" />
-              ) : schoolLogo ? (
-                <Image src={schoolLogo} alt="School" width={32} height={32} className="w-full h-full object-contain p-1" />
-              ) : (
-                <span className="text-slate-900">{user.first_name?.[0]}</span>
-              )}
-            </div>
+            <ProfileAvatar 
+              src={profilePic || undefined} 
+              alt={`${user.first_name || ''} ${user.last_name || ''}`.trim() || 'User'}
+              size="sm"
+              schoolLogo={schoolLogo}
+              className="border-2 border-white/20 shadow-sm"
+            />
             <div className="text-left hidden md:block">
               <p className="text-sm font-medium text-sidebar-foreground-computed">
                 {user.first_name} {user.last_name}

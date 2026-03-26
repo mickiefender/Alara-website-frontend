@@ -67,10 +67,6 @@ export function NoticeBoard() {
     }
 
     fetchData()
-    
-    // Refresh data every 30 seconds
-    const interval = setInterval(fetchData, 30000)
-    return () => clearInterval(interval)
   }, [])
 
   const getPriorityStyles = (priority: string) => {
@@ -154,19 +150,21 @@ export function NoticeBoard() {
 
   return (
     <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-          <Bell className="w-4 h-4 text-slate-500" />
-          Notice Board
-          <span className="ml-1 px-2 py-0.5 text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-full">
-            {totalCount}
-          </span>
-        </h3>
-        <span className="text-xs text-slate-500 dark:text-slate-400">
-          {new Date().toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" })}
-        </span>
-      </div>
+      {/* Header with refresh */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <h3 className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+              <Bell className="w-4 h-4 text-slate-500" />
+              Notice Board
+              <span className="ml-1 px-2 py-0.5 text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-full">
+                {totalCount}
+              </span>
+            </h3>
+            <span className="text-xs text-slate-500 dark:text-slate-400">
+              {new Date().toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" })}
+            </span>
+          </div>
+        </div>
 
       {/* Tab buttons */}
       <div className="flex gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">

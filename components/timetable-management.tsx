@@ -196,9 +196,18 @@ export function TimetableManagement() {
 
   const getTeacherName = (id: number) => {
     const teacher = teachers.find((t) => (t.user?.id || t.id) === id)
-    return teacher?.user?.get_full_name?.() || teacher?.first_name
-      ? `${teacher?.first_name} ${teacher?.last_name}`
-      : `Teacher ${id}`
+    if (teacher) {
+      let name = '';
+      if (teacher.user && teacher.user.first_name && teacher.user.last_name) {
+        name = `${teacher.user.first_name} ${teacher.user.last_name}`.trim();
+      } else if (teacher.first_name || teacher.last_name) {
+        name = `${teacher.first_name || ''} ${teacher.last_name || ''}`.trim();
+      } else if (teacher.username) {
+        name = teacher.username;
+      }
+      if (name) return name;
+    }
+    return `Teacher ${id}`;
   }
 
   const getClassName = (id: number) => {
@@ -374,11 +383,23 @@ export function TimetableManagement() {
                       <SelectValue placeholder="Select Teacher" />
                     </SelectTrigger>
                     <SelectContent>
-                      {teachers.map((t) => (
-                        <SelectItem key={t.id} value={t.user?.id?.toString() || t.id.toString()}>
-                          {t.user?.first_name ? `${t.user.first_name} ${t.user.last_name}` : t.first_name}
-                        </SelectItem>
-                      ))}
+{teachers.map((t) => {
+  let displayName = '';
+  if (t.user && t.user.first_name && t.user.last_name) {
+    displayName = `${t.user.first_name} ${t.user.last_name}`.trim();
+  } else if (t.first_name || t.last_name) {
+    displayName = `${t.first_name || ''} ${t.last_name || ''}`.trim();
+  } else if (t.user_data && t.user_data.first_name && t.user_data.last_name) {
+    displayName = `${t.user_data.first_name} ${t.user_data.last_name}`.trim();
+  } else if (t.username) {
+    displayName = t.username;
+  }
+  return (
+    <SelectItem key={t.id} value={t.user?.id?.toString() || t.id.toString()}>
+      {displayName || `Teacher ${t.id}`}
+    </SelectItem>
+  );
+})}
                     </SelectContent>
                   </Select>
                 </div>
