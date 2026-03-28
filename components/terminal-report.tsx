@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -9,17 +9,27 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { academicsAPI, usersAPI } from "@/lib/api"
-import { Award, Users, BookOpen, Calendar, CheckCircle, FileText, Download, Eye } from "lucide-react"
+import { Award, Users, BookOpen, Calendar, CheckCircle, FileText, Download, Eye, Loader2 } from "lucide-react"
 
 interface TerminalReportProps {
   studentId?: number
+}
+
+interface Student {
+  id: number
+  user?: {
+    id: number
+    first_name: string
+    last_name: string
+  }
 }
 
 export function TerminalReport({ studentId }: TerminalReportProps) {
   const [reports, setReports] = useState<any[]>([])
   const [sessions, setSessions] = useState<any[]>([])
   const [classes, setClasses] = useState<any[]>([])
-  const [students, setStudents] = useState<any[]>([])
+  const [students, setStudents] = useState<Student[]>([])
+  const [studentsLoading, setStudentsLoading] = useState(false)
   const [loading, setLoading] = useState(true)
   const [selectedReport, setSelectedReport] = useState<any>(null)
   const [showGenerateDialog, setShowGenerateDialog] = useState(false)
@@ -32,27 +42,33 @@ export function TerminalReport({ studentId }: TerminalReportProps) {
     student_id: studentId?.toString() || "",
     class_id: "",
     session_id: "",
+    template_id: "",
   })
 
-  // Fetch students when class changes in generate form
-  useEffect(() => {
-    if (generateForm.class_id) {
-      fetchStudentsForClass(generateForm.class_id)
-    }
-  }, [generateForm.class_id])
+  const [templates, setTemplates] = useState<any[]>([])
 
+  // Reset student when class changes
+  const handleClassChange = useCallback((classId: string) => {
+    setGenerateForm(prev => ({ ...prev, class_id: classId === "none" ? "" : classId, student_id: "" }))
+    if (classId !== "none" && classId !== "") {
+      fetchStudentsForClass(classId)
+    } else {
+      setStudents([])
+    }
+  }, [])
+
+  // Fetch students for selected class ONLY
   const fetchStudentsForClass = async (classId: string) => {
     try {
+      setStudentsLoading(true)
       const res = await usersAPI.students({ class_id: parseInt(classId) })
-      const classStudents = res.data.results || res.data || []
-      // Update students list with filtered students
-      setStudents(prev => {
-        // Keep students from other sources but prioritize class students
-        const otherStudents = prev.filter(s => !s.class_id)
-        return [...classStudents, ...otherStudents]
-      })
+      const classStudents: Student[] = res.data.results || res.data || []
+      setStudents(classStudents)
     } catch (error) {
-      console.error("[v0] Failed to fetch students for class:", error)
+      console.error("[FIXED] Failed to fetch students for class:", error)
+      setStudents([])
+    } finally {
+      setStudentsLoading(false)
     }
   }
 
@@ -63,21 +79,21 @@ export function TerminalReport({ studentId }: TerminalReportProps) {
   const fetchData = async () => {
     try {
       setLoading(true)
-      const [reportsRes, sessionsRes, classesRes, studentsRes] = await Promise.all([
+      const [reportsRes, sessionsRes, classesRes, templatesRes] = await Promise.all([
         studentId 
           ? academicsAPI.terminalReports({ student: studentId })
           : academicsAPI.terminalReports(),
         academicsAPI.academicSessions(),
         academicsAPI.classes(),
-        usersAPI.students(),
+        academicsAPI.terminalReportTemplates(),
       ])
 
       setReports(reportsRes.data.results || reportsRes.data || [])
       setSessions(sessionsRes.data.results || sessionsRes.data || [])
       setClasses(classesRes.data.results || classesRes.data || [])
-      setStudents(studentsRes.data.results || studentsRes.data || [])
+      setTemplates(templatesRes.data.results || templatesRes.data || [])
     } catch (error) {
-      console.error("[v0] Failed to fetch terminal reports data:", error)
+      console.error(" Failed to fetch terminal reports data:", error)
     } finally {
       setLoading(false)
     }
@@ -95,18 +111,22 @@ export function TerminalReport({ studentId }: TerminalReportProps) {
         student_id: parseInt(generateForm.student_id),
         class_id: parseInt(generateForm.class_id),
         session_id: parseInt(generateForm.session_id),
+        template_id: generateForm.template_id ? parseInt(generateForm.template_id) : null,
       })
       
       alert("Terminal report generated successfully!")
       setShowGenerateDialog(false)
       setGenerateForm({ student_id: studentId?.toString() || "", class_id: "", session_id: "" })
+      setStudents([])
       await fetchData()
       
       // Show the generated report
       setSelectedReport(res.data)
     } catch (error: any) {
       console.error("[v0] Failed to generate terminal report:", error)
-      alert(error?.response?.data?.error || "Failed to generate terminal report")
+      const errorMsg = error?.response?.data?.error || error?.response?.data?.non_field_errors?.[0] || error?.message || "Failed to generate terminal report. Check console for details."
+      console.error("[TerminalReport] Generate error:", error)
+      alert(errorMsg)
     } finally {
       setGenerating(false)
     }
@@ -132,7 +152,7 @@ export function TerminalReport({ studentId }: TerminalReportProps) {
       alert("Report published successfully!")
       await fetchData()
     } catch (error) {
-      console.error("[v0] Failed to publish report:", error)
+      console.error(" Failed to publish report", error)
       alert("Failed to publish report")
     }
   }
@@ -140,14 +160,6 @@ export function TerminalReport({ studentId }: TerminalReportProps) {
   const getStudentName = (id: number) => {
     const student = students.find((s) => (s.user?.id || s.id) === id)
     return student?.user?.first_name ? `${student.user.first_name} ${student.user.last_name}` : `Student ${id}`
-  }
-
-  // Get students filtered by selected class
-  const getStudentsForClass = (classId: string) => {
-    if (!classId) return students
-    // Students in the class would need to be fetched from API or filtered locally
-    // For now, return all students - the backend will handle validation
-    return students
   }
 
   // Filter reports - handle type comparison properly
@@ -307,7 +319,7 @@ export function TerminalReport({ studentId }: TerminalReportProps) {
         </CardContent>
       </Card>
 
-      {/* Generate Report Dialog */}
+      {/* Generate Report Dialog - FIXED STUDENT FILTERING */}
       <Dialog open={showGenerateDialog} onOpenChange={setShowGenerateDialog}>
         <DialogContent>
           <DialogHeader>
@@ -317,67 +329,104 @@ export function TerminalReport({ studentId }: TerminalReportProps) {
             {!studentId && (
               <div>
                 <Label>Student</Label>
-            <Select 
+                <Select 
                   value={generateForm.student_id || "none"} 
                   onValueChange={(v) => setGenerateForm({ ...generateForm, student_id: v === "none" ? "" : v })}
+                  disabled={!generateForm.class_id || studentsLoading}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select Student" />
+                    <SelectValue placeholder={generateForm.class_id ? (studentsLoading ? "Loading students..." : "Select Student") : "Select Class first"} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">Select Student</SelectItem>
                     {students.map((s) => (
-                      <SelectItem key={s.id} value={(s.user?.id || s.id).toString()}>
-                        {s.user?.first_name} {s.user?.last_name}
+                      <SelectItem key={s.id || s.user?.id} value={(s.user?.id || s.id).toString()}>
+                        {s.user?.first_name || ''} {s.user?.last_name || ''} (ID: {s.id || s.user?.id})
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+                {studentsLoading && (
+                  <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    <span>Loading students for selected class...</span>
+                  </div>
+                )}
               </div>
             )}
             <div>
               <Label>Class</Label>
-            <Select 
-                  value={generateForm.class_id || "none"} 
-                  onValueChange={(v) => setGenerateForm({ ...generateForm, class_id: v === "none" ? "" : v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Class" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Select Class</SelectItem>
-                    {classes.map((c) => (
-                      <SelectItem key={c.id} value={c.id.toString()}>
-                        {c.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <Select 
+                value={generateForm.class_id || "none"} 
+                onValueChange={(v) => handleClassChange(v)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Class" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Select Class</SelectItem>
+                  {classes.map((c) => (
+                    <SelectItem key={c.id} value={c.id.toString()}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label>Academic Session</Label>
-            <Select 
-                  value={generateForm.session_id || "none"} 
-                  onValueChange={(v) => setGenerateForm({ ...generateForm, session_id: v === "none" ? "" : v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Session" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Select Session</SelectItem>
-                    {sessions.map((s) => (
-                      <SelectItem key={s.id} value={s.id.toString()}>
-                        {s.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <Select 
+                value={generateForm.session_id || "none"} 
+                onValueChange={(v) => setGenerateForm({ ...generateForm, session_id: v === "none" ? "" : v })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Session" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Select Session</SelectItem>
+                  {sessions.map((s) => (
+                    <SelectItem key={s.id} value={s.id.toString()}>
+                      {s.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Report Template</Label>
+              <Select 
+                value={generateForm.template_id || "none"} 
+                onValueChange={(v) => setGenerateForm({ ...generateForm, template_id: v === "none" ? "" : v })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Default Template" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Default Template</SelectItem>
+                  {templates.map((t) => (
+                    <SelectItem key={t.id} value={t.id.toString()}>
+                      {t.name} {t.is_default && '(Default)'}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowGenerateDialog(false)}>Cancel</Button>
-            <Button onClick={handleGenerateReport} disabled={generating}>
-              {generating ? "Generating..." : "Generate"}
+            <Button variant="outline" onClick={() => {
+              setShowGenerateDialog(false)
+              setGenerateForm({ student_id: studentId?.toString() || "", class_id: "", session_id: "" })
+              setStudents([])
+            }}>Cancel</Button>
+            <Button onClick={handleGenerateReport} disabled={generating || !generateForm.student_id || !generateForm.class_id || !generateForm.session_id}>
+              {generating ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                'Generate'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -491,4 +540,3 @@ export function TerminalReport({ studentId }: TerminalReportProps) {
     </div>
   )
 }
-

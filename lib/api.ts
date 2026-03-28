@@ -39,8 +39,6 @@ apiClient.interceptors.response.use(
         if (typeof window !== "undefined") {
           window.location.href = "/auth/login"
         }
-      } else {
-        console.warn('[API] 401 on protected path, not redirecting')
       }
     } else if (status >= 500) {
       console.error('[API Error]', { status, url, details })
@@ -198,6 +196,8 @@ export const academicsAPI = {
   deleteGradingPolicy: (id: number) => apiClient.delete(`/academics/grading-policies/${id}/`),
   bulkCreateGradingPolicies: (data: any) => apiClient.post("/academics/grading-policies/bulk_create/", data),
   terminalReportTemplates: () => apiClient.get("/academics/terminal-report-templates/"),
+  templatePreview: (templateId: number, data: any) => apiClient.post(`/academics/terminal-report-templates/${templateId}/preview_render/`, data),
+  templatePdf: (templateId: number, data: any) => apiClient.post(`/academics/terminal-report-templates/${templateId}/generate_pdf/`, data, { responseType: 'blob' }),
   createTerminalReportTemplate: (data: any) => apiClient.post("/academics/terminal-report-templates/", data),
   updateTerminalReportTemplate: (id: number, data: any) => apiClient.put(`/academics/terminal-report-templates/${id}/`, data),
   deleteTerminalReportTemplate: (id: number) => apiClient.delete(`/academics/terminal-report-templates/${id}/`),

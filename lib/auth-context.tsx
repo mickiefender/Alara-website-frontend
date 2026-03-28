@@ -99,7 +99,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   useEffect(() => {
-    validateToken().finally(() => setLoading(false))
+    validateToken().finally(() => {
+      setLoading(false)
+      // Notify components of auth state change
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('authStateChanged'))
+      }
+    })
   }, [])
 
   const login = async (credential: string, password: string, loginType: "email" | "student_id" = "email") => {
@@ -119,6 +125,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await fetchSchool(userData.school_id)
       }
 
+      // Notify auth state change
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('authStateChanged'))
+      }
+
       router.push("/dashboard")
     } catch (error) {
       throw new Error("Login failed")
@@ -131,6 +142,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     authAPI.logout()
     setUser(null)
     setSchool(null)
+    
+    // Notify auth state change
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('authStateChanged'))
+    }
+    
     router.push("/auth/login")
   }
 

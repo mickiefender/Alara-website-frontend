@@ -88,6 +88,17 @@ const navSections: Record<string, NavSection[]> = {
         { label: "Grading", href: "/dashboard/school-admin/grading", icon: ClipboardEdit },
         { label: "Attendance", href: "/dashboard/school-admin/attendance", icon: CheckSquare },
         { label: "Exam", href: "/dashboard/school-admin/exam", icon: FileText },
+      
+      ],
+    },
+    {
+    label: "Results",
+      icon: BarChart,
+      items: [
+
+        { label: "Export Results", href: "/dashboard/school-admin/results/export", icon: FileText },
+        { label: "Report Templates", href: "/dashboard/school-admin/results/templates", icon: FileText },
+        { label: "Grading Policy", href: "/dashboard/school-admin/grading-policy", icon: Settings },
       ],
     },
     {

@@ -42,15 +42,30 @@ export default function StudentGradesDetail() {
           academicsAPI.subjects(),
         ])
 
-        const studentGrades = gradesRes.data.results || gradesRes.data || []
+        // Server-side filtered grades (safety net: client filter too)
+        let studentGrades = gradesRes.data.results || gradesRes.data || []
+        
+        // Double-check client-side filter if backend doesn't filter properly
+        studentGrades = studentGrades.filter((g: any) => g.student === studentId)
         setGrades(studentGrades)
         
-        const student = studentsRes.data.results?.find((s: any) => (s.id || s.user?.id) === studentId) || studentsRes.data?.find((s: any) => (s.id || s.user?.id) === studentId)
-        setStudentName(student ? `${student.first_name || student.user_data?.first_name || ''} ${student.last_name || student.user_data?.last_name || ''}`.trim() || `Student ${studentId}` : `Student ${studentId}`)
+        // Robust student lookup with full optional chaining
+        const studentsList = studentsRes.data?.results || studentsRes.data || []
+        const student = studentsList.find((s: any) => {
+          const studentIdField = s.id || s.user?.id || s.user_data?.id
+          return studentIdField === studentId
+        })
+        
+        setStudentName(student 
+          ? `${student.first_name || student.user_data?.first_name || student.user?.first_name || ''} ${student.last_name || student.user_data?.last_name || student.user?.last_name || ''}`.trim() 
+          : `Student ${studentId}`)
 
         setSubjects(subjectsRes.data.results || subjectsRes.data || [])
       } catch (error) {
         console.error("Failed to fetch student grades:", error)
+        // Don't crash on error - show generic student name
+        setStudentName(`Student ${studentId}`)
+        setGrades([])
       } finally {
         setLoading(false)
       }

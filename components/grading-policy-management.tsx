@@ -22,6 +22,18 @@ interface GradingPolicy {
   is_active: boolean
 }
 
+const isValidGradingPolicy = (obj: any): obj is GradingPolicy => {
+  return obj && 
+    typeof obj.id === 'number' &&
+    typeof obj.academic_session === 'number' &&
+    typeof obj.name === 'string' &&
+    typeof obj.assessment_type === 'string' &&
+    typeof obj.assessment_type_display === 'string' &&
+    typeof obj.weightage === 'number' &&
+    typeof obj.is_active === 'boolean'
+}
+
+
 interface AcademicSession {
   id: number
   name: string
@@ -110,7 +122,22 @@ export function GradingPolicyManagement() {
     try {
       setLoading(true)
       const res = await academicsAPI.gradingPoliciesBySession(parseInt(sessionId))
-      setPolicies(res.data || [])
+      const rawPolicies = Array.isArray(res.data?.results) 
+        ? res.data.results 
+        : Array.isArray(res.data) 
+          ? res.data 
+          : []
+      if (!Array.isArray(rawPolicies)) {
+        console.error("[GradingPolicy] rawPolicies not array:", typeof rawPolicies, rawPolicies)
+        setPolicies([])
+        setLoading(false)
+        return
+      }
+      const validPolicies = rawPolicies.filter(isValidGradingPolicy)
+      if (rawPolicies.length > 0 && validPolicies.length === 0) {
+        console.warn("[v0] No valid grading policies found. Using empty array.")
+      }
+      setPolicies(validPolicies)
     } catch (error) {
       console.error("[v0] Failed to fetch policies:", error)
     } finally {
@@ -220,7 +247,10 @@ export function GradingPolicyManagement() {
   }
 
   const calculateTotalWeightage = () => {
-    return policies.reduce((sum, p) => sum + (p.is_active ? p.weightage : 0), 0)
+    return policies.reduce((sum, p) => {
+      const weight = p.is_active ? (p.weightage ?? 0) : 0
+      return sum + weight
+    }, 0)
   }
 
   const isValidWeightage = calculateTotalWeightage() === 100
@@ -308,35 +338,35 @@ export function GradingPolicyManagement() {
                       </div>
                       <div className="flex items-center gap-4">
                         <div className="w-32">
-                          <Input
-                            type="number"
-                            value={existingPolicy?.weightage ?? policy.weightage}
-                            onChange={async (e) => {
-                              const newWeightage = parseFloat(e.target.value) || 0
-                              // Try to update locally first for UI responsiveness
-                              const updatedPolicies = policies.map(p => 
-                                p.assessment_type === policy.assessment_type 
-                                  ? { ...p, weightage: newWeightage }
-                                  : p
-                              )
-                              // If not exists, add it
-                              if (!existingPolicy) {
-                                updatedPolicies.push({
-                                  id: 0,
-                                  academic_session: parseInt(selectedSession),
-                                  name: "Default Grading Policy",
-                                  assessment_type: policy.assessment_type,
-                                  assessment_type_display: policy.name,
-                                  weightage: newWeightage,
-                                  is_active: true,
-                                })
-                              }
-                              setPolicies(updatedPolicies)
-                            }}
-                            min={0}
-                            max={100}
-                            step={1}
-                          />
+                        <Input
+                          type="number"
+                          value={(existingPolicy?.weightage ?? policy.weightage) ?? 0}
+                          onChange={async (e) => {
+                            const newWeightage = parseFloat(e.target.value) || 0
+                            // Try to update locally first for UI responsiveness
+                            const updatedPolicies = policies.map(p => 
+                              p.assessment_type === policy.assessment_type 
+                                ? { ...p, weightage: newWeightage }
+                                : p
+                            )
+                            // If not exists, add it
+                            if (!existingPolicy) {
+                              updatedPolicies.push({
+                                id: 0,
+                                academic_session: parseInt(selectedSession),
+                                name: "Default Grading Policy",
+                                assessment_type: policy.assessment_type,
+                                assessment_type_display: policy.name,
+                                weightage: newWeightage,
+                                is_active: true,
+                              })
+                            }
+                            setPolicies(updatedPolicies)
+                          }}
+                          min={0}
+                          max={100}
+                          step={1}
+                        />
                         </div>
                         <span className="text-gray-500">%</span>
                         {existingPolicy?.is_active ? (
