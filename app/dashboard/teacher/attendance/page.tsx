@@ -41,6 +41,7 @@ const [studentNames, setStudentNames] = useState<Record<number, string>>({})
   const [searchTerm, setSearchTerm] = useState("")
   const [startDate, setStartDate] = useState("")
   const [endDate, setEndDate] = useState("")
+  const [exporting, setExporting] = useState(false)
 
   // Fetch teacher's classes
   useEffect(() => {
@@ -145,6 +146,31 @@ const [studentNames, setStudentNames] = useState<Record<number, string>>({})
       console.error("Failed to fetch summary:", error)
     } finally {
       setSummaryLoading(false)
+    }
+  }
+
+  const exportSummary = async () => {
+    try {
+      setExporting(true)
+      await attendanceAPI.exportMyStudentsSummaryExcel(
+        selectedClass ? parseInt(selectedClass) : undefined,
+        startDate || undefined,
+        endDate || undefined
+      ).then((response) => {
+        const url = window.URL.createObjectURL(new Blob([response.data]))
+        const link = document.createElement('a')
+        link.href = url
+        link.setAttribute('download', `attendance_summary.xlsx`)
+        document.body.appendChild(link)
+        link.click()
+        link.parentNode?.removeChild(link)
+        window.URL.revokeObjectURL(url)
+      })
+    } catch (error) {
+      console.error("Failed to export summary:", error)
+      alert("Failed to export. Please try again.")
+    } finally {
+      setExporting(false)
     }
   }
 
@@ -537,9 +563,24 @@ const [studentNames, setStudentNames] = useState<Record<number, string>>({})
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg">Student Attendance Summary</CardTitle>
-                <Button variant="outline" size="sm" className="gap-1">
-                  <Download className="h-4 w-4" />
-                  Export
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={exportSummary}
+                  disabled={exporting || summaryLoading}
+                  className="gap-1"
+                >
+                  {exporting ? (
+                    <>
+                      <span className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                      Exporting...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="h-4 w-4" />
+                      Export Excel
+                    </>
+                  )}
                 </Button>
               </div>
             </CardHeader>

@@ -251,6 +251,15 @@ export const attendanceAPI = {
     if (endDate) params.append('end_date', endDate)
     return apiClient.get(`/attendance/my_students_summary/?${params.toString()}`)
   },
+  exportMyStudentsSummaryExcel: (classId?: number, startDate?: string, endDate?: string) => {
+    const params = new URLSearchParams()
+    if (classId) params.append('class_id', classId.toString())
+    if (startDate) params.append('start_date', startDate)
+    if (endDate) params.append('end_date', endDate)
+    return apiClient.get(`/attendance/export_my_students_summary/?${params.toString()}`, { 
+      responseType: 'blob' 
+    })
+  },
 }
 
 export const gradesAPI = {
