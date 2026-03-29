@@ -120,18 +120,7 @@ export const academicsAPI = {
   updateDepartment: (id: number, data: any) => apiClient.put(`/academics/departments/${id}/`, data),
   deleteClass: (id: number) => apiClient.delete(`/academics/classes/${id}/`),
   deleteSubject: (id: number) => apiClient.delete(`/academics/subjects/${id}/`),
-  classPerformance: () => {
-    const mockData = {
-      results: [
-        { className: "Class A", averageScore: 85 },
-        { className: "Class B", averageScore: 78 },
-        { className: "Class C", averageScore: 92 },
-        { className: "Class D", averageScore: 81 },
-        { className: "Class E", averageScore: 88 },
-      ],
-    }
-    return Promise.resolve({ data: mockData })
-  },
+  classPerformance: () => apiClient.get("/academics/classes/performance-detail/"),
   classPerformanceWithAttendance: () => apiClient.get("/academics/classes/performance/"),
   calendarEvents: () => apiClient.get("/academics/calendar-events/"),
   createCalendarEvent: (data: any) => apiClient.post("/academics/calendar-events/", data),
@@ -387,7 +376,13 @@ export const usersAPI = {
   updateStudent: (id: number, data: any) => apiClient.put(`/users/students/${id}/`, data),
   delete: (id: number) => apiClient.delete(`/users/users/${id}/`),
   deleteTeacher: (id: number) => apiClient.delete(`/users/teachers/${id}/`),
-  deleteStudent: (id: number) => apiClient.delete(`/users/students/${id}/`),
+  deleteStudent: (id: number) => apiClient.delete(`/users/students/${id}/`),  
+  adminStaff: {
+    list: () => apiClient.get("/users/admin-staff/"),
+    create: (data: any) => apiClient.post("/users/admin-staff/", data),
+    updatePermissions: (id: number, permissions: string[]) => apiClient.put(`/users/admin-staff/${id}/permissions/`, { permissions }),
+    delete: (id: number) => apiClient.delete(`/users/admin-staff/${id}/`),
+  },
 }
 
 export const timetableAPI = {

@@ -13,9 +13,10 @@ interface User {
   email: string
   first_name: string
   last_name: string
-  role: "super_admin" | "school_admin" | "teacher" | "student"
+  role: "super_admin" | "school_admin" | "teacher" | "student" | "academic_admin" | "exam_officer" | "finance_officer" | "ct_admin_support"
   school_id?: number
   student_id?: string
+  permissions?: string[]
 }
 
 interface School {
@@ -78,14 +79,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!token || !storedUser) return false
 
     try {
-      const parsedUser: User = JSON.parse(storedUser)
-      // Test token validity
-      await authAPI.me()
+      const meResponse = await authAPI.me()
+      const meData = meResponse.data
+      const parsedUser: User = { ...JSON.parse(storedUser || '{}'), ...meData, permissions: meData.permissions || meData.role_permission?.permission || [] }
+      sessionStorage.setItem("user", JSON.stringify(parsedUser))
       setUser(parsedUser)
       if (parsedUser.school_id) {
         await fetchSchool(parsedUser.school_id)
       }
-      setIsAuthenticated(!!parsedUser.school_id)
+      setIsAuthenticated(true)
       return true
     } catch (error: any) {
       console.warn("Invalid/expired token:", error.response?.status)
@@ -117,12 +119,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const response = await authAPI.login(loginData)
       const { access, user: userData } = response.data
 
+      const fullUserData = { ...userData, permissions: userData.permissions || userData.role_permission?.permission || [] }
       sessionStorage.setItem("authToken", access)
-      sessionStorage.setItem("user", JSON.stringify(userData))
-      setUser(userData)
+      sessionStorage.setItem("user", JSON.stringify(fullUserData))
+      setUser(fullUserData)
 
-      if (userData.school_id) {
-        await fetchSchool(userData.school_id)
+      if (fullUserData.school_id) {
+        await fetchSchool(fullUserData.school_id)
       }
 
       // Notify auth state change
@@ -131,6 +134,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       router.push("/dashboard")
+
     } catch (error) {
       throw new Error("Login failed")
     }

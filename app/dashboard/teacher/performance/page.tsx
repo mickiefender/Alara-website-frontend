@@ -1,84 +1,165 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { usersAPI } from "@/lib/api"
-import { Input } from "@/components/ui/input"
-import { Search, TrendingUp } from "lucide-react"
-import Loader from "@/components/loader"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Badge } from "@/components/ui/badge"
+import { BarChart3, Users, TrendingUp } from "lucide-react"
+import { academicsAPI } from "@/lib/api"
+import { useAuthContext } from "@/lib/auth-context"
+import { ProtectedRoute } from "@/lib/protected-route"
+import { TeacherClassStats } from "@/components/teacher-class-stats"
 
-function PerformanceContent() {
-  const [students, setStudents] = useState<any[]>([])
+interface ClassPerformanceData {
+  classId: number
+  className: string
+  averageScore: number
+  attendancePercentage: number
+  performanceScore: number
+  studentCount: number
+}
+
+interface ClassTeacher {
+  id: number
+  class_name: string
+}
+
+export default function PerformancePage() {
+  const { user } = useAuthContext()
+  const [classesPerformance, setClassesPerformance] = useState<ClassPerformanceData[]>([])
+  const [teacherClasses, setTeacherClasses] = useState<ClassTeacher[]>([])
   const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState("")
+  const [selectedClassPerf, setSelectedClassPerf] = useState<ClassPerformanceData | null>(null)
 
   useEffect(() => {
-    const fetchStudents = async () => {
+    const fetchPerformance = async () => {
       try {
-        const res = await usersAPI.students()
-        const data = res.data.results || res.data || []
-        setStudents(Array.isArray(data) ? data : [])
+        setLoading(true)
+        const [teacherClassesRes, perfRes] = await Promise.all([
+          academicsAPI.classTeachers(),
+          academicsAPI.classPerformanceWithAttendance()
+        ])
+        const teacherClassIds = teacherClassesRes.data.results?.map((ct: ClassTeacher) => ct.id) || []
+        const allPerf = perfRes.data.results || perfRes.data || []
+        const teacherPerf = allPerf.filter((p: ClassPerformanceData) => teacherClassIds.includes(p.classId))
+        setClassesPerformance(teacherPerf)
+        setTeacherClasses(teacherClassesRes.data.results || [])
+        if (teacherPerf.length > 0) {
+          setSelectedClassPerf(teacherPerf[0])
+        }
       } catch (error) {
-        console.error("Failed to fetch students:", error)
+        console.error("Failed to fetch performance data:", error)
       } finally {
         setLoading(false)
       }
     }
-    fetchStudents()
+    fetchPerformance()
   }, [])
 
-  const filteredStudents = students.filter((s) => (s.first_name || "").toLowerCase().includes(searchTerm.toLowerCase()))
-
   if (loading) {
+    return (
+      <ProtectedRoute allowedRoles={["teacher"]}>
+        <div className="space-y-6">
+          <div className="space-y-2">
+            <div className="h-8 w-64 bg-muted rounded-md animate-pulse" />
+            <div className="h-4 w-96 bg-muted rounded-md animate-pulse" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="h-32 bg-muted rounded-xl animate-pulse" />
+            ))}
+          </div>
+        </div>
+      </ProtectedRoute>
+    )
+  }
+
   return (
-    <div className="flex items-center justify-center min-h-screen">
-      <Loader size="md" color="#f5c607" />
-    </div>
-  )
-}
- return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-secondary">Student Performance</h1>
-        <p className="text-gray-600">Track and analyze student progress</p>
-      </div>
-
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="mb-6 relative">
-          <Search className="absolute left-3 top-3 text-gray-400" size={20} />
-          <Input
-            placeholder="Search students..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
+    <ProtectedRoute allowedRoles={["teacher"]}>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold text-secondary">My Classes Performance</h1>
+          <p className="text-muted-foreground">Analytics for your assigned classes ({teacherClasses.length})</p>
         </div>
 
-        <div className="grid gap-4">
-          {filteredStudents.map((s) => (
-            <div key={s.id} className="border rounded-lg p-4 hover:shadow-lg transition-shadow">
-              <div className="flex justify-between items-start mb-3">
-                <div>
-                  <h3 className="font-semibold text-lg">
-                    {s.first_name} {s.last_name}
-                  </h3>
-                  <p className="text-sm text-gray-600">ID: {s.id}</p>
+        <Card>
+          <CardHeader>
+            <CardTitle>Select Class</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {classesPerformance.map((perf) => (
+                <div 
+                  key={perf.classId}
+                  className={`p-4 border rounded-lg cursor-pointer hover:shadow-md transition-all ${
+                    selectedClassPerf?.classId === perf.classId ? "border-primary bg-primary/5 shadow-md" : ""
+                  }`}
+                  onClick={() => setSelectedClassPerf(perf)}
+                >
+                  <h3 className="font-semibold">{perf.className}</h3>
+                  <p className="text-2xl font-bold text-primary">{perf.averageScore.toFixed(1)}%</p>
+                  <p className="text-sm text-muted-foreground">{perf.studentCount} students</p>
                 </div>
-                <div className="flex items-center gap-2 text-green-600">
-                  <TrendingUp size={20} />
-                  <span className="font-semibold">85%</span>
+              ))}
+              {classesPerformance.length === 0 && (
+                <div className="col-span-full p-12 text-center border-2 border-dashed border-muted rounded-lg">
+                  <Users className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
+                  <h3 className="text-xl font-semibold mb-2 text-muted-foreground">No Classes Assigned</h3>
+                  <p className="text-muted-foreground">Performance data will appear here when you are assigned to classes.</p>
                 </div>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-green-500 h-2 rounded-full" style={{ width: "85%" }}></div>
-              </div>
+              )}
             </div>
-          ))}
-        </div>
+          </CardContent>
+        </Card>
+
+        {selectedClassPerf && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="w-5 h-5" />
+                {selectedClassPerf.className} Grade Stats
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <TeacherClassStats data={selectedClassPerf} loading={false} />
+            </CardContent>
+          </Card>
+        )}
+
+        <Tabs defaultValue="overview" className="w-full">
+          <TabsList>
+            <TabsTrigger value="overview">
+              <Users className="w-4 h-4 mr-2" />
+              Overview
+            </TabsTrigger>
+            <TabsTrigger value="grades">
+              <TrendingUp className="w-4 h-4 mr-2" />
+              Grades Distribution
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="overview" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Class Comparison</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">Comparison chart across your classes coming soon...</p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          <TabsContent value="grades">
+            <Card>
+              <CardHeader>
+                <CardTitle>Grade Breakdown</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">Detailed grade distribution and top performers coming soon...</p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
-    </div>
+    </ProtectedRoute>
   )
 }
 
-export default function PerformancePage() {
-  return <PerformanceContent />
-}

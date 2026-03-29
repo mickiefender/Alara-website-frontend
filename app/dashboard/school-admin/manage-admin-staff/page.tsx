@@ -1,6 +1,7 @@
 "use client"
 
 import React from "react"
+import { usersAPI } from "@/lib/api";
 
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -19,26 +20,22 @@ const ADMIN_ROLES = [
   { id: "ct_admin_support", label: "CT/Admin Support", icon: "🖥️" },
 ]
 
-const PERMISSIONS = [
-  { id: "manage_students", label: "Manage Students", category: "User Management" },
-  { id: "manage_teachers", label: "Manage Teachers", category: "User Management" },
-  { id: "manage_classes", label: "Manage Classes", category: "Academics" },
-  { id: "manage_subjects", label: "Manage Subjects", category: "Academics" },
-  { id: "manage_attendance", label: "Manage Attendance", category: "Operations" },
-  { id: "manage_grades", label: "Manage Grades", category: "Academics" },
-  { id: "manage_exams", label: "Manage Exams", category: "Exams" },
-  { id: "view_exams", label: "View Exams", category: "Exams" },
-  { id: "manage_fees", label: "Manage Fees", category: "Finance" },
-  { id: "view_fees", label: "View Fees", category: "Finance" },
-  { id: "manage_assignments", label: "Manage Assignments", category: "Teaching" },
-  { id: "view_reports", label: "View Reports", category: "Analytics" },
-  { id: "manage_timetable", label: "Manage Timetable", category: "Academics" },
-  { id: "manage_materials", label: "Manage Materials", category: "Teaching" },
-  { id: "send_messages", label: "Send Messages", category: "Communication" },
-  { id: "manage_notices", label: "Manage Notices", category: "Communication" },
-  { id: "manage_events", label: "Manage Events", category: "Communication" },
-  { id: "manage_admins", label: "Manage Admin Accounts", category: "Administration" },
-  { id: "view_analytics", label: "View Analytics", category: "Analytics" },
+const NAV_LINK_PERMISSIONS = [
+  { id: "manage_admins", label: "Admin Staff Management", category: "Admin", href: "/dashboard/school-admin/manage-admin-staff" },
+  { id: "manage_students", label: "Students", category: "Admin", href: "/dashboard/school-admin/students" },
+  { id: "manage_teachers", label: "Teachers", category: "Admin", href: "/dashboard/school-admin/teachers" },
+  { id: "manage_classes", label: "Classes", category: "Academics", href: "/dashboard/school-admin/classes" },
+  { id: "manage_subjects", label: "Subjects", category: "Academics", href: "/dashboard/school-admin/subjects" },
+  { id: "manage_attendance", label: "Attendance", category: "Operations", href: "/dashboard/school-admin/attendance" },
+  { id: "manage_grades", label: "Grading", category: "Academics", href: "/dashboard/school-admin/grading" },
+  { id: "manage_exams", label: "Exams", category: "Exams", href: "/dashboard/school-admin/exam" },
+  { id: "view_reports", label: "Performance Reports", category: "Analytics", href: "/dashboard/school-admin/performance" },
+  { id: "manage_fees", label: "Fee Management", category: "Finance", href: "/dashboard/school-admin/manage-fees" },
+  { id: "view_fees", label: "Payments & Receipts", category: "Finance", href: "/dashboard/school-admin/receipts" },
+  { id: "manage_timetable", label: "Timetable", category: "Academics", href: "/dashboard/school-admin/timetable" },
+  { id: "manage_materials", label: "Learning Materials", category: "Library", href: "/dashboard/school-admin/library/books" },
+  { id: "send_messages", label: "Messaging", category: "Communication", href: "/dashboard/school-admin/messaging" },
+  { id: "manage_notices", label: "Announcements", category: "Communication", href: "/dashboard/school-admin/announcement" },
 ]
 
 interface AdminStaff {
@@ -77,33 +74,10 @@ export default function ManageAdminStaffPage() {
     try {
       setLoading(true)
       setError(null)
-      console.log("[v0] Fetching admin staff from /api/users/admin-staff/")
-      
-      const token = localStorage.getItem("authToken")
-      const response = await fetch("/api/users/admin-staff/", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: token ? `Bearer ${token}` : "",
-        },
-      })
-
-      console.log("[v0] Response status:", response.status)
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        console.error("[v0] Error response:", errorData)
-        throw new Error(
-          errorData?.detail || errorData?.message || `Failed to fetch staff: ${response.status} ${response.statusText}`
-        )
-      }
-      
-      const data = await response.json()
-      console.log("[v0] Staff data received:", data)
+      const { data } = await usersAPI.adminStaff.list();
       setStaff(data.results || data || [])
     } catch (err: any) {
-      console.error("[v0] Error fetching staff:", err)
-      setError(err.message || "Failed to load admin staff. Please try again.")
+      setError(err.response?.data?.detail || err.message || "Failed to load admin staff. Please try again.")
     } finally {
       setLoading(false)
     }
@@ -119,37 +93,11 @@ export default function ManageAdminStaffPage() {
     try {
       setLoading(true)
       setError(null)
-      
-      const token = localStorage.getItem("authToken")
-      console.log("[v0] Creating staff member with role:", selectedRole)
-      
-      const response = await fetch("/api/users/admin-staff/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: token ? `Bearer ${token}` : "",
-        },
-        body: JSON.stringify({
-          ...formData,
-          role: selectedRole,
-          permissions: selectedPermissions,
-        }),
-      })
-
-      console.log("[v0] Create response status:", response.status)
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        console.error("[v0] Error creating staff:", errorData)
-        throw new Error(
-          errorData?.detail || 
-          errorData?.email?.[0] ||
-          errorData?.username?.[0] ||
-          "Failed to create staff"
-        )
-      }
-      
-      console.log("[v0] Staff created successfully")
+      await usersAPI.adminStaff.create({
+        ...formData,
+        role: selectedRole,
+        permissions: selectedPermissions,
+      });
       setFormData({ username: "", email: "", first_name: "", last_name: "", password: "" })
       setSelectedRole("")
       setSelectedPermissions([])
@@ -157,8 +105,7 @@ export default function ManageAdminStaffPage() {
       setError(null)
       fetchStaff()
     } catch (err: any) {
-      console.error("[v0] Error creating staff:", err)
-      setError(err.message || "Failed to create staff")
+      setError(err.response?.data?.detail || err.response?.data?.email?.[0] || err.response?.data?.username?.[0] || err.message || "Failed to create staff")
     } finally {
       setLoading(false)
     }
@@ -167,17 +114,10 @@ export default function ManageAdminStaffPage() {
   const handleUpdatePermissions = async (staffId: number) => {
     try {
       setError(null)
-      const response = await fetch(`/api/users/admin-staff/${staffId}/permissions/`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ permissions: selectedPermissions }),
-      })
-
-      if (!response.ok) throw new Error("Failed to update permissions")
+      await usersAPI.adminStaff.updatePermissions(staffId, selectedPermissions);
       setSelectedStaff(null)
       fetchStaff()
     } catch (err: any) {
-      console.error("[v0] Update error:", err)
       setError("Failed to update permissions")
     }
   }
@@ -186,14 +126,9 @@ export default function ManageAdminStaffPage() {
     if (confirm("Are you sure you want to delete this staff member?")) {
       try {
         setError(null)
-        const response = await fetch(`/api/users/admin-staff/${staffId}/`, {
-          method: "DELETE",
-        })
-
-        if (!response.ok) throw new Error("Failed to delete staff")
+        await usersAPI.adminStaff.delete(staffId);
         fetchStaff()
       } catch (err: any) {
-        console.error("[v0] Delete error:", err)
         setError("Failed to delete staff member")
       }
     }
@@ -310,9 +245,10 @@ export default function ManageAdminStaffPage() {
                     Assign Permissions
                   </h3>
                   <div className="space-y-3">
-                    {PERMISSIONS.map((permission) => (
+                  {NAV_LINK_PERMISSIONS.map((permission) => (
                       <label key={permission.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer">
                         <Checkbox
+                          checked={selectedPermissions.includes(permission.id)}
                           checked={selectedPermissions.includes(permission.id)}
                           onCheckedChange={(checked) => {
                             setSelectedPermissions(
@@ -322,9 +258,14 @@ export default function ManageAdminStaffPage() {
                             )
                           }}
                         />
-                        <div>
-                          <p className="font-medium text-gray-900">{permission.label}</p>
-                          <p className="text-xs text-gray-500">{permission.category}</p>
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <span className="text-sm font-semibold">{permission.category[0]}</span>
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-900">{permission.label}</p>
+                            <p className="text-xs text-gray-500">{permission.category}</p>
+                          </div>
                         </div>
                       </label>
                     ))}
@@ -442,7 +383,7 @@ export default function ManageAdminStaffPage() {
               <div>
                 <h3 className="text-sm font-semibold text-gray-900 mb-4">Select Permissions</h3>
                 <div className="space-y-3">
-                  {PERMISSIONS.map((permission) => (
+                  {NAV_LINK_PERMISSIONS.map((permission) => (
                     <label key={permission.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer">
                       <Checkbox
                         checked={selectedPermissions.includes(permission.id)}

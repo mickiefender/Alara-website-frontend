@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Users, BookOpen, FileText, Clock, Hash } from "lucide-react"
+import { Users, BookOpen, FileText, Clock, Hash, BarChart3 } from "lucide-react"
 import { academicsAPI } from "@/lib/api"
 import { useAuthContext } from "@/lib/auth-context"
+import { TeacherClassStats } from "./teacher-class-stats"
 
 interface ClassTeacher {
   id: number
@@ -32,11 +33,22 @@ interface ClassSubject {
   subject_code: string
 }
 
+interface ClassPerformanceData {
+  classId: number
+  className: string
+  averageScore: number
+  attendancePercentage: number
+  performanceScore: number
+  studentCount: number
+}
+
 export function TeacherClassesDashboard() {
   const { user } = useAuthContext()
   const [managedClasses, setManagedClasses] = useState<ClassTeacher[]>([])
   const [studentsInClass, setStudentsInClass] = useState<StudentInClass[]>([])
   const [classSubjects, setClassSubjects] = useState<ClassSubject[]>([])
+  const [performanceData, setPerformanceData] = useState<ClassPerformanceData | null>(null)
+  const [performanceLoading, setPerformanceLoading] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedClass, setSelectedClass] = useState<ClassTeacher | null>(null)
@@ -95,6 +107,21 @@ export function TeacherClassesDashboard() {
       const allSubjects = subjectsRes.data.results || subjectsRes.data
       const subjects = Array.isArray(allSubjects) ? allSubjects.filter((s: any) => s.class_obj === classTeacher.id) : []
       setClassSubjects(subjects)
+
+      // Get performance stats for this class
+      setPerformanceLoading(true)
+      try {
+        const perfRes = await academicsAPI.classPerformanceWithAttendance()
+        const allPerf = perfRes.data.results || perfRes.data || []
+        // Filter to selected class (backend returns school-wide top 10)
+        const classPerf = allPerf.find((p: any) => p.classId === classTeacher.id)
+        setPerformanceData(classPerf || null)
+      } catch (perfErr) {
+        console.error("Performance data fetch failed:", perfErr)
+        setPerformanceData(null)
+      } finally {
+        setPerformanceLoading(false)
+      }
     } catch (err: any) {
       setError("Failed to load class details")
     }
@@ -155,26 +182,52 @@ export function TeacherClassesDashboard() {
         </CardContent>
       </Card>
 
-      {selectedClass && (
-        <Tabs defaultValue="students" className="w-full">
-          <TabsList>
-            <TabsTrigger value="students" className="gap-2">
-              <Users className="w-4 h-4" />
-              Students ({studentsInClass.length})
-            </TabsTrigger>
-            <TabsTrigger value="subjects" className="gap-2">
-              <BookOpen className="w-4 h-4" />
-              Subjects ({classSubjects.length})
-            </TabsTrigger>
-            <TabsTrigger value="attendance" className="gap-2">
-              <FileText className="w-4 h-4" />
-              Attendance
-            </TabsTrigger>
-            <TabsTrigger value="grades" className="gap-2">
-              <Clock className="w-4 h-4" />
-              Grades
-            </TabsTrigger>
-          </TabsList>
+{selectedClass && (
+        <>
+          {/* Performance Stats Cards */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="w-5 h-5" />
+                {selectedClass.class_name} Performance Overview
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <TeacherClassStats 
+                data={performanceData} 
+                loading={performanceLoading}
+                className="mb-6"
+              />
+            </CardContent>
+          </Card>
+
+<Tabs defaultValue="stats" className="w-full">
+            <TabsList>
+              <TabsTrigger value="students" className="gap-2">
+                <Users className="w-4 h-4" />
+                Students ({studentsInClass.length})
+              </TabsTrigger>
+              <TabsTrigger value="subjects" className="gap-2">
+                <BookOpen className="w-4 h-4" />
+                Subjects ({classSubjects.length})
+              </TabsTrigger>
+              <TabsTrigger value="stats" className="gap-2">
+                <BarChart3 className="w-4 h-4" />
+                Stats ({performanceData?.studentCount || 0})
+              </TabsTrigger>
+              <TabsTrigger value="attendance" className="gap-2">
+                <FileText className="w-4 h-4" />
+                Attendance
+              </TabsTrigger>
+              <TabsTrigger value="grades" className="gap-2">
+                <Clock className="w-4 h-4" />
+                Grades
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        )}
+      )}
+
 
           <TabsContent value="students">
             <Card>
@@ -234,6 +287,49 @@ export function TeacherClassesDashboard() {
                       </div>
                     ))}
                   </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="stats">
+            <Card>
+              <CardHeader>
+                <CardTitle>{selectedClass?.class_name} Grade Statistics</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {performanceData ? (
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <h3 className="font-semibold mb-2">Key Metrics</h3>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span>Average Grade:</span>
+                            <Badge variant="default">{performanceData.averageScore.toFixed(1)}%</Badge>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Pass Rate:</span>
+                            <Badge variant="outline">{Math.round(performanceData.averageScore / 1.2).toFixed(0)}%</Badge>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Performance Score:</span>
+                            <Badge variant="secondary">{performanceData.performanceScore.toFixed(1)}%</Badge>
+                          </div>
+                        </div>
+                      </div>
+                      <div>
+                        <h3 className="font-semibold mb-2">Class Size</h3>
+                        <div className="text-3xl font-bold">{performanceData.studentCount}</div>
+                        <p className="text-sm text-muted-foreground">Active students</p>
+                      </div>
+                    </div>
+                    <div className="text-center py-8 bg-muted/50 rounded-lg">
+                      <p className="text-muted-foreground">Detailed grade distribution chart coming soon...</p>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground">Performance data loading...</p>
                 )}
               </CardContent>
             </Card>
