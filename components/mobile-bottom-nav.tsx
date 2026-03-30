@@ -22,6 +22,8 @@ const MOBILE_NAV_PERMISSION_MAP: Record<string, string> = {
   'Grades': 'manage_grades',
   'Timetable': 'manage_timetable',
   'Fees': 'view_fees',
+  'Dashboard': 'view_admin_dashboard',
+  'Profile': 'view_profile',
 }
 
 const navItems: Record<string, NavItem[]> = {
@@ -30,6 +32,11 @@ const navItems: Record<string, NavItem[]> = {
     { label: 'Students', href: '/dashboard/school-admin/students', icon: Users },
     { label: 'Teachers', href: '/dashboard/school-admin/teachers', icon: Users },
     { label: 'Academics', href: '/dashboard/school-admin/timetable', icon: BookOpen },
+    { label: 'More', href: '#', icon: Menu, isMenu: true },
+  ],
+  admin_staff: [
+    { label: 'Dashboard', href: '/dashboard/admin-staff', icon: LayoutDashboard },
+    { label: 'Profile', href: '/dashboard/admin-staff/profile', icon: Users },
     { label: 'More', href: '#', icon: Menu, isMenu: true },
   ],
   teacher: [

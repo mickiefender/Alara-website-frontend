@@ -2,6 +2,7 @@
 
 import React from "react"
 import { usersAPI } from "@/lib/api";
+import { NAV_LINK_PERMISSIONS } from "@/lib/permissions";
 
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -20,23 +21,6 @@ const ADMIN_ROLES = [
   { id: "ct_admin_support", label: "CT/Admin Support", icon: "🖥️" },
 ]
 
-const NAV_LINK_PERMISSIONS = [
-  { id: "manage_admins", label: "Admin Staff Management", category: "Admin", href: "/dashboard/school-admin/manage-admin-staff" },
-  { id: "manage_students", label: "Students", category: "Admin", href: "/dashboard/school-admin/students" },
-  { id: "manage_teachers", label: "Teachers", category: "Admin", href: "/dashboard/school-admin/teachers" },
-  { id: "manage_classes", label: "Classes", category: "Academics", href: "/dashboard/school-admin/classes" },
-  { id: "manage_subjects", label: "Subjects", category: "Academics", href: "/dashboard/school-admin/subjects" },
-  { id: "manage_attendance", label: "Attendance", category: "Operations", href: "/dashboard/school-admin/attendance" },
-  { id: "manage_grades", label: "Grading", category: "Academics", href: "/dashboard/school-admin/grading" },
-  { id: "manage_exams", label: "Exams", category: "Exams", href: "/dashboard/school-admin/exam" },
-  { id: "view_reports", label: "Performance Reports", category: "Analytics", href: "/dashboard/school-admin/performance" },
-  { id: "manage_fees", label: "Fee Management", category: "Finance", href: "/dashboard/school-admin/manage-fees" },
-  { id: "view_fees", label: "Payments & Receipts", category: "Finance", href: "/dashboard/school-admin/receipts" },
-  { id: "manage_timetable", label: "Timetable", category: "Academics", href: "/dashboard/school-admin/timetable" },
-  { id: "manage_materials", label: "Learning Materials", category: "Library", href: "/dashboard/school-admin/library/books" },
-  { id: "send_messages", label: "Messaging", category: "Communication", href: "/dashboard/school-admin/messaging" },
-  { id: "manage_notices", label: "Announcements", category: "Communication", href: "/dashboard/school-admin/announcement" },
-]
 
 interface AdminStaff {
   id: number
@@ -249,7 +233,6 @@ export default function ManageAdminStaffPage() {
                       <label key={permission.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer">
                         <Checkbox
                           checked={selectedPermissions.includes(permission.id)}
-                          checked={selectedPermissions.includes(permission.id)}
                           onCheckedChange={(checked) => {
                             setSelectedPermissions(
                               checked
@@ -344,7 +327,18 @@ export default function ManageAdminStaffPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="text-sm text-gray-600">{member.permissions?.length || 0} permissions</span>
+                        <div className="flex flex-wrap gap-1">
+                          {member.permissions?.map((permId: string) => {
+                            const perm = NAV_LINK_PERMISSIONS.find(p => p.id === permId)
+                            return perm ? (
+                              <span key={permId} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                                {perm.label}
+                              </span>
+                            ) : null
+                          }) || (member.permissions?.length === 0 ? (
+                            <span className="text-xs text-gray-500">No permissions</span>
+                          ) : null)}
+                        </div>
                       </td>
                       <td className="px-6 py-4 flex gap-2">
                         <button

@@ -42,7 +42,18 @@ import {
   Bell,
   Search,
   X,
+  Shield,
+  ClipboardList,
 } from "lucide-react"
+
+import { NAV_LINK_PERMISSIONS } from "@/lib/permissions"
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogHeader, 
+  DialogTitle 
+} from "@/components/ui/dialog"
 
 type NavItem = {
   label: string
@@ -140,6 +151,30 @@ const navSections: Record<string, NavSection[]> = {
       ],
     },
   ],
+  admin_staff: [
+    {
+      label: "Dashboard",
+      icon: LayoutDashboard,
+      href: "/dashboard/admin-staff",
+    },
+    {
+      label: "Profile",
+      icon: UserCircle,
+      href: "/dashboard/admin-staff/profile",
+    },
+    {
+      label: "Permissions",
+      icon: Shield,
+      href: "/dashboard/admin-staff/permissions",
+    },
+    {
+      label: "My Tasks",
+      icon: ClipboardList,
+      items: [
+        { label: "Quick Actions", href: "/dashboard/admin-staff/tasks", icon: ClipboardCheck },
+      ],
+    },
+  ],
   teacher: [
     {
       label: "Dashboard",
@@ -223,6 +258,7 @@ function SidebarNavContent({ isCollapsed, onClose, isMobile, onToggleCollapse }:
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(["Dashboard"]))
   const [searchQuery, setSearchQuery] = useState("")
   const [profilePic, setProfilePic] = useState<string>("")
+  const [showPermissionsDialog, setShowPermissionsDialog] = useState(false)
 
 
   useEffect(() => {
@@ -258,18 +294,42 @@ function SidebarNavContent({ isCollapsed, onClose, isMobile, onToggleCollapse }:
 
   const sections = navSections[user.role as keyof typeof navSections] || []
 
-  // Filter sections based on search
+  // Permission-based filtering for admin staff roles
+  const userPerms = user.permissions || []
+  const isAdminStaff = ['academic_admin', 'exam_officer', 'finance_officer', 'ct_admin_support'].includes(user.role || '')
+  
+  const permissionFilteredSections = sections.map(section => ({
+    ...section,
+    items: section.items?.filter(item => {
+      // Always allow dashboard/admin core for school_admin
+      if (user.role === 'school_admin') return true
+      // Admin staff: filter by permissions
+      if (isAdminStaff) {
+        // Exact match by href from NAV_LINK_PERMISSIONS
+        const hrefMatch = NAV_LINK_PERMISSIONS.find(p => p.href === item.href)
+        if (hrefMatch && userPerms.includes(hrefMatch.id as any)) return true
+        
+        // Fallback heuristic
+        const itemId = item.href.split('/').pop()?.replace(/-/g, '_') || ''
+        return userPerms.includes(itemId) || 
+               userPerms.includes('view_' + itemId)
+      }
+      return true
+    })
+  }))
+
+  // Filter sections based on search + permissions
   const filteredSections = searchQuery
-    ? sections.map(section => ({
+    ? permissionFilteredSections.map(section => ({
         ...section,
         items: section.items?.filter(
           item => item.label.toLowerCase().includes(searchQuery.toLowerCase())
-        )
+        ) || []
       })).filter(section => 
         section.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        section.items?.length
+        (section.items?.length ?? 0) > 0
       )
-    : sections
+    : permissionFilteredSections.filter(section => !(section.items && section.items.length === 0))
 
   const toggleSection = (label: string) => {
     const newExpanded = new Set(expandedSections)
@@ -356,6 +416,32 @@ h-16 px-4 flex items-center justify-between
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto p-3 space-y-1 scrollbar-thin scrollbar-thumb-sidebar-accent scrollbar-track-transparent">
+        {isAdminStaff && (
+          <div>
+            <button
+              onClick={() => setShowPermissionsDialog(true)}
+              className={`
+                w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200
+                text-sidebar-foreground-computed/70 hover:bg-sidebar-accent hover:text-sidebar-foreground-computed group
+                ${isCollapsed && !isMobile ? "justify-center" : ""}
+              `}
+            >
+              <Shield className="w-4 h-4 flex-shrink-0 text-sidebar-foreground-computed/60 group-hover:text-sidebar-foreground-computed" />
+              {!isCollapsed || isMobile ? (
+                <>
+                  <span className="font-medium text-sm flex-1 text-left truncate">My Permissions</span>
+                  <div className="flex items-center gap-1 bg-sidebar-primary/20 text-sidebar-primary text-xs px-2 py-0.5 rounded-full font-medium">
+                    {userPerms.length}
+                  </div>
+                </>
+              ) : (
+                <div className="w-5 h-5 bg-sidebar-primary/20 text-sidebar-primary text-xs rounded-full flex items-center justify-center font-medium">
+                  {userPerms.length}
+                </div>
+              )}
+            </button>
+          </div>
+        )}
         {filteredSections.map((section) => {
           const isExpanded = expandedSections.has(section.label)
           const isActive = section.href && pathname.includes(section.href.split("#")[0])
@@ -438,6 +524,47 @@ h-16 px-4 flex items-center justify-between
         })}
       </nav>
 
+      {/* Permissions Dialog for Staff Admins */}
+      <Dialog open={showPermissionsDialog} onOpenChange={setShowPermissionsDialog}>
+        <DialogContent className="max-w-md sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Shield className="w-5 h-5" />
+              My Permissions ({userPerms.length})
+            </DialogTitle>
+            <DialogDescription>
+              These are the permissions assigned to your account by the school administrator.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 max-h-64 overflow-y-auto">
+            {userPerms.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Shield className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
+                <p className="text-sm">No permissions assigned yet.</p>
+                <p className="text-xs">Contact your school administrator to grant access.</p>
+              </div>
+            ) : (
+              userPerms.map((permId) => {
+                const permission = NAV_LINK_PERMISSIONS.find(p => p.id === permId)
+                if (!permission) return null
+                return (
+                  <div key={permId} className="flex items-center justify-between p-3 bg-sidebar-accent/50 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="w-2 h-8 bg-gradient-to-b from-sidebar-primary/60 to-sidebar-primary/40 rounded-sm" />
+                      <div>
+                        <p className="font-medium text-sidebar-foreground-computed">{permission.label}</p>
+                        <p className="text-xs text-sidebar-foreground-computed/60">{permission.category}</p>
+                      </div>
+                    </div>
+                    <div className="w-2 h-8 bg-green-400 rounded-sm animate-pulse" />
+                  </div>
+                )
+              })
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Footer */}
       <div className="p-4 border-t border-sidebar-border">
         
@@ -459,3 +586,4 @@ h-16 px-4 flex items-center justify-between
     </aside>
   )
 }
+
