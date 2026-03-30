@@ -56,19 +56,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter()
 
   const fetchSchool = async (schoolId: number) => {
+    console.log('[Auth] fetchSchool called with schoolId:', schoolId)
+    if (!schoolId) {
+      console.warn('[Auth] No schoolId provided, skipping school fetch')
+      setSchool(null)
+      return
+    }
     try {
       // Use list and filter since get is not available on schoolsAPI
       const response = await schoolsAPI.list()
       const schools = response.data.results || response.data
       const schoolData = Array.isArray(schools) ? schools.find((s: any) => s.id === schoolId) : null
+      console.log('[Auth] Fetched schools, found for id', schoolId, ':', schoolData)
       setSchool(schoolData)
     } catch (error: any) {
-      console.error("Failed to fetch school data", error)
-      // Handle 500 or network errors gracefully - set school to null
-      // This prevents the app from crashing when backend is unavailable
-      if (error.response?.status === 500) {
-        console.warn("Backend server error - school data unavailable")
-      }
+      console.error("[Auth] Failed to fetch school data:", error.response?.status, error.message)
+      // Handle all errors (401, 500, network) gracefully - set school to null
       setSchool(null)
     }
   }
@@ -76,21 +79,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const validateToken = async () => {
     const token = sessionStorage.getItem("authToken")
     const storedUser = sessionStorage.getItem("user")
+    console.log('[Auth] validateToken: token exists?', !!token, 'storedUser exists?', !!storedUser)
     if (!token || !storedUser) return false
 
     try {
+      console.log('[Auth] Calling authAPI.me() with token...')
       const meResponse = await authAPI.me()
       const meData = meResponse.data
+      console.log('[Auth] meResponse:', meData)
       const parsedUser: User = { ...JSON.parse(storedUser || '{}'), ...meData, permissions: meData.permissions || meData.role_permission?.permission || [] }
+      console.log('[Auth] parsedUser school_id:', parsedUser.school_id)
       sessionStorage.setItem("user", JSON.stringify(parsedUser))
       setUser(parsedUser)
       if (parsedUser.school_id) {
         await fetchSchool(parsedUser.school_id)
+      } else {
+        console.log('[Auth] No school_id, skipping fetchSchool')
+        setSchool(null)
       }
       setIsAuthenticated(true)
       return true
     } catch (error: any) {
-      console.warn("Invalid/expired token:", error.response?.status)
+      console.warn("Invalid/expired token:", error.response?.status, error.message)
       sessionStorage.removeItem("authToken")
       sessionStorage.removeItem("user")
       setUser(null)
@@ -133,7 +143,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         window.dispatchEvent(new CustomEvent('authStateChanged'))
       }
 
-      router.push("/dashboard")
+      // Role-based redirect
+      const adminStaffRoles = ['academic_admin', 'exam_officer', 'finance_officer', 'ct_admin_support'] as const
+      if (fullUserData.role && adminStaffRoles.includes(fullUserData.role as any)) {
+        router.push("/dashboard/admin-staff")
+      } else {
+        router.push("/dashboard")
+      }
 
     } catch (error) {
       throw new Error("Login failed")
@@ -163,7 +179,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       sessionStorage.setItem("authToken", access)
       sessionStorage.setItem("user", JSON.stringify(userData))
       setUser(userData)
-      router.push("/dashboard")
+      
+      // Role-based redirect
+      const adminStaffRoles = ['academic_admin', 'exam_officer', 'finance_officer', 'ct_admin_support'] as const
+      if (userData.role && adminStaffRoles.includes(userData.role as any)) {
+        router.push("/dashboard/admin-staff")
+      } else {
+        router.push("/dashboard")
+      }
     } catch (error) {
       throw new Error("Registration failed")
     }

@@ -1,27 +1,14 @@
-# Sidebar Icon Fix - FINAL UPDATE
+# Admin Staff Login Redirect & Permissions Display ✅
 
-## Status: ✅ COMPLETED
+## Status: Completed
 
-**All Steps Complete:**
-- ✅ Step 1: Created TODO.md tracking file  
-- ✅ Step 2: Analyzed files 
-- ✅ Step 3: Edited sidebar-nav.tsx - Fixed ClipboardCheck and all inconsistent icon/iconKey usages
-- ✅ Step 4: Verified rendering logic uses iconsMap uniformly  
-- ✅ Step 5: Consistent iconKey pattern applied across student, teacher, admin sections
+**Changes Made:**
+1. ✅ Created TODO.md 
+2. ✅ Updated `frontend/lib/auth-context.tsx`: Added role-based redirects in login() and register()
+   - Admin staff roles: academic_admin, exam_officer, finance_officer, ct_admin_support
+   - Now redirects to /dashboard/admin-staff instead of /dashboard
+3. ✅ Sidebar permissions display was already working (permissions dialog/badge in sidebar-nav.tsx)
+4. ✅ Verified implementation complete
 
-**Key Changes:**
-- All `icon: ComponentName` → `iconKey: "ComponentName"`
-- Removed direct component references causing ReferenceError
-- Icons now resolve via shared iconsMap for consistency/maintainability
-- Type definitions NavItem/NavSection updated to expect iconKey
-
-**Result:** No more "ClipboardCheck is not defined" error. Sidebar renders correctly for all roles.
-
-**Verification:** 
-```bash
-cd "Wbesite projects/Sch.sys/frontend" && pnpm dev
-```
-Load dashboard - navigate student/teacher views. Icons display, no console errors.
-
-**Next Tasks:** Check other TODOs (theme-provider, report templates, etc.)
+**Test:** Login with admin_staff role user to verify redirect to /dashboard/admin-staff and permissions display in sidebar.
 

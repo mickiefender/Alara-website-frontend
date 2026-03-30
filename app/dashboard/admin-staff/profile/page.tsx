@@ -37,7 +37,7 @@ export default function AdminStaffProfile() {
           <div className="flex flex-col md:flex-row gap-6 items-start md:items-center">
             <div className="flex flex-col items-center gap-3">
               <Avatar className="w-32 h-32 border-4 border-border ring-4 ring-background shadow-lg">
-                <AvatarImage src={user.profile_picture || ''} />
+                <AvatarImage src={(user as any).profile_picture || ''} />
                 <AvatarFallback className="w-32 h-32 text-3xl font-bold bg-gradient-to-br from-primary/20 to-secondary/20">
                   {user.first_name?.charAt(0)}{user.last_name?.charAt(0)}
                 </AvatarFallback>

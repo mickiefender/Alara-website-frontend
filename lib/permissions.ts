@@ -35,6 +35,7 @@ export const NAV_LINK_PERMISSIONS = [
   { id: "view_admin_dashboard", label: "Dashboard", category: "Admin Staff", href: "/dashboard/admin-staff" },
   { id: "view_profile", label: "Profile", category: "Admin Staff", href: "/dashboard/admin-staff/profile" },
   { id: "view_permissions", label: "Permissions", category: "Admin Staff", href: "/dashboard/admin-staff/permissions" },
+  { id: "view_admin_staff_tasks", label: "My Tasks", category: "Admin Staff", href: "/dashboard/admin-staff/tasks" },
 ] as const;
 
 export type PermissionId = (typeof NAV_LINK_PERMISSIONS)[number]['id'];
@@ -74,5 +75,6 @@ export const NAV_HREF_TO_PERMISSION: Record<string, PermissionId> = {
   "/dashboard/admin-staff": "view_admin_dashboard",
   "/dashboard/admin-staff/profile": "view_profile",
   "/dashboard/admin-staff/permissions": "view_permissions",
+  "/dashboard/admin-staff/tasks": "view_admin_staff_tasks",
 } as const;
 

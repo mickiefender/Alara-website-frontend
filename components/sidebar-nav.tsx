@@ -318,7 +318,7 @@ function SidebarNavContent({ isCollapsed, onClose, isMobile, onToggleCollapse }:
     })
   }))
 
-  // Filter sections based on search + permissions
+  // Filter sections based on search + permissions - always show core admin_staff sections
   const filteredSections = searchQuery
     ? permissionFilteredSections.map(section => ({
         ...section,
@@ -327,9 +327,15 @@ function SidebarNavContent({ isCollapsed, onClose, isMobile, onToggleCollapse }:
         ) || []
       })).filter(section => 
         section.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (section.items?.length ?? 0) > 0
+        (section.items?.length ?? 0) > 0 ||
+        // Always show core admin_staff sections
+        (isAdminStaff && ['Dashboard', 'Profile', 'Permissions', 'My Tasks'].includes(section.label))
       )
-    : permissionFilteredSections.filter(section => !(section.items && section.items.length === 0))
+    : permissionFilteredSections.filter(section => 
+        !(section.items && section.items.length === 0) ||
+        // Always show core admin_staff sections even if filtered items empty
+        (isAdminStaff && ['Dashboard', 'Profile', 'Permissions', 'My Tasks'].includes(section.label))
+      )
 
   const toggleSection = (label: string) => {
     const newExpanded = new Set(expandedSections)
