@@ -206,7 +206,23 @@ const [studentNames, setStudentNames] = useState<Record<number, string>>({})
       setSelectedSubject("")
     } catch (error: any) {
       console.error("Failed to submit attendance:", error)
-      alert(error?.response?.data?.detail || "Failed to mark attendance")
+      
+      let errorMsg = "Failed to mark attendance";
+      if (error?.response?.data) {
+        const data = error.response.data;
+        if (data.detail) {
+          errorMsg = data.detail;
+        } else if (data.validation_errors && data.validation_errors.length > 0) {
+          errorMsg = `Validation errors: ${data.validation_errors.length} records failed. Check console.`;
+        } else if (data.unauthorized_class_subjects && data.unauthorized_class_subjects.length > 0) {
+          errorMsg = `Unauthorized: Not assigned to ${data.unauthorized_class_subjects.length} class-subjects.`;
+        } else if (data.created > 0) {
+          errorMsg = `Success: ${data.created} created, ${data.updated || 0} updated, ${data.skipped_duplicates || 0} duplicates skipped.`;
+        }
+      }
+      
+      alert(errorMsg);
+      console.log("Full error response:", error?.response?.data);
     } finally {
       setSubmitting(false)
     }

@@ -103,6 +103,8 @@ export function TableLoader({ rows = 5, className = "" }: { rows?: number; class
 /**
  * Full screen loader with branding
  */
+import { BookOpeningLoader } from './BookOpeningLoader'
+
 export function FullScreenLoader() {
   const [show, setShow] = useState(true)
 
@@ -114,17 +116,8 @@ export function FullScreenLoader() {
   if (!show) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center ">
-      <video 
-        autoPlay 
-        loop 
-        muted 
-        playsInline
-        className="w-28 h-28 md:w-48 md:h-32 lg:w-56 lg:h-56  object-cover "
-        src="/loader.mp4"
-      >
-        <source src="/loader.mp4" type="video/mp4" />
-      </video>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm">
+      <BookOpeningLoader size="lg" />
     </div>
   )
 }

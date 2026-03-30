@@ -104,7 +104,9 @@ export const academicsAPI = {
   deleteClassSubjectTeacher: (id: number) => apiClient.delete(`/academics/class-subject-teachers/${id}/`),
   
   classSubjects: () => apiClient.get("/academics/class-subjects/"),
+  getTeacherClassSubjects: (classId: number) => apiClient.get(`/academics/classes/my_class_subjects/?class_obj=${classId}`),
   createClassSubject: (data: any) => apiClient.post("/academics/class-subjects/", data),
+
   updateClassSubject: (id: number, data: any) => apiClient.put(`/academics/class-subjects/${id}/`, data),
   deleteClassSubject: (id: number) => apiClient.delete(`/academics/class-subjects/${id}/`),
   createSubject: (data: any) => apiClient.post("/academics/subjects/", data),

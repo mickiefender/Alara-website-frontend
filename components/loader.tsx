@@ -1,8 +1,9 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { BookOpeningLoader } from './BookOpeningLoader'
 
-const Loader = ({ size = 'md', color = '#3b82f6' }) => {
+const Loader = ({ size = 'md', color = 'var(--school-primary)' }) => {
   const [show, setShow] = useState(true)
 
   useEffect(() => {
@@ -21,19 +22,7 @@ const Loader = ({ size = 'md', color = '#3b82f6' }) => {
   return (
     <div className="flex justify-center items-center w-full h-full">
       <div className={`relative ${sizeStyles[size] || sizeStyles.md} mx-auto`}>
-        <video 
-          autoPlay 
-          loop 
-          muted 
-          playsInline
-          className="w-full h-full object-cover rounded-2xl shadow-2xl ring-2 ring-white/50"
-          style={{ borderColor: color }}
-          src="/loader.mp4"
-          poster="/placeholder.svg"
-        >
-          <source src="/loader.mp4" type="video/mp4" />
-          Loading...
-        </video>
+        <BookOpeningLoader size={size as any} color={color} />
       </div>
     </div>
   )
