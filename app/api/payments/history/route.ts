@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
+import axios from "axios"
+
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
@@ -25,7 +27,7 @@ async function fetchBackendPayments(url: string, headers: HeadersInit, params: R
   return data.results || data || [];
 }
 
-function mapToPaymentRecord(backendPayment: any): any {
+export function mapToPaymentRecord(backendPayment: any): any {
   const payment_source = backendPayment.payment_source || (backendPayment.channel?.includes('paystack') ? 'online' : 'manual');
   const status = backendPayment.status || 'success';
   const paid_at = backendPayment.paid_at || backendPayment.created_at || backendPayment.payment_date || new Date().toISOString();
@@ -134,6 +136,35 @@ export async function POST(request: NextRequest) {
       { error: error.message || "Failed to save payment record" },
       { status: 500 }
     );
+  }
+}
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+
+export async function addPaymentRecord(paymentData: any, authHeader?: string) {
+  try {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    if (authHeader) {
+      headers.Authorization = authHeader;
+    }
+
+    const response = await fetch(`${API_URL}/billing/online-payments/`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(paymentData),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Backend error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return mapToPaymentRecord({ ...paymentData, ...data });
+  } catch (error: any) {
+    console.error("addPaymentRecord error:", error);
+    throw error;
   }
 }
 

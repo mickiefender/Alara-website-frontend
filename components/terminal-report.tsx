@@ -116,7 +116,7 @@ export function TerminalReport({ studentId }: TerminalReportProps) {
       
       alert("Terminal report generated successfully!")
       setShowGenerateDialog(false)
-      setGenerateForm({ student_id: studentId?.toString() || "", class_id: "", session_id: "" })
+      setGenerateForm({ student_id: studentId?.toString() || "", class_id: "", session_id: "", template_id: "" })
       setStudents([])
       await fetchData()
       
@@ -415,7 +415,7 @@ export function TerminalReport({ studentId }: TerminalReportProps) {
           <DialogFooter>
             <Button variant="outline" onClick={() => {
               setShowGenerateDialog(false)
-              setGenerateForm({ student_id: studentId?.toString() || "", class_id: "", session_id: "" })
+              setGenerateForm({ student_id: studentId?.toString() || "", class_id: "", session_id: "", template_id: "" })
               setStudents([])
             }}>Cancel</Button>
             <Button onClick={handleGenerateReport} disabled={generating || !generateForm.student_id || !generateForm.class_id || !generateForm.session_id}>

@@ -621,9 +621,9 @@ export default function StudentDashboard() {
                       return (
                         <tr key={index} className="border-b hover:bg-gray-50">
                           <td className="py-3 px-4 font-medium">{fee.fee_name}</td>
-                          <td className="py-3 px-4">${feeAmount.toFixed(2)}</td>
-                          <td className="py-3 px-4 text-green-600 font-medium">${amountPaid.toFixed(2)}</td>
-                          <td className="py-3 px-4 font-medium">${balance.toFixed(2)}</td>
+                          <td className="py-3 px-4">¢{feeAmount.toFixed(2)}</td>
+                          <td className="py-3 px-4 text-green-600 font-medium">¢{amountPaid.toFixed(2)}</td>
+                          <td className="py-3 px-4 font-medium">¢{balance.toFixed(2)}</td>
                           <td className="py-3 px-4">{new Date(fee.due_date).toLocaleDateString()}</td>
                           <td className="py-3 px-4">
                             <span className={`px-3 py-1 rounded-full text-xs font-semibold ${statusColor}`}>

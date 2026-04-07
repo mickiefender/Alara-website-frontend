@@ -395,7 +395,7 @@ export function ModernTimetable() {
         pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
       }
       
-      const pdf = html2pdf().set(opt).from(element)
+      const pdf = html2pdf(element, opt)
       pdf.save()
       
       // Cleanup

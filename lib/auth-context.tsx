@@ -76,39 +76,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const validateToken = async () => {
-    const token = sessionStorage.getItem("authToken")
-    const storedUser = sessionStorage.getItem("user")
-    console.log('[Auth] validateToken: token exists?', !!token, 'storedUser exists?', !!storedUser)
-    if (!token || !storedUser) return false
+    const validateToken = async () => {
+      const token = sessionStorage.getItem("authToken")
+      const storedUser = sessionStorage.getItem("user")
+      console.log('[Auth] validateToken: token exists?', !!token, 'storedUser exists?', !!storedUser)
+      if (!token || !storedUser) return false
 
-    try {
-      console.log('[Auth] Calling authAPI.me() with token...')
-      const meResponse = await authAPI.me()
-      const meData = meResponse.data
-      console.log('[Auth] meResponse:', meData)
-      const parsedUser: User = { ...JSON.parse(storedUser || '{}'), ...meData, permissions: meData.permissions || meData.role_permission?.permission || [] }
-      console.log('[Auth] parsedUser school_id:', parsedUser.school_id)
-      sessionStorage.setItem("user", JSON.stringify(parsedUser))
-      setUser(parsedUser)
-      if (parsedUser.school_id) {
-        await fetchSchool(parsedUser.school_id)
-      } else {
-        console.log('[Auth] No school_id, skipping fetchSchool')
+      try {
+        console.log('[Auth] Calling authAPI.me() with token...')
+        const meResponse = await authAPI.me()
+        const meData = meResponse.data
+        console.log('[Auth] meResponse:', meData)
+        const parsedUser: User = { ...JSON.parse(storedUser || '{}'), ...meData, permissions: meData.permissions || meData.role_permission?.permission || [] }
+        console.log('[Auth] parsedUser school_id:', parsedUser.school_id)
+        sessionStorage.setItem("user", JSON.stringify(parsedUser))
+        setUser(parsedUser)
+        // Only fetch school if user has school_id and is authenticated successfully
+        if (parsedUser.school_id) {
+          try {
+            await fetchSchool(parsedUser.school_id)
+          } catch (schoolError: any) {
+            console.warn('[Auth] School fetch failed (non-critical):', schoolError.response?.status, schoolError.message)
+            setSchool(null)
+          }
+        } else {
+          console.log('[Auth] No school_id, skipping fetchSchool')
+          setSchool(null)
+        }
+        setIsAuthenticated(true)
+        return true
+      } catch (error: any) {
+        if (error.response?.status === 401) {
+          console.warn('[Auth] Token invalid/expired (401), clearing storage')
+        } else {
+          console.warn("Token validation error:", error.response?.status, error.message)
+        }
+        sessionStorage.removeItem("authToken")
+        sessionStorage.removeItem("user")
+        setUser(null)
         setSchool(null)
+        setIsAuthenticated(false)
+        return false
       }
-      setIsAuthenticated(true)
-      return true
-    } catch (error: any) {
-      console.warn("Invalid/expired token:", error.response?.status, error.message)
-      sessionStorage.removeItem("authToken")
-      sessionStorage.removeItem("user")
-      setUser(null)
-      setSchool(null)
-      setIsAuthenticated(false)
-      return false
     }
-  }
 
   useEffect(() => {
     validateToken().finally(() => {

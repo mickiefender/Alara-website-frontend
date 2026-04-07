@@ -72,13 +72,14 @@ export function MobileBottomNav() {
   const isFullAccess = ['super_admin', 'school_admin'].includes(user.role || '')
   const userPermissions = user.permissions || []
 
-  const filterMobileItem = (item: NavItem): boolean => {
-    if (isFullAccess || item.isMenu) return true
+const filterMobileItem = (item: NavItem): boolean => {
+    // Bypass permission check for teacher/student roles - they get core nav access
+    if (['teacher', 'student'].includes(user.role || '') || isFullAccess || item.isMenu) return true
     const permission = MOBILE_NAV_PERMISSION_MAP[item.label]
     return userPermissions.includes(permission)
   }
 
-  const items = navItems[user.role as keyof typeof navItems]?.filter(filterMobileItem) || []
+  const items = navItems[user.role as keyof typeof navItems]?.filter(filterMobileItem).slice(0, 4) || []
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-sidebar-border z-40 shadow-2xl pb-[env(safe-area-inset-bottom)]">

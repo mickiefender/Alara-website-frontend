@@ -10,8 +10,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { assignmentAPI } from "@/lib/api"
 import { useToast } from "@/components/ui/use-toast"
 
+interface Assignment {
+  id: string
+  title: string
+  description?: string
+  due_date?: string
+}
+
 interface AssignmentSubmissionModalProps {
-  assignment: any
+  assignment?: Assignment | null
   isOpen: boolean
   onClose: () => void
 }
@@ -22,6 +29,22 @@ export default function AssignmentSubmissionModal({ assignment, isOpen, onClose 
   const [textSubmission, setTextSubmission] = useState("")
   const [loading, setLoading] = useState(false)
   const { toast } = useToast()
+
+  if (!assignment) {
+    return (
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Error: No Assignment Data</DialogTitle>
+          </DialogHeader>
+          <p className="py-4 text-muted-foreground text-sm">Assignment information is not available. Please refresh the page and try again.</p>
+          <DialogFooter>
+            <Button onClick={onClose}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    )
+  }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -46,26 +69,69 @@ export default function AssignmentSubmissionModal({ assignment, isOpen, onClose 
     }
 
     setLoading(true)
+    if (!assignment.id) {
+      toast({
+        title: "Invalid Assignment",
+        description: "Assignment ID is missing. Please refresh.",
+        variant: "destructive",
+      })
+      setLoading(false)
+      return
+    }
     try {
       const formData = new FormData()
-      formData.append("assignment", assignment.id)
+      formData.append("assignment", assignment.id.toString())
       if (file) {
         formData.append("file", file)
       } else if (textSubmission) {
         formData.append("text_submission", textSubmission)
       }
 
+      console.log("[DEBUG] Submitting FormData contents:")
+      for (let [key, value] of formData.entries()) {
+        console.log(`  ${key}:`, value)
+      }
+      
       await assignmentAPI.submitAssignment(formData)
       toast({
         title: "Assignment submitted",
         description: "Your assignment has been submitted successfully.",
       })
       onClose()
-    } catch (error) {
-      console.error("Error submitting assignment:", error)
+    } catch (error: any) {
+      console.error("Full error object:", error)
+      
+      let description = "There was an error submitting your assignment."
+      
+      if (error && typeof error === 'object' && 'response' in error && error.response) {
+        const status = error.response.status
+        console.error("Error status:", status)
+        console.error("Error response data:", error.response.data)
+        
+        if (status === 400) {
+          if (error.response.data?.detail) {
+            description = `Error: ${error.response.data.detail}`
+          } else if (error.response.data?.non_field_errors?.[0]) {
+            description = error.response.data.non_field_errors[0]
+          } else if (Array.isArray(error.response.data)) {
+            description = error.response.data.join(', ')
+          }
+        } else if (error.response.data) {
+          try {
+            description = `Server Error (${status}): ${JSON.stringify(error.response.data)}`
+          } catch {
+            description = `Server Error (${status})`
+          }
+        }
+      } else {
+        // Network error or other
+        console.error("Non-axios error:", error?.message || error || 'Unknown error')
+        description = error?.message || 'Network error. Please check your connection and try again.'
+      }
+      
       toast({
         title: "Submission failed",
-        description: "There was an error submitting your assignment.",
+        description,
         variant: "destructive",
       })
     } finally {
@@ -77,7 +143,7 @@ export default function AssignmentSubmissionModal({ assignment, isOpen, onClose 
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Submit Assignment: {assignment.title}</DialogTitle>
+          <DialogTitle>Submit Assignment: {assignment?.title || 'Untitled Assignment'}</DialogTitle>
         </DialogHeader>
         <Tabs value={submissionType} onValueChange={setSubmissionType} className="w-full">
           <TabsList>
@@ -111,7 +177,7 @@ export default function AssignmentSubmissionModal({ assignment, isOpen, onClose 
               Cancel
             </Button>
           </DialogClose>
-          <Button onClick={handleSubmit} disabled={loading}>
+          <Button onClick={handleSubmit} disabled={loading || !assignment.id}>
             {loading ? "Submitting..." : "Submit"}
           </Button>
         </DialogFooter>

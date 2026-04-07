@@ -100,27 +100,8 @@ export function TableLoader({ rows = 5, className = "" }: { rows?: number; class
   )
 }
 
-/**
- * Full screen loader with branding
- */
-import { BookOpeningLoader } from './BookOpeningLoader'
 
-export function FullScreenLoader() {
-  const [show, setShow] = useState(true)
 
-  useEffect(() => {
-    const timer = setTimeout(() => setShow(false), 2000);
-    return () => clearTimeout(timer);
-  }, []);
-
-  if (!show) return null;
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm">
-      <BookOpeningLoader size="lg" />
-    </div>
-  )
-}
 
 /**
  * Compact spinner for buttons
@@ -129,5 +110,6 @@ export function ButtonSpinner({ className = "" }: { className?: string }) {
   return <Loader2 className={`h-4 w-4 animate-spin ${className}`} />
 }
 
+export { PageLoader as FullScreenLoader }
 export default CircularLoader
 

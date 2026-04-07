@@ -31,6 +31,10 @@ apiClient.interceptors.response.use(
     
     if (status === 401) {
       console.error('[API 401] Auth failed:', { url, details })
+      // Let auth-context handle cleanup and redirect to avoid double-handling
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('authError'))
+      }
       const currentPath = typeof window !== "undefined" ? window.location.pathname : ""
       if (!currentPath.startsWith("/auth/") && !currentPath.startsWith("/dashboard/")) {
         console.warn('[API] Clearing invalid token, redirecting to login')

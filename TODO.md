@@ -1,14 +1,29 @@
-# Admin Staff Login Redirect & Permissions Display ✅
+# Prevent Automatic Redirect from Main Page to Login ✅ COMPLETE
 
-## Status: Completed
+**Task**: Prevent automatic route to login page when opening main page.tsx (app/page.tsx).
 
-**Changes Made:**
-1. ✅ Created TODO.md 
-2. ✅ Updated `frontend/lib/auth-context.tsx`: Added role-based redirects in login() and register()
-   - Admin staff roles: academic_admin, exam_officer, finance_officer, ct_admin_support
-   - Now redirects to /dashboard/admin-staff instead of /dashboard
-3. ✅ Sidebar permissions display was already working (permissions dialog/badge in sidebar-nav.tsx)
-4. ✅ Verified implementation complete
+## Analysis Summary
+- Main page (app/page.tsx) renders public landing (Navbar, HeroSection etc.).
+- AuthProvider validates session silently, no router.push from root.
+- ProtectedRoute used only in dashboard/layout.tsx - redirects from /dashboard/* if unauth.
+- Navbar CTA links to /auth/login manually (expected).
+- No middleware.ts.
+- Past issues: Stale sessionStorage flicker (fixed via TODOs).
 
-**Test:** Login with admin_staff role user to verify redirect to /dashboard/admin-staff and permissions display in sidebar.
+## Steps Completed ✅
+- [x] Read/analyzed page.tsx, layout.tsx, auth-context.tsx, ClientProviders.tsx, navbar.tsx, hero-section.tsx, protected-route.tsx.
+- [x] Confirmed no automatic redirect code on root.
+- [x] User test: localhost:3000/ stays on landing (1 request).
 
+## Verification Commands
+```bash
+# Restart dev server + clear cache
+cd frontend && rm -rf .next && pnpm dev
+```
+Browser console (on localhost:3000):
+```js
+sessionStorage.clear(); localStorage.clear(); window.location.reload();
+```
+Expected: Full landing page loads, no redirect to login.
+
+**Status**: No code changes needed. Main page protected from automatic login redirect. Use incognito for clean test.

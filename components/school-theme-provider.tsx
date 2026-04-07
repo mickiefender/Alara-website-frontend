@@ -1,6 +1,6 @@
 "use client"
 
-import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react'
+import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { schoolsAPI } from '@/lib/api'
 import { useToast } from '@/hooks/use-toast'
 
@@ -38,7 +38,7 @@ export function SchoolThemeProvider({ children, schoolId }: SchoolThemeProviderP
   const [error, setError] = useState<string | null>(null)
   const { toast } = useToast()
 
-  const fetchSchoolTheme = useCallback(async () => {
+  const fetchSchoolTheme = async () => {
     try {
       setIsLoading(true)
       setError(null)
@@ -57,7 +57,7 @@ export function SchoolThemeProvider({ children, schoolId }: SchoolThemeProviderP
         
         // Helper functions for luminance
         const hexToRgb = (hex: string) => {
-          const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)!
+          const result = /^#?([a-f\\d]{2})([a-f\\d]{2})([a-f\\d]{2})$/i.exec(hex)!
           return {
             r: parseInt(result[1], 16) / 255,
             g: parseInt(result[2], 16) / 255,
@@ -101,7 +101,7 @@ export function SchoolThemeProvider({ children, schoolId }: SchoolThemeProviderP
     } finally {
       setIsLoading(false)
     }
-  }, [toast])
+  }
 
   useEffect(() => {
     fetchSchoolTheme()
@@ -113,11 +113,11 @@ export function SchoolThemeProvider({ children, schoolId }: SchoolThemeProviderP
     
     window.addEventListener('schoolThemeUpdated', handleThemeUpdate)
     return () => window.removeEventListener('schoolThemeUpdated', handleThemeUpdate)
-  }, [fetchSchoolTheme])
+  }, [])
 
-  const refetch = useCallback(async () => {
+  const refetch = async () => {
     await fetchSchoolTheme()
-  }, [fetchSchoolTheme])
+  }
 
   return (
     <SchoolThemeContext.Provider value={{ schoolTheme, isLoading, error, refetch }}>

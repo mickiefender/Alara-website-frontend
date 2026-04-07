@@ -1,30 +1,25 @@
-"use client"
-
-import { useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { useAuthContext } from "@/lib/auth-context"
-import { FullScreenLoader } from "@/components/circular-loader"
+import { Navbar } from "@/components/landing/navbar"
+import { HeroSection } from "@/components/landing/hero-section"
+import { PartnersSection } from "@/components/landing/partners-section"
+import { FeaturesSection } from "@/components/landing/features-section"
+import { StatsSection } from "@/components/landing/stats-section"
+import { TestimonialsSection } from "@/components/landing/testimonials-section"
+import { CtaSection } from "@/components/landing/cta-section"
+import { Footer } from "@/components/landing/footer"
 
 export default function Home() {
-  const router = useRouter()
-  const { user, loading } = useAuthContext()
-
-  useEffect(() => {
-    if (!loading) {
-      if (user) {
-        router.push("/dashboard")
-      } else {
-        router.push("/auth/login")
-      }
-    }
-  }, [user, loading, router])
-
   return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">School Management SaaS</h1>
-        <p className="text-muted-foreground">Loading...</p>
-      </div>
+    <div className="min-h-screen bg-background">
+      <Navbar />
+      <main>
+        <HeroSection />
+        <PartnersSection />
+        <FeaturesSection />
+        <StatsSection />
+        <TestimonialsSection />
+        <CtaSection />
+      </main>
+      <Footer />
     </div>
   )
 }

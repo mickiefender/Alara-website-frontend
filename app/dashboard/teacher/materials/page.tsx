@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Plus, Trash2, Download, Search, Sparkles, X, Zap, Copy, FolderOpen, Printer, BookOpen } from "lucide-react"
-import Loader from "@/components/loader"
+import { CircularLoader } from "@/components/circular-loader"
 import TeacherFileExplorer from "@/components/teacher-file-explorer"
 
 interface Document {
@@ -285,7 +285,7 @@ const [aiSettings, setAiSettings] = useState({
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-cyan-50 to-indigo-50">
-        <Loader size="md" color="#41e0e0" />
+<CircularLoader size="md" color="#41e0e0" />
       </div>
     )
   }
@@ -581,8 +581,8 @@ const [aiSettings, setAiSettings] = useState({
                           <Zap size={16} /> {'summary' in normalized ? 'Summary Generated' : 'Content Generated'} Successfully
                         </p>
                         <p className="text-teal-800 text-sm mt-1">
-                          {'summary' in normalized 
-                            ? `${normalized.wordCount} words` 
+                          {'summary' in normalized
+                            ? `${(normalized as NormalizedSummary).wordCount} words`
                             : `${normalized.count} item${normalized.count !== 1 ? 's' : ''}` } created
                           {normalized.documentTitle ? ` from "${normalized.documentTitle}"` : ""}
                         </p>

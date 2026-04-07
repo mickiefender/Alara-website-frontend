@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { PaystackService } from "@/lib/paystack"
 import { addPaymentRecord } from "../history/route"
-import { addRevenueRecord } from "../../revenue/route"
 import axios from "axios"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"
@@ -18,10 +16,24 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const paystack = new PaystackService()
-    const result = await paystack.verifyTransaction(reference)
+    // Direct Paystack API call
+    const response = await fetch(`https://api.paystack.co/transaction/verify/${reference}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${PAYSTACK_SECRET_KEY}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+    });
 
-    if (result.data.status === "success") {
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`Paystack verify failed: ${errorData.message || response.statusText}`);
+    }
+
+    const result = await response.json();
+
+    if (result.status === "success") {
       const amountInCedis = result.data.amount / 100
       
       // Get metadata - use type assertion for additional metadata fields
@@ -33,43 +45,10 @@ export async function GET(request: NextRequest) {
         (f: any) => f.variable_name === "student_name"
       )?.value || result.data.customer?.first_name || ""
 
-      // Save payment record server-side (in-memory)
-      try {
-        addPaymentRecord({
-          student_id: studentId,
-          student_name: studentName,
-          email: result.data.customer?.email,
-          amount: amountInCedis,
-          fee_type: result.data.metadata?.fee_type,
-          fee_id: feeId,
-          academic_year: result.data.metadata?.academic_year,
-          term: result.data.metadata?.term,
-          reference: result.data.reference,
-          status: "success",
-          payment_channel: result.data.channel,
-          school_id: schoolId,
-          paid_at: result.data.paid_at,
-        })
-
-        // Track revenue
-        addRevenueRecord({
-          type: "payment",
-          amount: amountInCedis,
-          reference: result.data.reference,
-          student_id: studentId,
-          student_name: studentName,
-          fee_type: result.data.metadata?.fee_type,
-          school_id: schoolId,
-          created_at: new Date().toISOString(),
-        })
-      } catch (err) {
-        console.error("Failed to save payment record:", err)
-      }
-
       // NEW: Record payment in Django backend and update fee assignment
       try {
         // Get auth token from headers if available
-        const authHeader = request.headers.get("authorization")
+        const authHeader = request.headers.get("Authorization")
         
         // Prepare the payment data for Django API
         const paymentData = {
@@ -81,6 +60,8 @@ export async function GET(request: NextRequest) {
           channel: result.data.channel,
           status: "success",
           notes: `Paid via Paystack - ${result.data.channel}`,
+          school_id: schoolId,
+          student_name: studentName,
         }
 
         // Call Django API to record the online payment
@@ -133,3 +114,4 @@ export async function GET(request: NextRequest) {
     )
   }
 }
+

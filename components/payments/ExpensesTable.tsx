@@ -52,13 +52,13 @@ export default function ExpensesTable({
     
     const printContent = document.getElementById('expenses-printable')
     if (printContent) {
-      html2pdf().from(printContent).set({
+      html2pdf(printContent, {
         margin: 1,
         filename: `school-expenses-${new Date().toISOString().slice(0,10)}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true },
         jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
-      }).save()
+      })
     }
   }
 
@@ -106,7 +106,7 @@ export default function ExpensesTable({
             </CardDescription>
           </div>
           <div className="flex gap-2 flex-wrap">
-            <Select value={filter} onValueChange={setFilter}>
+            <Select value={filter} onValueChange={(value) => setFilter(value as typeof filter)}>
               <SelectTrigger className="w-[200px]">
                 <SelectValue placeholder="Filter Category" />
               </SelectTrigger>

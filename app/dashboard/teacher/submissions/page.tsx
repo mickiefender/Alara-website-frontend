@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Search, FileText } from "lucide-react"
 import Loader from "@/components/loader"
+import { assignmentAPI } from "@/lib/api"
 
 function SubmissionsContent() {
   const [submissions, setSubmissions] = useState<any[]>([])
@@ -14,9 +15,8 @@ function SubmissionsContent() {
   useEffect(() => {
     const fetchSubmissions = async () => {
       try {
-        const res = await fetch("/api/assignments/submissions/")
-        const data = await res.json()
-        setSubmissions(data.results || data || [])
+        const res = await assignmentAPI.submissions()
+        setSubmissions(res.data?.results || res.data || [])
       } catch (error) {
         console.error("Failed to fetch submissions:", error)
       } finally {

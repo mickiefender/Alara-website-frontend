@@ -86,7 +86,7 @@ export function StudentsManagement() {
       if (editingStudent) {
         await usersAPI.updateStudent(editingStudent.id, formData)
       } else {
-        const schoolId = user?.school_id || user?.school
+        const schoolId = user?.school_id
         if (!schoolId) {
           setError("No school associated with your account. Please ensure you are logged in as a school admin.")
           return

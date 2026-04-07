@@ -34,7 +34,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Checkbox } from "@/components/ui/checkbox"
-import Loader from "@/components/loader"
+import { Loader } from "@/components/ui/loader"
 
 interface DocumentFolder {
   id: number

@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
-import Loader from '@/components/loader'
+
 import { GradingPolicyManagement } from "@/components/grading-policy-management"
 import { gradesAPI, usersAPI, academicsAPI } from "@/lib/api"
 import { Search, ArrowRight, Users, TrendingUp, Award } from "lucide-react"
@@ -169,9 +169,7 @@ export default function GradingPage() {
     { label: 'A Grade Students', value: studentsSummary.filter(s => s.overallGrade === 'A').length, icon: Award, color: 'yellow' },
   ]
 
-  if (loading) {
-    return <Loader size="lg" />
-  }
+  
 
   return (
     <div className="space-y-6">
