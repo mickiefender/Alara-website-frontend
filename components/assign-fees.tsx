@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { billingAPI } from "@/lib/api"
+
 import { useToast } from "@/hooks/use-toast"
 
 export function AssignFees() {
@@ -89,7 +89,7 @@ export function AssignFees() {
 
   const handleAssignFee = async () => {
     try {
-      await billingAPI.assignFee({
+      await billingAPI.createFee({
         fee_type_id: selectedFeeType,
         assign_to: assignTo,
         class_id: selectedClass || null,
