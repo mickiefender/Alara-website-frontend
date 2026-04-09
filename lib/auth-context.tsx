@@ -70,8 +70,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('[Auth] Fetched schools, found for id', schoolId, ':', schoolData)
       setSchool(schoolData)
     } catch (error: any) {
-      console.error("[Auth] Failed to fetch school data:", error.response?.status, error.message)
-      // Handle all errors (401, 500, network) gracefully - set school to null
+      const status = error.response?.status
+      if (status === 401) {
+        console.warn('[Auth] 401 on school fetch - likely public page or token issue')
+        // Don't trigger global authError, just set null
+        setSchool(null)
+        return
+      }
+      console.error("[Auth] Failed to fetch school data:", status, error.message)
       setSchool(null)
     }
   }

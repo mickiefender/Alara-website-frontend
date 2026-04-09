@@ -21,6 +21,9 @@ export function Header() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
+            <Link href="/" className="block text-foreground hover:text-primary">
+              Home
+            </Link>
             <Link href="/about" className="text-foreground hover:text-primary transition">
               About
             </Link>
@@ -54,6 +57,9 @@ export function Header() {
         {/* Mobile Navigation */}
         {isOpen && (
           <div className="md:hidden mt-4 space-y-4 pb-4">
+            <Link href="/" className="block text-foreground hover:text-primary">
+              Home
+            </Link>
             <Link href="/about" className="block text-foreground hover:text-primary">
               About
             </Link>

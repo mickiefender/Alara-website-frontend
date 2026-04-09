@@ -20,7 +20,7 @@ function TypewriterHeading({ className }: { className: string }) {
   const [phase, setPhase] = useState<"typing" | "pausing" | "deleting">("typing")
   const [charIndex, setCharIndex] = useState(0)
 
-  const intervalRef = useRef<NodeJS.Timeout>()
+  const intervalRef = useRef<NodeJS.Timeout>(null)
   const config = {
     typeSpeed: 80,
     deleteSpeed: 50,
@@ -54,7 +54,11 @@ function TypewriterHeading({ className }: { className: string }) {
 
   useEffect(() => {
     intervalRef.current = setInterval(updateDisplay, config.typeSpeed)
-    return () => clearInterval(intervalRef.current)
+    return () => {
+      if (intervalRef.current !== null) {
+        clearInterval(intervalRef.current)
+      }
+    }
   }, [updateDisplay])
 
   const cursorBlink =
