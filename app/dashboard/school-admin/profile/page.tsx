@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useSession } from 'next-auth/react'
+import { useAuthContext } from "@/lib/auth-context"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { useToast } from "@/components/ui/use-toast"
 import ProfilePictureUpload from "@/components/profile-picture-upload"
 import { usersAPI } from "@/lib/api"
-import Loader from '@/components/loader'
+import { Loader2 } from "lucide-react"
 
 interface SchoolAdminProfile {
   id: number
@@ -26,7 +26,7 @@ interface SchoolAdminProfile {
 }
 
 export default function SchoolAdminProfilePage() {
-  const { data: session } = useSession()
+  const { user, loading: authLoading } = useAuthContext()
   const [profile, setProfile] = useState<SchoolAdminProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [isEditing, setIsEditing] = useState(false)
@@ -37,13 +37,13 @@ export default function SchoolAdminProfilePage() {
 
   useEffect(() => {
     fetchProfile()
-  }, [refreshTrigger])
+  }, [refreshTrigger, user?.id])
 
   const fetchProfile = async () => {
-    if (!session?.user?.id) return
+    if (!user?.id || authLoading) return
     try {
       setLoading(true)
-  const res = await usersAPI.getById(session.user.id as number)
+      const res = await usersAPI.getById(user.id as number)
       setProfile(res.data)
       setFormData(res.data)
     } catch (err) {
@@ -91,8 +91,13 @@ export default function SchoolAdminProfilePage() {
     setFormData({})
   }
 
-  if (loading) {
-    return <Loader />
+  if (authLoading || loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <p className="mt-2 text-muted-foreground">Loading profile...</p>
+      </div>
+    )
   }
 
   if (!profile) {
