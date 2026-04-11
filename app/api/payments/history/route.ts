@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import axios from "axios"
 
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/';
 
 async function fetchBackendPayments(url: string, headers: HeadersInit, params: Record<string, string> = {}) {
   const query = new URLSearchParams(params).toString();

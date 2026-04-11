@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { addPaymentRecord } from "../history/route"
 import axios from "axios"
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/"
 
 export async function GET(request: NextRequest) {
   try {
