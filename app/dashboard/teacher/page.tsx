@@ -26,7 +26,7 @@ import {
   Mail,
   GraduationCap
 } from "lucide-react"
-import { academicsAPI, assignmentAPI, usersAPI, attendanceAPI, gradesAPI } from "@/lib/api"
+import { academicsAPI, assignmentAPI, usersAPI, attendanceAPI, gradesAPI, resolveImageUrl } from "@/lib/api"
 import { useAuthContext as useAuth } from "@/lib/auth-context"
 import { NoticeBoard } from "@/components/notice-board"
 import { CircularLoader } from "@/components/circular-loader"
@@ -271,10 +271,10 @@ export default function TeacherPage() {
 
   return (
     <ProtectedRoute allowedRoles={["teacher"]}>
-      <div className="p-4 md:p-6 lg:p-8 space-y-6">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+      <div className="w-full max-w-[1600px] mx-auto p-3 sm:p-4 md:p-6 lg:p-8 space-y-5 md:space-y-6">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-2">
           <div>
-            <h1 className="text-3xl font-bold text-foreground dark:text-white">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground dark:text-white tracking-tight">
               Welcome back, {user?.first_name || "Teacher"}! 
             </h1>
             <p className="text-muted-foreground dark:text-slate-400 mt-1">
@@ -308,7 +308,7 @@ export default function TeacherPage() {
               <CardTitle className="text-sm font-medium text-cyan-700 dark:text-cyan-400">My Classes</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-4xl font-bold text-cyan-700 dark:text-cyan-300">{stats.classes}</p>
+              <p className="text-3xl sm:text-4xl font-bold text-cyan-700 dark:text-cyan-300">{stats.classes}</p>
               <p className="text-xs text-cyan-600 dark:text-cyan-500 mt-1">Classes assigned to you</p>
             </CardContent>
           </Card>
@@ -319,7 +319,7 @@ export default function TeacherPage() {
             </CardHeader>
             <CardContent>
               <div className="flex items-baseline gap-2">
-                <p className="text-4xl font-bold text-green-700 dark:text-green-300">{stats.students}</p>
+                <p className="text-3xl sm:text-4xl font-bold text-green-700 dark:text-green-300">{stats.students}</p>
               </div>
               <p className="text-xs text-green-600 dark:text-green-500 mt-1">Students in your classes</p>
             </CardContent>
@@ -330,7 +330,7 @@ export default function TeacherPage() {
               <CardTitle className="text-sm font-medium text-purple-700 dark:text-purple-400">Active Assignments</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-4xl font-bold text-purple-700 dark:text-purple-300">{stats.assignmentsGiven}</p>
+              <p className="text-3xl sm:text-4xl font-bold text-purple-700 dark:text-purple-300">{stats.assignmentsGiven}</p>
               <p className="text-xs text-purple-600 dark:text-purple-500 mt-1">Assignments to complete</p>
             </CardContent>
           </Card>
@@ -340,14 +340,14 @@ export default function TeacherPage() {
               <CardTitle className="text-sm font-medium text-orange-700 dark:text-orange-400">Pending Reviews</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-4xl font-bold text-orange-700 dark:text-orange-300">{stats.assignmentsPending}</p>
+              <p className="text-3xl sm:text-4xl font-bold text-orange-700 dark:text-orange-300">{stats.assignmentsPending}</p>
               <p className="text-xs text-orange-600 dark:text-orange-500 mt-1">Submissions awaiting review</p>
             </CardContent>
           </Card>
         </div>
 
         {/* Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
           <Card className="border-0 shadow-md">
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-lg">
@@ -457,7 +457,7 @@ export default function TeacherPage() {
           </CardHeader>
           <CardContent>
             {performanceChartData.length > 0 ? (
-              <div className="h-80">
+              <div className="h-[320px] sm:h-80">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={performanceChartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -545,7 +545,7 @@ export default function TeacherPage() {
         </div>
 
         {/* Quick Actions & Resources */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-6">
           <Card className="border-0 shadow-md">
             <CardHeader className="pb-4 border-b border-border dark:border-slate-800">
               <CardTitle className="flex items-center gap-2 text-foreground dark:text-white">
@@ -647,7 +647,7 @@ export default function TeacherPage() {
                 <GraduationCap className="h-6 w-6 text-secondary" />
                 My Students ({teacherStudents.length})
               </CardTitle>
-              <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <input
@@ -673,7 +673,7 @@ export default function TeacherPage() {
           </CardHeader>
           <CardContent>
             {teacherStudents.length > 0 ? (
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto rounded-lg border border-border/60">
                 <table className="w-full">
                   <thead>
                     <tr className="border-b bg-muted/50">
@@ -707,9 +707,9 @@ export default function TeacherPage() {
                             </td>
                             <td className="py-3 px-4">
                               <div className="flex items-center gap-2">
-                                {student.profile_picture ? (
+                                {resolveImageUrl(student.profile_picture) ? (
                                   <img 
-                                    src={student.profile_picture} 
+                                    src={resolveImageUrl(student.profile_picture)} 
                                     alt={`${student.user?.first_name} ${student.user?.last_name}`}
                                     className="h-8 w-8 rounded-full object-cover"
                                   />

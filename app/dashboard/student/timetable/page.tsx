@@ -64,6 +64,7 @@ export default function TimetablePage() {
   const [error, setError] = useState("")
   const [timeSlots, setTimeSlots] = useState<string[]>([])
   const [downloading, setDownloading] = useState(false)
+  const [excelDownloading, setExcelDownloading] = useState(false)
   const timetableRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -98,6 +99,66 @@ export default function TimetablePage() {
       const [hour] = (slot.start_time || "00:00").split(":").map(Number)
       return slotDay === dayLower && hour === slotStart
     })
+  }
+
+  const downloadCsvFile = (fileName: string, rows: string[][]) => {
+    const csvContent = rows
+      .map((row) =>
+        row
+          .map((cell) => {
+            const safe = (cell ?? "").toString().replace(/"/g, '""')
+            return `"${safe}"`
+          })
+          .join(",")
+      )
+      .join("\n")
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    link.href = url
+    link.setAttribute("download", fileName)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }
+
+  const handleDownloadExcel = async () => {
+    try {
+      setExcelDownloading(true)
+
+      const rows: string[][] = [
+        ["Day", "Start Time", "End Time", "Subject", "Teacher", "Venue"]
+      ]
+
+      timetable
+        .slice()
+        .sort((a, b) => {
+          const dayOrderA = DAYS.findIndex((d) => d.toLowerCase() === a.day?.toLowerCase())
+          const dayOrderB = DAYS.findIndex((d) => d.toLowerCase() === b.day?.toLowerCase())
+          if (dayOrderA !== dayOrderB) return dayOrderA - dayOrderB
+          return (a.start_time || "").localeCompare(b.start_time || "")
+        })
+        .forEach((entry) => {
+          rows.push([
+            entry.day || "",
+            entry.start_time?.substring(0, 5) || "",
+            entry.end_time?.substring(0, 5) || "",
+            entry.subject_name || (typeof entry.subject === "object" ? entry.subject?.name : String(entry.subject || "")),
+            entry.teacher_name || (typeof entry.teacher === "object" ? entry.teacher?.name : String(entry.teacher || "")),
+            entry.venue || "",
+          ])
+        })
+
+      const fileName = `${user?.first_name || "Student"}_${user?.last_name || ""}_Timetable_${new Date().toISOString().split("T")[0]}.csv`
+      downloadCsvFile(fileName, rows)
+    } catch (err) {
+      console.error("[v0] Error downloading Excel:", err)
+      alert("Failed to download timetable excel. Please try again.")
+    } finally {
+      setExcelDownloading(false)
+    }
   }
 
   const handleDownloadPDF = async () => {
@@ -151,7 +212,7 @@ export default function TimetablePage() {
 
   return (
     <ProtectedRoute allowedRoles={["student"]}>
-      <div className="min-h-screen p-8" style={{ backgroundColor: "#F39C12" }}>
+      <div className="min-h-screen p-4 md:p-8" style={{ backgroundColor: "#F39C12" }}>
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="mb-8">
@@ -165,7 +226,7 @@ export default function TimetablePage() {
 
           {/* Title */}
           <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold tracking-wider text-white">MY SCHEDULE</h1>
+            <h1 className="text-2xl md:text-4xl font-bold tracking-wider text-white">MY SCHEDULE</h1>
             <p className="text-white mt-2">
               {user?.first_name} {user?.last_name}
             </p>
@@ -173,20 +234,28 @@ export default function TimetablePage() {
 
           {/* Download Button */}
           {timetable.length > 0 && (
-            <div className="mb-6 flex justify-center">
+            <div className="mb-6 flex flex-col sm:flex-row gap-3 justify-center">
               <button
                 onClick={handleDownloadPDF}
                 disabled={downloading}
-                className="bg-white text-gray-900 px-6 py-3 rounded-lg font-semibold flex items-center gap-2 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="bg-white text-gray-900 px-6 py-3 rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Download className="w-5 h-5" />
-                {downloading ? "Downloading..." : "Download Schedule"}
+                {downloading ? "Downloading PDF..." : "Download PDF"}
+              </button>
+              <button
+                onClick={handleDownloadExcel}
+                disabled={excelDownloading}
+                className="bg-white text-gray-900 px-6 py-3 rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Download className="w-5 h-5" />
+                {excelDownloading ? "Downloading Excel..." : "Download Excel"}
               </button>
             </div>
           )}
 
           {/* Main Content Card */}
-          <div className="bg-white rounded-lg shadow-2xl p-8" ref={timetableRef}>
+          <div className="bg-white rounded-lg shadow-2xl p-4 md:p-8" ref={timetableRef}>
             {error && (
               <div className="mb-4 text-red-600 p-4 bg-red-50 rounded-lg flex items-center gap-2">
                 <Calendar className="w-5 h-5" />
@@ -201,7 +270,7 @@ export default function TimetablePage() {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <div className="inline-block w-full border border-gray-300">
+                <div className="inline-block min-w-[760px] w-full border border-gray-300">
                   {/* Header Row - Days */}
                   <div className="grid gap-0" style={{ gridTemplateColumns: "120px repeat(7, 1fr)" }}>
                     <div className="font-bold p-3 text-center" style={{ backgroundColor: "#4b5563", color: "#ffffff" }}>TIME</div>

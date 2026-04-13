@@ -393,7 +393,7 @@ export default function StudentFeesPage() {
       </Dialog>
 
       {/* Payment History */}
-      <PaymentHistory studentId={user?.student_id || undefined} />
+      <PaymentHistory studentId={user?.id ? String(user.id) : undefined} />
 
       {/* Payment Methods Info */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">

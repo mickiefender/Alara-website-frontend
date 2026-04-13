@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { ProtectedRoute } from "@/lib/protected-route"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { apiClient } from "@/lib/api"
+import { gradesAPI } from "@/lib/api"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 
@@ -17,8 +17,8 @@ export default function ResultsPage() {
     const fetchResults = async () => {
       try {
         setLoading(true)
-        const res = await apiClient.get("/students/student-portal/exam_results/")
-        setGrades(res.data || [])
+        const res = await gradesAPI.list()
+        setGrades(res.data.results || res.data || [])
       } catch (err: any) {
         setError("Failed to load results")
         console.error("[v0] Failed to fetch results:", err)
@@ -29,6 +29,18 @@ export default function ResultsPage() {
 
     fetchResults()
   }, [])
+
+  const getGradeColor = (grade: string) => {
+    switch (grade) {
+      case "A": return "bg-green-100 text-green-800"
+      case "B": return "bg-blue-100 text-blue-800"
+      case "C": return "bg-yellow-100 text-yellow-800"
+      case "D": return "bg-orange-100 text-orange-800"
+      case "E": return "bg-pink-100 text-pink-800"
+      case "F": return "bg-red-100 text-red-800"
+      default: return "bg-gray-100 text-gray-800"
+    }
+  }
 
   if (loading) return <div className="p-8">Loading...</div>
 
@@ -48,38 +60,42 @@ export default function ResultsPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Exam Results</CardTitle>
+            <CardTitle>My Grades</CardTitle>
           </CardHeader>
           <CardContent>
             {grades.length > 0 ? (
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b">
-                      <th className="text-left py-2 px-4">Subject</th>
-                      <th className="text-left py-2 px-4">Score</th>
-                      <th className="text-left py-2 px-4">Percentage</th>
-                      <th className="text-left py-2 px-4">Grade</th>
-                      <th className="text-left py-2 px-4">Date</th>
+                      <th className="text-left py-3 px-4 font-semibold">Subject</th>
+                      <th className="text-left py-3 px-4 font-semibold">Assessment Type</th>
+                      <th className="text-left py-3 px-4 font-semibold">Score</th>
+                      <th className="text-left py-3 px-4 font-semibold">Percentage</th>
+                      <th className="text-left py-3 px-4 font-semibold">Grade</th>
+                      <th className="text-left py-3 px-4 font-semibold">Date</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {grades.map((grade) => (
-                      <tr key={grade.id} className="border-b hover:bg-muted/50">
-                        <td className="py-2 px-4 font-medium">{grade.subject_name}</td>
-                        <td className="py-2 px-4">
-                          {grade.score}/{grade.max_score}
+                    {grades.map((grade: any, index: number) => (
+                      <tr key={index} className="border-b hover:bg-gray-50">
+                        <td className="py-3 px-4 font-medium">{grade.subject_name || grade.subject}</td>
+                        <td className="py-3 px-4 capitalize">{grade.assessment_type}</td>
+                        <td className="py-3 px-4">{grade.score}/{grade.max_score}</td>
+                        <td className="py-3 px-4">{grade.percentage?.toFixed(1) || 0}%</td>
+                        <td className="py-3 px-4">
+                          <span className={`px-2 py-1 rounded ${getGradeColor(grade.grade)}`}>
+                            {grade.grade}
+                          </span>
                         </td>
-                        <td className="py-2 px-4">{Math.round(grade.percentage)}%</td>
-                        <td className="py-2 px-4 font-bold text-primary">{grade.grade}</td>
-                        <td className="py-2 px-4 text-sm text-muted-foreground">{grade.recorded_date}</td>
+                        <td className="py-3 px-4">{new Date(grade.recorded_date).toLocaleDateString()}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
             ) : (
-              <p className="text-muted-foreground text-center py-8">No exam results available</p>
+              <p className="text-muted-foreground text-center py-8">No grades available</p>
             )}
           </CardContent>
         </Card>

@@ -68,6 +68,16 @@ interface ClassAssignment {
   teacher: number
 }
 
+interface GradingPolicy {
+  id: number
+  academic_session: number
+  name: string
+  assessment_type: string
+  assessment_type_display?: string
+  weightage: number
+  is_active: boolean
+}
+
 export function TeacherGrading() {
   const { user } = useAuth()
   const [grades, setGrades] = useState<Grade[]>([])
@@ -75,6 +85,7 @@ export function TeacherGrading() {
   const [students, setStudents] = useState<any[]>([])
   const [subjects, setSubjects] = useState<any[]>([])
   const [sessions, setSessions] = useState<any[]>([])
+  const [gradingPolicies, setGradingPolicies] = useState<GradingPolicy[]>([])
   const [filterStudent, setFilterStudent] = useState("")
   const [filterSession, setFilterSession] = useState("")
   const [loading, setLoading] = useState(true)
@@ -89,6 +100,8 @@ const [bulkMaxScore, setBulkMaxScore] = useState('100')
   const [selectedAssignmentId, setSelectedAssignmentId] = useState("")
   const [saving, setSaving] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
   const [newGrade, setNewGrade] = useState({
     student: "",
     subject: "",
@@ -162,6 +175,7 @@ const [bulkMaxScore, setBulkMaxScore] = useState('100')
   useEffect(() => {
     if (filterSession) {
       fetchGrades({ academic_session: filterSession })
+      fetchGradingPolicies(filterSession)
     }
   }, [filterSession])
 
@@ -203,10 +217,22 @@ const [bulkMaxScore, setBulkMaxScore] = useState('100')
       ])
       
       let classesData = teacherClassesRes.data.results || teacherClassesRes.data || []
-      
-      if (classesData.length === 0) {
+
+      if (Array.isArray(classesData)) {
+        classesData = classesData.filter((c: any) => {
+          const tId = c.teacher ?? c.teacher_id ?? c.teacher_obj
+          return tId ? Number(tId) === Number(user.id) : true
+        })
+      }
+
+      if (!classesData || classesData.length === 0) {
         const classTeacherData = classTeachersRes.data.results || classTeachersRes.data || []
-        classesData = classTeacherData.map((ct: any) => ({
+        const teacherOnlyClassTeacherData = (Array.isArray(classTeacherData) ? classTeacherData : []).filter((ct: any) => {
+          const tId = ct.teacher ?? ct.teacher_id ?? ct.teacher_obj
+          return tId ? Number(tId) === Number(user.id) : true
+        })
+
+        classesData = teacherOnlyClassTeacherData.map((ct: any) => ({
           id: ct.id,
           class_obj: ct.class_obj,
           class_name: ct.class_name,
@@ -217,7 +243,7 @@ const [bulkMaxScore, setBulkMaxScore] = useState('100')
         }))
       }
       
-      setClasses(classesData)
+      setClasses(Array.isArray(classesData) ? classesData : [])
     } catch (error) {
       console.error("[TeacherGrading] Failed to fetch teacher data:", error)
     } finally {
@@ -225,28 +251,54 @@ const [bulkMaxScore, setBulkMaxScore] = useState('100')
     }
   }
 
-  const fetchClassData = async (classId: number | string) => {
-    if (!user) return
-    try {
-      const classIdNum = typeof classId === 'string' ? parseInt(classId) : classId
-      
-      const [studentsRes, subjectsRes] = await Promise.all([
-        usersAPI.students({ class_id: classIdNum, teacher_id: user?.id }),
-        academicsAPI.classSubjects(),
-      ])
-      
-      const studentsData = studentsRes.data.results || studentsRes.data || []
-      setStudents(studentsData)
-      
-      const allSubjects = subjectsRes.data.results || subjectsRes.data || []
-      const filteredSubjects = allSubjects.filter(
-        (s: any) => Number(s.class_obj) === Number(classIdNum)
-      )
-      setSubjects(filteredSubjects)
-    } catch (error) {
-      console.error("[TeacherGrading] Failed to fetch class data:", error)
-    }
-  }
+      const fetchGradeEntryData = async (classId: number | string) => {
+        if (!user) return
+        try {
+          const classIdNum = typeof classId === 'string' ? parseInt(classId) : classId
+          const res = await gradesAPI.gradeEntryData(classIdNum)
+          const data = res.data
+          
+          if (!data.students || !data.subjects) {
+            console.warn("[TeacherGrading] Invalid grade_entry_data response:", data)
+            return
+          }
+
+          setStudents(data.students.map((s: any) => ({
+            id: s.id,
+            first_name: s.first_name,
+            last_name: s.last_name,
+            user_id: s.id,
+            user: { first_name: s.first_name, last_name: s.last_name }
+          })))
+          
+          setSubjects(data.subjects.map((s: any) => ({
+            id: s.id,
+            subject: s.id,
+            name: s.name,
+            code: s.code,
+            subject_name: s.name
+          })))
+
+          // Handle form tutor mode
+          if (data.is_form_tutor) {
+            console.log(`[TeacherGrading] Form Tutor mode: ${data.subjects.length} class subjects for class ${classIdNum}`)
+          } else {
+            console.log(`[TeacherGrading] Subject Teacher: ${data.subjects.length} subjects for class ${classIdNum}`)
+          }
+          
+        } catch (error: any) {
+          console.error("[TeacherGrading] Failed to fetch grade_entry_data:", error)
+          let errorMsg = "Failed to load class data"
+          if (error.response?.status === 403) {
+            errorMsg = error.response?.data?.error || "You are not assigned to any subject in this class. Contact admin to set ClassSubject/ClassTeacher records."
+          } else if (error.response?.status === 404) {
+            errorMsg = "Class not found"
+          }
+          alert(errorMsg)
+        }
+      }
+
+  const fetchClassData = fetchGradeEntryData // Alias for compatibility
 
   const fetchGrades = async (params = {}) => {
     try {
@@ -258,6 +310,18 @@ const [bulkMaxScore, setBulkMaxScore] = useState('100')
     }
   }
 
+  const fetchGradingPolicies = async (sessionId: string) => {
+    try {
+      const res = await academicsAPI.gradingPoliciesBySession(parseInt(sessionId))
+      const policiesData = res.data?.results || res.data || []
+      const safePolicies = Array.isArray(policiesData) ? policiesData : []
+      setGradingPolicies(safePolicies.filter((p: any) => p?.is_active))
+    } catch (error) {
+      console.error("[TeacherGrading] Failed to fetch grading policies:", error)
+      setGradingPolicies([])
+    }
+  }
+
   const addGrade = async () => {
     if (!newGrade.student || (!newGrade.subject && newGrade.subject !== "0") || !newGrade.score) {
       alert("Please fill all required fields")
@@ -265,10 +329,24 @@ const [bulkMaxScore, setBulkMaxScore] = useState('100')
     }
 
     try {
+      // Pre-validate access
+      const validateRes = await gradesAPI.validateGradeAccess({
+        student_id: Number.parseInt(newGrade.student),
+        subject_id: Number.parseInt(newGrade.subject)
+      })
+      
+      const validation = validateRes.data
+      if (!validation.valid) {
+        alert(`Cannot grade: ${validation.reason}\nStudent classes: ${validation.student_classes.join(', ')}\nYour assignments: ${validation.teacher_assignments.slice(0,5).map(a => a.join(' - ')).join(', ')}`)
+        return
+      }
+
+      console.log('[TeacherGrading] Validation passed:', validation.reason)
+      
       setSaving(true)
       const data = {
-        student: Number.parseInt(newGrade.student),
-        subject: Number.parseInt(newGrade.subject),
+        student: Number.parseInt(newGrade.student),  // Serializer normalizes subject_id
+        subject_id: Number.parseInt(newGrade.subject),  // Key for validation
         assessment_type: newGrade.assessment_type,
         score: Number.parseFloat(newGrade.score),
         max_score: Number.parseFloat(newGrade.max_score),
@@ -292,7 +370,8 @@ const [bulkMaxScore, setBulkMaxScore] = useState('100')
       }
     } catch (error: any) {
       console.error("[TeacherGrading] Failed to create grade:", error)
-      alert(`Error: ${error?.response?.data?.error || error?.response?.data?.detail || error?.message || "Failed to create grade"}`)
+      const detail = error?.response?.data?.subject_id || error?.response?.data?.error || error?.response?.data?.detail || error?.message || "Failed to create grade"
+      alert(`Error: ${detail}`)
     } finally {
       setSaving(false)
     }
@@ -433,6 +512,10 @@ const [bulkMaxScore, setBulkMaxScore] = useState('100')
     return true
   })
 
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [selectedAssignmentId, filterSession, filterStudent, searchQuery])
+
   const gradeDistribution = {
     a: filteredGrades.filter(g => g.grade === "A").length,
     b: filteredGrades.filter(g => g.grade === "B").length,
@@ -442,11 +525,64 @@ const [bulkMaxScore, setBulkMaxScore] = useState('100')
     f: filteredGrades.filter(g => g.grade === "F").length,
   }
 
+  const policyWeightMap = gradingPolicies.reduce<Record<string, number>>((acc, policy) => {
+    acc[policy.assessment_type] = policy.weightage
+    return acc
+  }, {})
+
+  const studentWeightedResults = (() => {
+    const byStudent = new Map<number, Grade[]>()
+    filteredGrades.forEach((g) => {
+      const list = byStudent.get(g.student) || []
+      list.push(g)
+      byStudent.set(g.student, list)
+    })
+
+    const results = new Map<number, { total: number; byType: Record<string, { raw: number; weight: number; contribution: number }> }>()
+    byStudent.forEach((studentGrades, studentId) => {
+      const typeAgg = new Map<string, { score: number; max: number }>()
+      studentGrades.forEach((g) => {
+        const curr = typeAgg.get(g.assessment_type) || { score: 0, max: 0 }
+        curr.score += Number(g.score) || 0
+        curr.max += Number(g.max_score) || 0
+        typeAgg.set(g.assessment_type, curr)
+      })
+
+      let weightedTotal = 0
+      const breakdown: Record<string, { raw: number; weight: number; contribution: number }> = {}
+
+      typeAgg.forEach((agg, type) => {
+        const raw = agg.max > 0 ? (agg.score / agg.max) * 100 : 0
+        const weight = policyWeightMap[type] ?? 0
+        const contribution = (raw / 100) * weight
+        weightedTotal += contribution
+        breakdown[type] = { raw, weight, contribution }
+      })
+
+      results.set(studentId, {
+        total: Math.max(0, Math.min(100, weightedTotal)),
+        byType: breakdown,
+      })
+    })
+
+    return results
+  })()
+
+  const weightedAverage =
+    studentWeightedResults.size > 0
+      ? Array.from(studentWeightedResults.values()).reduce((sum, r) => sum + r.total, 0) / studentWeightedResults.size
+      : 0
+
+  const totalPages = Math.max(1, Math.ceil(filteredGrades.length / pageSize))
+  const safeCurrentPage = Math.min(currentPage, totalPages)
+  const paginatedGrades = filteredGrades.slice(
+    (safeCurrentPage - 1) * pageSize,
+    safeCurrentPage * pageSize
+  )
+
   const stats = {
     total: filteredGrades.length,
-    average: filteredGrades.length > 0 
-      ? filteredGrades.reduce((sum, g) => sum + g.percentage, 0) / filteredGrades.length 
-      : 0,
+    average: weightedAverage,
     locked: filteredGrades.filter(g => g.is_locked).length,
     students: students.length,
   }
@@ -459,6 +595,29 @@ const [bulkMaxScore, setBulkMaxScore] = useState('100')
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
             <p className="text-muted-foreground">Loading grading system...</p>
           </div>
+
+          {filteredGrades.length > 0 && (
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mt-4">
+              <div className="text-sm text-slate-600">
+                Showing {(safeCurrentPage - 1) * pageSize + 1}-{Math.min(safeCurrentPage * pageSize, filteredGrades.length)} of {filteredGrades.length}
+              </div>
+              <div className="flex items-center gap-2">
+                <Select value={pageSize.toString()} onValueChange={(v) => { setPageSize(parseInt(v)); setCurrentPage(1) }}>
+                  <SelectTrigger className="w-[110px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">10 / page</SelectItem>
+                    <SelectItem value="20">20 / page</SelectItem>
+                    <SelectItem value="50">50 / page</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button variant="outline" size="sm" onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={safeCurrentPage <= 1}>Previous</Button>
+                <span className="text-sm px-2">Page {safeCurrentPage} of {totalPages}</span>
+                <Button variant="outline" size="sm" onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={safeCurrentPage >= totalPages}>Next</Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     )
@@ -615,7 +774,12 @@ const [bulkMaxScore, setBulkMaxScore] = useState('100')
                   ) : (
                     classes.map((c) => (
                       <SelectItem key={c.id} value={c.id.toString()}>
-                        {c.class_name || c.class_data?.name || "Class"} - {c.subject_name || "All Subjects"}
+                        <div className="flex flex-col items-start">
+                          <span>{c.class_name || c.class_data?.name || "Class"} - {c.subject_name || "All Subjects"}</span>
+{c.subject_name === "Form Tutor (All Subjects)" && (
+                            <span className="text-xs text-muted-foreground mt-0.5">Form Tutor - All Subjects</span>
+                          )}
+                        </div>
                       </SelectItem>
                     ))
                   )}
@@ -710,12 +874,13 @@ const [bulkMaxScore, setBulkMaxScore] = useState('100')
                     <th className="text-left py-3 px-4 font-semibold text-sm text-slate-600">Grade</th>
                     <th className="text-left py-3 px-4 font-semibold text-sm text-slate-600">Status</th>
                     <th className="text-left py-3 px-4 font-semibold text-sm text-slate-600">Date</th>
+                    <th className="text-left py-3 px-4 font-semibold text-sm text-slate-600">Weighted Breakdown</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredGrades.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="text-center py-12 text-muted-foreground">
+                      <td colSpan={9} className="text-center py-12 text-muted-foreground">
                         <div className="flex flex-col items-center gap-2">
                           <FileText className="h-12 w-12 text-slate-300" />
                           <p>No grades found</p>
@@ -724,7 +889,7 @@ const [bulkMaxScore, setBulkMaxScore] = useState('100')
                       </td>
                     </tr>
                   ) : (
-                    filteredGrades.map((grade) => (
+                    paginatedGrades.map((grade) => (
                       <tr key={grade.id} className="border-b hover:bg-slate-50/50">
                         <td className="py-3 px-4 font-medium">{getStudentName(grade.student, grade)}</td>
                         <td className="py-3 px-4 text-slate-600">{getSubjectName(grade.subject, grade)}</td>
@@ -772,6 +937,26 @@ const [bulkMaxScore, setBulkMaxScore] = useState('100')
                           )}
                         </td>
                         <td className="py-3 px-4 text-slate-500 text-sm">{grade.recorded_date}</td>
+                        <td className="py-3 px-4 text-xs text-slate-600">
+                          {(() => {
+                            const studentResult = studentWeightedResults.get(grade.student)
+                            if (!studentResult) return "-"
+                            const entries = Object.entries(studentResult.byType)
+                            if (entries.length === 0) return "-"
+                            return (
+                              <div className="space-y-1">
+                                <div className="font-semibold text-slate-700">
+                                  Total: {studentResult.total.toFixed(1)}%
+                                </div>
+                                {entries.map(([type, v]) => (
+                                  <div key={type} className="whitespace-nowrap">
+                                    <span className="capitalize">{type}</span>: {v.raw.toFixed(1)}% × {v.weight}% = {v.contribution.toFixed(1)}
+                                  </div>
+                                ))}
+                              </div>
+                            )
+                          })()}
+                        </td>
                       </tr>
                     ))
                   )}
@@ -791,9 +976,19 @@ const [bulkMaxScore, setBulkMaxScore] = useState('100')
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <div className="p-3 bg-slate-50 rounded-lg">
+          <div className="p-3 bg-slate-50 rounded-lg">
+            <div className="flex items-center gap-2 mb-1">
               <p className="text-sm font-medium">{getAssignmentName(selectedAssignmentId)}</p>
+              {students.length === 0 && selectedAssignmentId && (
+                <Badge variant="secondary" className="text-xs">
+                  No Data - Check Assignments
+                </Badge>
+              )}
             </div>
+            {students.length === 0 && selectedAssignmentId && (
+              <p className="text-xs text-muted-foreground">No students or subjects available. Verify ClassSubject/ClassTeacher records.</p>
+            )}
+          </div>
             
             <div className="space-y-2">
               <Label>Student</Label>

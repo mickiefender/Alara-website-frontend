@@ -17,7 +17,7 @@ interface ProfilePictureUploadProps {
   onUploadSuccess?: () => void
 }
 
-export default function ProfilePictureUpload({
+export function ProfilePictureUpload({
   userId,
   userName,
   currentPicture,

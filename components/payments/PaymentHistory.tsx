@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { PaymentRecord } from "@/types/payment"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { billingAPI } from "@/lib/api"
 
 interface PaymentHistoryProps {
   studentId?: string
@@ -22,50 +23,109 @@ export default function PaymentHistory({ studentId, schoolId, showStudentColumn 
   const fetchPayments = async () => {
     setLoading(true)
     try {
-      // Fetch from API
-      const params = new URLSearchParams()
-      if (studentId) params.set("student_id", studentId)
-      if (schoolId) params.set("school_id", schoolId)
-      if (filter !== "all") params.set("status", filter)
+      let manualPayments: any[] = []
+      let onlinePayments: any[] = []
 
-      const response = await fetch(`/api/payments/history?${params.toString()}`)
-      const data = await response.json()
-      let apiPayments = data.payments || []
+      if (studentId) {
+        const numericStudentId = Number(studentId)
+        if (!Number.isFinite(numericStudentId) || numericStudentId <= 0) {
+          console.warn("Skipping payment fetch due to invalid studentId:", studentId)
+          setPayments([])
+          return
+        }
 
-      // Also merge with localStorage payments for the student
-      if (studentId && typeof window !== "undefined") {
+        const [manualRes, onlineRes] = await Promise.all([
+          billingAPI.manualPaymentsByStudent(numericStudentId),
+          billingAPI.onlinePaymentsByStudent(numericStudentId),
+        ])
+        manualPayments = manualRes.data?.results || manualRes.data || []
+        onlinePayments = onlineRes.data?.results || onlineRes.data || []
+      } else if (schoolId) {
+        const [manualRes, onlineRes] = await Promise.all([
+          billingAPI.manualPaymentsBySchool(),
+          billingAPI.onlinePaymentsBySchool(),
+        ])
+        manualPayments = manualRes.data?.results || manualRes.data || []
+        onlinePayments = onlineRes.data?.results || onlineRes.data || []
+      }
+
+      const normalizedManual = (Array.isArray(manualPayments) ? manualPayments : []).map((p: any, idx: number) => ({
+        id: p.id || `manual_${idx}_${p.reference || p.receipt_number || Date.now()}`,
+        student_id: String(p.student_id || p.student || studentId || ""),
+        student_name: p.student_name || p.student_full_name || p.student?.name || "",
+        email: p.email || p.student_email || "",
+        amount: Number(p.amount || 0),
+        fee_type: p.fee_type || p.fee_name || "Fee Payment",
+        reference: p.reference || p.receipt_number || "",
+        status: p.status || "success",
+        payment_channel: p.payment_channel || p.payment_method || p.channel || "manual",
+        paid_at: p.paid_at || p.payment_date || p.created_at || "",
+        created_at: p.created_at || p.payment_date || p.paid_at || new Date().toISOString(),
+        updated_at: p.updated_at || p.created_at || new Date().toISOString(),
+        academic_year: p.academic_year || "",
+        term: p.term || "",
+      }))
+
+      const normalizedOnline = (Array.isArray(onlinePayments) ? onlinePayments : []).map((p: any, idx: number) => ({
+        id: p.id || `online_${idx}_${p.reference || Date.now()}`,
+        student_id: String(p.student_id || p.student || studentId || ""),
+        student_name: p.student_name || p.student_full_name || p.student?.name || "",
+        email: p.email || p.student_email || "",
+        amount: Number(p.amount || 0),
+        fee_type: p.fee_type || p.fee_name || "Fee Payment",
+        reference: p.reference || p.transaction_reference || "",
+        status: p.status || "success",
+        payment_channel: p.payment_channel || p.channel || "online",
+        paid_at: p.paid_at || p.payment_date || p.created_at || "",
+        created_at: p.created_at || p.payment_date || p.paid_at || new Date().toISOString(),
+        updated_at: p.updated_at || p.created_at || new Date().toISOString(),
+        academic_year: p.academic_year || "",
+        term: p.term || "",
+      }))
+
+      let apiPayments: PaymentRecord[] = [...normalizedManual, ...normalizedOnline]
+
+      const dedupMap = new Map<string, PaymentRecord>()
+      apiPayments.forEach((p) => {
+        const key = `${p.reference || ""}_${p.id}_${p.amount}_${p.paid_at || p.created_at}`
+        if (!dedupMap.has(key)) {
+          dedupMap.set(key, p)
+        }
+      })
+      apiPayments = Array.from(dedupMap.values())
+
+      if (studentId && apiPayments.length === 0 && typeof window !== "undefined") {
         try {
           const historyKey = `payment_history_${studentId}`
           const localPayments = JSON.parse(localStorage.getItem(historyKey) || "[]")
-          const apiRefs = new Set(apiPayments.map((p: any) => p.reference))
 
-          const mergedLocal = localPayments
-            .filter((lp: any) => !apiRefs.has(lp.reference))
-            .map((lp: any, idx: number) => ({
-              id: `local_${idx}`,
-              student_id: studentId,
-              student_name: "",
-              email: "",
-              amount: lp.amount || 0,
-              fee_type: lp.fee_type || "Payment",
-              reference: lp.reference || "",
-              status: lp.status || "success",
-              payment_channel: lp.channel || "",
-              paid_at: lp.paid_at || "",
-              created_at: lp.paid_at || new Date().toISOString(),
-              updated_at: lp.paid_at || new Date().toISOString(),
-              academic_year: "",
-              term: "",
-            }))
+          const mergedLocal = (Array.isArray(localPayments) ? localPayments : []).map((lp: any, idx: number) => ({
+            id: `local_${idx}`,
+            student_id: studentId,
+            student_name: "",
+            email: "",
+            amount: Number(lp.amount || 0),
+            fee_type: lp.fee_type || "Payment",
+            reference: lp.reference || "",
+            status: lp.status || "success",
+            payment_channel: lp.channel || "",
+            paid_at: lp.paid_at || "",
+            created_at: lp.paid_at || new Date().toISOString(),
+            updated_at: lp.paid_at || new Date().toISOString(),
+            academic_year: "",
+            term: "",
+          })) as PaymentRecord[]
 
-          apiPayments = [...apiPayments, ...mergedLocal]
+          apiPayments = mergedLocal
         } catch {
-          // ignore
+          // ignore local fallback failures
         }
       }
 
-      // Sort by date descending
-      apiPayments.sort((a: any, b: any) => new Date(b.created_at || b.paid_at).getTime() - new Date(a.created_at || a.paid_at).getTime())
+      apiPayments.sort(
+        (a: any, b: any) =>
+          new Date(b.created_at || b.paid_at).getTime() - new Date(a.created_at || a.paid_at).getTime()
+      )
 
       if (filter !== "all") {
         apiPayments = apiPayments.filter((p: any) => p.status === filter)
@@ -74,6 +134,7 @@ export default function PaymentHistory({ studentId, schoolId, showStudentColumn 
       setPayments(apiPayments)
     } catch (error) {
       console.error("Failed to fetch payments:", error)
+      setPayments([])
     } finally {
       setLoading(false)
     }

@@ -1,8 +1,8 @@
 "use client"
 
-import React from "react"
 import Image from "next/image"
 import { useAuthContext } from "@/lib/auth-context"
+import { resolveImageUrl } from "@/lib/api"
 
 interface ProfileAvatarProps {
   src?: string | null
@@ -32,7 +32,9 @@ export function ProfileAvatar({ src, alt, size = "md", className = "", schoolLog
   // Use provided schoolLogo or get from auth context
   const logoUrl = schoolLogo || school?.logo_url || school?.logo_url_computed
   
-  const hasImage = src && src.length > 0
+  const resolvedSrc = resolveImageUrl(src)
+  const resolvedLogoUrl = resolveImageUrl(logoUrl)
+  const hasImage = resolvedSrc.length > 0
   
   // Get initials from alt text (name)
   const getInitials = (name: string) => {
@@ -54,21 +56,21 @@ export function ProfileAvatar({ src, alt, size = "md", className = "", schoolLog
     >
       {hasImage ? (
         <Image
-          src={src}
+          src={resolvedSrc}
           alt={alt}
           width={sizeClassesImage[size]}
           height={sizeClassesImage[size]}
           className="w-full h-full object-cover"
-          unoptimized={src.startsWith("http") ? true : false}
+          unoptimized
         />
-      ) : logoUrl ? (
+      ) : resolvedLogoUrl ? (
         <Image
-          src={logoUrl}
+          src={resolvedLogoUrl}
           alt={alt}
           width={sizeClassesImage[size]}
           height={sizeClassesImage[size]}
           className="w-full h-full object-cover"
-          unoptimized={logoUrl.startsWith("http") ? true : false}
+          unoptimized
         />
       ) : (
         <div className="w-full h-full flex items-center justify-center text-white font-medium">

@@ -3,9 +3,8 @@
 import { useState, useEffect, Suspense } from "react"
 import { useAuthContext } from "@/lib/auth-context"
 import { usersAPI, academicsAPI } from "@/lib/api"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Users, BookOpen, FileText, Clock, Calendar, BookMarked, Star } from "lucide-react"
+import { Users, BookOpen, FileText, Clock, Calendar, BookMarked, Star, ChevronRight } from "lucide-react"
 import Loader from '@/components/loader'
 import Link from "next/link"
 
@@ -65,71 +64,81 @@ function MyClassesContent() {
       </div>
 
       {classes.length === 0 ? (
-        <Card>
-          <CardContent className="py-8 text-center text-gray-500">
-            <BookOpen className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-            <p className="text-lg font-medium">No classes assigned yet</p>
-            <p className="text-sm mt-2">Classes assigned to you will appear here</p>
-          </CardContent>
-        </Card>
+        <div className="border border-gray-200 dark:border-gray-700 rounded-lg py-12 px-4 text-center bg-gray-50 dark:bg-gray-900">
+          <BookOpen className="h-12 w-12 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
+          <p className="text-lg font-medium text-gray-900 dark:text-white">No classes assigned yet</p>
+          <p className="text-sm mt-2 text-gray-600 dark:text-gray-400">Classes assigned to you will appear here</p>
+        </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-950">
           {classes.map((cls) => (
-            <Card key={cls.id} className="hover:shadow-lg transition-shadow border-l-4 border-l-secondary">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <CardTitle className="text-xl">{cls.name}</CardTitle>
-                  {cls.is_form_tutor && (
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
-                      <Star className="w-3 h-3 mr-1" /> Form Tutor
-                    </span>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                  <BookMarked size={18} />
-                  <span>Code: {cls.class_code || 'N/A'}</span>
-                </div>
-                <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                  <Users size={18} />
-                  <span>{cls.student_count || 0} Students</span>
-                </div>
-                <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                  <Calendar size={18} />
-                  <span>Level: {cls.level || 'N/A'}</span>
-                </div>
-                
-                {cls.subjects_taught && cls.subjects_taught.length > 0 && (
-                  <div className="pt-2 border-t">
-                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Subjects:</p>
-                    <div className="flex flex-wrap gap-1">
-                      {cls.subjects_taught.map((subject: any) => (
-                        <span 
-                          key={subject.id} 
-                          className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-secondary text-secondary"
-                        >
-                          {subject.name}
-                        </span>
-                      ))}
+            <article 
+              key={cls.id} 
+              className="p-4 sm:p-6 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors border-l-4 border-l-secondary focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-secondary"
+            >
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                {/* Left Content */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:gap-3 gap-2 mb-3">
+                    <h3 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white truncate">
+                      {cls.name}
+                    </h3>
+                    {cls.is_form_tutor && (
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-200 w-fit">
+                        <Star className="w-3 h-3 mr-1" /> Form Tutor
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Class Details Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                      <BookMarked size={18} className="flex-shrink-0" />
+                      <span>Code: <span className="font-medium text-gray-900 dark:text-white">{cls.class_code || 'N/A'}</span></span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                      <Users size={18} className="flex-shrink-0" />
+                      <span><span className="font-medium text-gray-900 dark:text-white">{cls.student_count || 0}</span> Students</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                      <Calendar size={18} className="flex-shrink-0" />
+                      <span>Level: <span className="font-medium text-gray-900 dark:text-white">{cls.level || 'N/A'}</span></span>
                     </div>
                   </div>
-                )}
-                
-                <div className="flex gap-2 pt-2">
-                  <Link href={`/dashboard/teacher/attendance?class=${cls.id}`} className="flex-1">
-                    <Button className="w-full bg-secondary hover:bg-primary" size="sm">
+
+                  {/* Subjects */}
+                  {cls.subjects_taught && cls.subjects_taught.length > 0 && (
+                    <div className="mb-4">
+                      <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-2">Subjects</p>
+                      <div className="flex flex-wrap gap-2">
+                        {cls.subjects_taught.map((subject: any) => (
+                          <span 
+                            key={subject.id} 
+                            className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-secondary/20 text-gray-900 dark:bg-secondary/30 dark:text-gray-100"
+                          >
+                            {subject.name}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Right Actions */}
+                <div className="flex flex-col gap-2 sm:w-auto">
+                  <Link href={`/dashboard/teacher/attendance?class=${cls.id}`}>
+                    <Button className="w-full sm:w-auto bg-secondary hover:bg-primary text-white" size="sm">
                       Take Attendance
                     </Button>
                   </Link>
-                  <Link href={`/dashboard/teacher/grades?class=${cls.id}`} className="flex-1">
-                    <Button variant="outline" className="w-full" size="sm">
+                  <Link href={`/dashboard/teacher/grades?class=${cls.id}`}>
+                    <Button variant="outline" className="w-full sm:w-auto" size="sm">
                       Grades
                     </Button>
                   </Link>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </article>
           ))}
         </div>
       )}
@@ -144,4 +153,3 @@ export default function MyClassesPage() {
     </Suspense>
   )
 }
-

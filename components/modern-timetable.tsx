@@ -152,6 +152,7 @@ export function ModernTimetable() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingEntry, setEditingEntry] = useState<TimetableEntry | null>(null)
   const [downloadLoading, setDownloadLoading] = useState(false)
+  const [excelLoading, setExcelLoading] = useState(false)
   const timetableRef = useRef<HTMLDivElement>(null)
   const [formData, setFormData] = useState({
     class_obj: "",
@@ -354,6 +355,69 @@ export function ModernTimetable() {
     return entry.subject
   }
 
+  const downloadCsvFile = (fileName: string, rows: string[][]) => {
+    const csvContent = rows
+      .map((row) =>
+        row
+          .map((cell) => {
+            const safe = (cell ?? "").toString().replace(/"/g, '""')
+            return `"${safe}"`
+          })
+          .join(",")
+      )
+      .join("\n")
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    link.href = url
+    link.setAttribute("download", fileName)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }
+
+  const handleDownloadExcel = async () => {
+    try {
+      setExcelLoading(true)
+      const classFilter = selectedClass === "all" ? "All-Classes" : (classes.find((c) => c.id.toString() === selectedClass)?.name || "Class")
+      const rows: string[][] = [
+        ["Day", "Start Time", "End Time", "Class", "Subject", "Teacher", "Venue"]
+      ]
+
+      filteredTimetables
+        .slice()
+        .sort((a, b) => {
+          const dayOrderA = DAYS_OF_WEEK.findIndex((d) => d.value === a.day.toLowerCase())
+          const dayOrderB = DAYS_OF_WEEK.findIndex((d) => d.value === b.day.toLowerCase())
+          if (dayOrderA !== dayOrderB) return dayOrderA - dayOrderB
+          return (a.start_time || "").localeCompare(b.start_time || "")
+        })
+        .forEach((entry) => {
+          rows.push([
+            entry.day,
+            entry.start_time?.substring(0, 5) || "",
+            entry.end_time?.substring(0, 5) || "",
+            getClassName(entry),
+            getSubjectName(entry),
+            getTeacherName(entry),
+            entry.venue || "",
+          ])
+        })
+
+      downloadCsvFile(
+        `School-Timetable-${classFilter}-${new Date().toISOString().split("T")[0]}.csv`,
+        rows
+      )
+    } catch (err) {
+      console.error("Excel export error:", err)
+      setError("Excel export failed. Please try again.")
+    } finally {
+      setExcelLoading(false)
+    }
+  }
+
   // Handle PDF Download
   const handleDownloadPDF = async () => {
     if (!timetableRef.current) return
@@ -440,13 +504,21 @@ export function ModernTimetable() {
             </CardDescription>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-              <Button 
-              onClick={handleDownloadPDF} 
+            <Button
+              onClick={handleDownloadPDF}
               disabled={downloadLoading || filteredTimetables.length === 0}
               className="bg-white text-cyan-600 hover:bg-indigo-50 gap-2 print:no-print"
             >
               <Download className="w-4 h-4" />
               {downloadLoading ? "Generating..." : "Download PDF"}
+            </Button>
+            <Button
+              onClick={handleDownloadExcel}
+              disabled={excelLoading || filteredTimetables.length === 0}
+              className="bg-white text-cyan-600 hover:bg-indigo-50 gap-2 print:no-print"
+            >
+              <Download className="w-4 h-4" />
+              {excelLoading ? "Preparing..." : "Download Excel"}
             </Button>
             {isAdmin && (
               <Dialog open={isDialogOpen} onOpenChange={(open) => {
@@ -705,9 +777,9 @@ export function ModernTimetable() {
         ) : viewMode === "grid" ? (
           /* Grid View */
 <div ref={timetableRef} className="overflow-x-auto -mx-4 md:mx-0 print:no-print">
-            <div className="inline-block min-w-full p-4 md:p-0 print:no-print">
+            <div className="inline-block min-w-[760px] w-full p-4 md:p-0 print:no-print">
               {/* Grid Header */}
-              <div className="grid gap-0.5 md:gap-1" style={{ gridTemplateColumns: "60px repeat(auto-fit, minmax(100px, 1fr))" }}>
+              <div className="grid gap-0.5 md:gap-1" style={{ gridTemplateColumns: "72px repeat(7, minmax(96px, 1fr))" }}>
                 <div className="p-1 md:p-2 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider bg-slate-100 rounded-tl-lg">
                   Time
                 </div>
@@ -724,7 +796,7 @@ export function ModernTimetable() {
 
               {/* Time Slots */}
               {getTimeSlots().map((time) => (
-                <div key={time} className="grid gap-0.5 md:gap-1" style={{ gridTemplateColumns: "60px repeat(auto-fit, minmax(100px, 1fr))" }}>
+                <div key={time} className="grid gap-0.5 md:gap-1" style={{ gridTemplateColumns: "72px repeat(7, minmax(96px, 1fr))" }}>
                   <div className="p-1 md:p-2 text-center text-xs md:text-sm font-medium text-slate-600 bg-slate-50 border-t">
                     {time}
                   </div>
@@ -788,7 +860,7 @@ export function ModernTimetable() {
                 if (dayOrder !== dayOrderB) return dayOrder - dayOrderB
                 return a.start_time.localeCompare(b.start_time)
               })
-              .map((entry, index) => {
+              .map((entry) => {
                 const color = getSubjectColor(getSubjectId(entry))
                 return (
                   <div

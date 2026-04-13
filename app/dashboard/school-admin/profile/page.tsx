@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/components/ui/use-toast"
-import ProfilePictureUpload from "@/components/profile-picture-upload"
+import { ProfilePictureUpload } from "@/components/profile-picture-upload"
 import { usersAPI } from "@/lib/api"
 import { Loader2 } from "lucide-react"
 

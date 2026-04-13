@@ -6,18 +6,15 @@ import 'quill/dist/quill.snow.css'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { Eye as PreviewIcon, Download, Save } from "lucide-react"
 import { VariableInserter } from './VariableInserter'
 import { academicsAPI } from '@/lib/api'
+import { useSchoolTheme } from '@/components/school-theme-provider'
 import { toast } from 'sonner'
-import { Skeleton } from "@/components/ui/skeleton"
 import { QuillEditorProvider } from './QuillEditorContext'
-import type { ReactNode } from 'react'
 
-// Mock preview data - replace with real student data in full page
-const MOCK_PREVIEW_DATA = {
+const BASE_MOCK_PREVIEW_DATA = {
   student_name: "John Doe",
   student_id: "STU001",
   class_name: "SS2A",
@@ -31,6 +28,7 @@ const MOCK_PREVIEW_DATA = {
   attendance_percentage: 94.2,
   form_teacher_remarks: "Excellent performance, continues to show great improvement.",
   principal_remarks: "Keep up the good work!",
+  school_logo: '/api/school/logo',
   subject_scores: [
     { subject_name: "Mathematics", percentage: 82, grade: "B", subject_position: "2/45" },
     { subject_name: "English", percentage: 78, grade: "B", subject_position: "5/45" },
@@ -53,68 +51,76 @@ interface ReportTemplateEditorProps {
 }
 
 const ReportTemplateEditor = forwardRef<TemplateEditorRef, ReportTemplateEditorProps>(
-  ({ templateId, initialHTML = '', onSave, previewData = MOCK_PREVIEW_DATA, readOnly = false, className }, ref) => {
+  ({ templateId, initialHTML = '', onSave, previewData = BASE_MOCK_PREVIEW_DATA, readOnly = false, className }, ref) => {
+    const { schoolTheme } = useSchoolTheme()
     const quillRef = useRef<Quill | null>(null)
     const containerRef = useRef<HTMLDivElement>(null)
     const [previewHtml, setPreviewHtml] = useState('')
     const [showPreview, setShowPreview] = useState(false)
     const [loading, setLoading] = useState(false)
-// toast polyfill - use sonner toast
-// showToast removed - use toast directly
 
-    // Expose editor methods
     useImperativeHandle(ref, () => ({
-      getHTML: () => {
-        return quillRef.current?.root.innerHTML || ''
-      },
+      getHTML: () => quillRef.current?.root.innerHTML || '',
       setHTML: (html: string) => {
-        if (quillRef.current) {
-          quillRef.current.root.innerHTML = html
-        }
+        if (quillRef.current) quillRef.current.root.innerHTML = html
       }
     }))
 
-    // Initialize Quill
     useEffect(() => {
       if (containerRef.current && !quillRef.current) {
         const quill = new Quill(containerRef.current, {
           theme: 'snow',
           modules: {
             toolbar: [
-              [{ 'header': [1, 2, 3, false] }],
-              ['bold', 'italic', 'underline'],
-              [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-              [{ 'align': [] }],
-              ['link', 'image'],
+              [{ header: [1, 2, 3, 4, 5, 6, false] }],
+              [{ font: [] }],
+              [{ size: ['small', false, 'large', 'huge'] }],
+              ['bold', 'italic', 'underline', 'strike'],
+              [{
+                color: [
+                  '#000000', '#e60000', '#ff9900', '#ffff00', '#008a00',
+                  '#0066cc', '#9933ff', '#ffffff',
+                  schoolTheme?.primary_color || '#008484',
+                  schoolTheme?.secondary_color || '#f1f5f9'
+                ]
+              }, {
+                background: [
+                  '#ffffff', '#facccc', '#ffebcc', '#ffffcc', '#cce8cc',
+                  '#cce0f5', '#ebd5ff',
+                  schoolTheme?.primary_color || '#008484',
+                  schoolTheme?.secondary_color || '#f1f5f9'
+                ]
+              }],
+              [{ align: [] }],
+              [{ list: 'ordered' }, { list: 'bullet' }],
+              [{ indent: '-1' }, { indent: '+1' }],
+              ['blockquote', 'code-block'],
+              [{ script: 'sub' }, { script: 'super' }],
+              ['link', 'image', 'video'],
               ['clean']
             ]
           },
-          placeholder: 'Start designing your report template... Use the Variable Inserter to add dynamic fields like {{student_name}}, {{subjects_table}}'
+          placeholder: `Design with your school colors: Primary ${schoolTheme?.primary_color || '#008484'}, Secondary ${schoolTheme?.secondary_color || '#f1f5f9'}.`
         })
         quillRef.current = quill
-
-        // Load initial HTML
-        if (initialHTML) {
-          quill.root.innerHTML = initialHTML
-        }
+        if (initialHTML) quill.root.innerHTML = initialHTML
       }
-    }, [])
+    }, [initialHTML, schoolTheme?.primary_color, schoolTheme?.secondary_color])
 
     const previewTemplate = useCallback(async () => {
       if (!quillRef.current || !templateId) return
-
       setLoading(true)
       try {
         const htmlContent = quillRef.current.root.innerHTML
-        const response = await academicsAPI.templatePreview(templateId, { 
-          html_template: htmlContent, 
-          student_data: previewData 
+        const response = await academicsAPI.templatePreview(templateId, {
+          html_template: htmlContent,
+          preview_data: previewData
         })
         setPreviewHtml(response.data.rendered_html)
         setShowPreview(true)
-        toast.success("Preview generated!")
+        toast.success("Preview generated with school theme!")
       } catch (error) {
-        toast.error("Preview failed")
+        toast.error("Preview failed - check backend connection")
         console.error('Preview error:', error)
       } finally {
         setLoading(false)
@@ -123,15 +129,12 @@ const ReportTemplateEditor = forwardRef<TemplateEditorRef, ReportTemplateEditorP
 
     const generatePDF = useCallback(async () => {
       if (!quillRef.current || !templateId) return
-
       try {
         const htmlContent = quillRef.current.root.innerHTML
-        const response = await academicsAPI.templatePdf(templateId, { 
-          html_template: htmlContent, 
-          student_data: previewData 
+        const response = await academicsAPI.templatePdf(templateId, {
+          html_template: htmlContent,
+          preview_data: previewData
         })
-        
-        // Download PDF
         const blob = new Blob([response.data], { type: 'application/pdf' })
         const url = URL.createObjectURL(blob)
         const a = document.createElement('a')
@@ -139,7 +142,6 @@ const ReportTemplateEditor = forwardRef<TemplateEditorRef, ReportTemplateEditorP
         a.download = `preview-report-${previewData.student_name}.pdf`
         a.click()
         URL.revokeObjectURL(url)
-        
         toast.success("PDF Downloaded!")
       } catch (error) {
         toast.error("PDF generation failed")
@@ -152,70 +154,74 @@ const ReportTemplateEditor = forwardRef<TemplateEditorRef, ReportTemplateEditorP
       onSave?.({ html_template: htmlContent })
     }, [onSave])
 
-  return (
-    <QuillEditorProvider quillRef={quillRef}>
-      <div className={`max-w-6xl mx-auto px-4 lg:px-6 xl:px-8 ${className || ''}`}>
-        <div className="max-w-4xl mx-auto px-4 lg:px-6 mb-6">
-          <div className="flex gap-3 mb-6 flex-wrap items-center">
-            <VariableInserter />
-            <Button onClick={previewTemplate} disabled={loading || !templateId} size="sm">
-              {loading ? "..." : <PreviewIcon className="w-4 h-4 mr-1" />}
-              Preview
-            </Button>
-            <Button onClick={generatePDF} disabled={!templateId} size="sm" variant="outline">
-              <Download className="w-4 h-4 mr-1" />
-              PDF
-            </Button>
-            {!readOnly && (
-              <Button onClick={handleSave} size="sm">
-                <Save className="w-4 h-4 mr-1" />
-                Save
+    return (
+      <QuillEditorProvider quillRef={quillRef}>
+        <div className={`w-full ${className || ''}`}>
+          <div className="w-full mb-4 lg:mb-6">
+            <div className="flex gap-2.5 mb-4 lg:mb-5 flex-wrap items-center">
+              <VariableInserter />
+              <Button onClick={previewTemplate} disabled={loading || !templateId} size="sm">
+                {loading ? "..." : <PreviewIcon className="w-4 h-4 mr-1" />}
+                Preview
               </Button>
-            )}
-          </div>
+              <Button onClick={generatePDF} disabled={!templateId} size="sm" variant="outline">
+                <Download className="w-4 h-4 mr-1" />
+                PDF
+              </Button>
+              {!readOnly && (
+                <Button onClick={handleSave} size="sm">
+                  <Save className="w-4 h-4 mr-1" />
+                  Save
+                </Button>
+              )}
+            </div>
 
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 lg:gap-8 items-stretch min-h-[600px] xl:min-h-[700px] h-fit">
-            {/* Editor */}
-            <Card className="h-full flex flex-col">
-              <CardContent className="pt-6 px-6 lg:px-8 pb-6 flex-1 flex flex-col">
-                <Label className="mb-3 block">Template Editor</Label>
-                <div 
-                  ref={containerRef} 
-                  className="flex-1 max-w-4xl mx-auto w-full [&_.ql-toolbar]:!max-w-4xl [&_.ql-toolbar]:!mx-auto [&_.ql-toolbar]:!border-b [&_.ql-toolbar]:!border-primary/20 [&_.ql-container]:!max-w-4xl [&_.ql-container]:!mx-auto [&_.ql-container]:!border [&_.ql-editor]:!min-h-[450px] [&_.ql-editor]:!p-6 lg:p-8 xl:p-12 [&_.ql-editor]:!leading-relaxed mt-2 overflow-auto"
-                />
-
-              </CardContent>
-            </Card>
-
-            {/* Preview Pane */}
-            <Card className="h-full flex flex-col xl:order-first">
-              <CardContent className="pt-6 px-6 lg:px-8 pb-6 flex-1 flex flex-col">
-                <div className="flex items-center gap-2 mb-4">
-                  <Label className="text-sm font-medium">Live Preview</Label>
-                  <Badge variant="secondary" className="text-xs">
-                    {previewData.student_name}
-                  </Badge>
-                </div>
-                {showPreview ? (
-                  <div 
-                    className="prose prose-sm max-w-none flex-1 min-h-[450px] p-6 lg:p-8 xl:p-12 border rounded-xl bg-gradient-to-br from-background to-muted overflow-auto"
-                    dangerouslySetInnerHTML={{ __html: previewHtml }} 
+            <div className="grid grid-cols-1 2xl:grid-cols-2 gap-4 lg:gap-6 items-stretch min-h-[520px] h-full">
+              <Card className="h-full flex flex-col border-primary/15 shadow-sm">
+                <CardContent className="pt-5 px-4 lg:px-6 pb-5 flex-1 flex flex-col">
+                  <Label className="mb-3 block text-sm font-semibold">Template Editor</Label>
+                  <div
+                    ref={containerRef}
+                    className="flex-1 w-full rounded-xl border border-primary/15 bg-background [&_.ql-toolbar]:!border-0 [&_.ql-toolbar]:!border-b [&_.ql-toolbar]:!border-primary/15 [&_.ql-toolbar]:sticky [&_.ql-toolbar]:top-0 [&_.ql-toolbar]:z-10 [&_.ql-toolbar]:!bg-card [&_.ql-container]:!border-0 [&_.ql-editor]:!min-h-[360px] [&_.ql-editor]:lg:!min-h-[420px] [&_.ql-editor]:!p-4 lg:[&_.ql-editor]:!p-6 [&_.ql-editor]:!leading-relaxed mt-3 overflow-auto"
                   />
-                ) : (
-                  <Skeleton className="h-[450px] w-full rounded-lg flex-1" />
-                )}
+                </CardContent>
+              </Card>
 
-              </CardContent>
-            </Card>
+              <Card className="h-full flex flex-col xl:order-first">
+                <CardContent className="pt-6 px-6 lg:px-8 pb-6 flex-1 flex flex-col">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Label className="text-sm font-medium">Live Preview</Label>
+                    <Badge variant="secondary" className="text-xs">
+                      {previewData.student_name}
+                    </Badge>
+                  </div>
+                  {showPreview ? (
+                    <div
+                      className="prose prose-sm max-w-none flex-1 min-h-[500px] p-8 2xl:p-12 border rounded-2xl shadow-inner bg-gradient-to-br from-background via-card to-muted/30 overflow-auto"
+                      dangerouslySetInnerHTML={{ __html: previewHtml }}
+                    />
+                  ) : (
+                    <div className="flex-1 min-h-[500px] flex items-center justify-center p-8 border-2 border-dashed border-muted rounded-2xl bg-gradient-to-br from-muted/30 to-background/50">
+                      <div className="text-center space-y-3">
+                        <PreviewIcon className="w-16 h-16 text-muted-foreground mx-auto" />
+                        <div>
+                          <h3 className="text-xl font-semibold text-muted-foreground mb-1">Preview Ready</h3>
+                          <p className="text-sm text-muted-foreground/80">Click Preview to see your template with school colors</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </div>
-      </div>
-    </QuillEditorProvider>
-  );
-});
+      </QuillEditorProvider>
+    )
+  }
+)
 
-ReportTemplateEditor.displayName = 'ReportTemplateEditor';
+ReportTemplateEditor.displayName = 'ReportTemplateEditor'
 
-export { ReportTemplateEditor };
-export { useQuillEditor } from './QuillEditorContext';
-
+export { ReportTemplateEditor }
+export { useQuillEditor } from './QuillEditorContext'

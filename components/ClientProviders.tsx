@@ -19,10 +19,9 @@ export function ClientProviders({ children }: ClientProvidersProps) {
       disableTransitionOnChange={false}
       storageKey="school-management-theme"
     >
-      <SchoolThemeProvider>
-        <AuthProvider>{children}</AuthProvider>
-      </SchoolThemeProvider>
+      <AuthProvider>
+        <SchoolThemeProvider>{children}</SchoolThemeProvider>
+      </AuthProvider>
     </ThemeProvider>
   )
 }
-

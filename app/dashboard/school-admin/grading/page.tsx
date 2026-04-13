@@ -33,7 +33,7 @@ interface Grade {
 interface StudentSummary {
   studentId: number
   studentName: string
-  gradeCount: number
+  subjectCount: number
   avgPercentage: number
   overallGrade: string
 }
@@ -116,10 +116,11 @@ export default function GradingPage() {
       .map(({ grades, name }) => {
         const avgPercentage = grades.reduce((sum, g) => sum + g.percentage, 0) / grades.length || 0
         const overallGrade = avgPercentage >= 90 ? 'A' : avgPercentage >= 80 ? 'B' : avgPercentage >= 70 ? 'C' : avgPercentage >= 60 ? 'D' : 'F'
+        const subjectCount = new Set(grades.map((g) => g.subject)).size
         return {
           studentId: grades[0].student,
           studentName: name || `Student ${grades[0].student}`,
-          gradeCount: grades.length,
+          subjectCount,
           avgPercentage,
           overallGrade
         }
@@ -129,8 +130,14 @@ export default function GradingPage() {
   }, [grades, filterSession, searchTerm])
 
   const getStudentName = (studentId: number) => {
-    const student = students.find((s) => (s.user?.id || s.id) === studentId)
-    return student?.user?.first_name ? `${student.user.first_name} ${student.user.last_name}` : `Student ${studentId}`
+    const student = students.find((s) => (s.user?.id || s.id) === studentId || s.id === studentId)
+    if (!student) return `Student ${studentId}`
+
+    const firstName = student.user?.first_name || student.first_name || student.user_data?.first_name || ""
+    const lastName = student.user?.last_name || student.last_name || student.user_data?.last_name || ""
+    const fullName = `${firstName} ${lastName}`.trim()
+
+    return fullName || student.student_name || student.name || `Student ${studentId}`
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -195,11 +202,15 @@ export default function GradingPage() {
                       <SelectValue placeholder="Select Student" />
                     </SelectTrigger>
                     <SelectContent>
-                      {students.map((s) => (
-                        <SelectItem key={s.id} value={(s.user?.id || s.id).toString()}>
-{getStudentName(s.id)}
-                        </SelectItem>
-                      ))}
+                      {students.map((s) => {
+                        const studentValue = (s.user?.id || s.id).toString()
+                        const studentLabel = getStudentName(s.user?.id || s.id)
+                        return (
+                          <SelectItem key={s.id} value={studentValue}>
+                            {studentLabel}
+                          </SelectItem>
+                        )
+                      })}
                     </SelectContent>
                   </Select>
                 </div>
@@ -341,7 +352,7 @@ export default function GradingPage() {
                       <div className="font-medium text-gray-900">{summary.studentName}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {summary.gradeCount}
+                      {summary.subjectCount}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="text-2xl font-bold text-emerald-600">{summary.avgPercentage.toFixed(1)}%</span>

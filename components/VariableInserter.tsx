@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { FileText, User, Award, Users, BookOpen, Calendar, CheckCircle } from "lucide-react"
+import { FileText, User, Award, Users, Calendar, CheckCircle, Image } from "lucide-react"
 import { useQuillEditor } from "./QuillEditorContext"
 
 const VARIABLES = [
@@ -10,6 +10,7 @@ const VARIABLES = [
   { key: "{{student_id}}", label: "Student ID", icon: User },
   { key: "{{class_name}}", label: "Class", icon: Users },
   { key: "{{school_name}}", label: "School Name", icon: Users },
+  { key: "{{school_logo}}", label: "School Logo", icon: Image },
   { key: "{{session_name}}", label: "Session/Term", icon: Calendar },
   { key: "{{total_marks}}", label: "Total Marks", icon: Award },
   { key: "{{average_marks}}", label: "Average %", icon: Award },

@@ -55,10 +55,24 @@ export default function StudentDashboard() {
         const upcomingExams = (exams.data.results || exams.data || []).filter((exam: any) => new Date(exam.exam_date) > new Date())
 
         // Calculate due fees
-        const allFees = fees.data.results || fees.data || []
-        const dueFees = allFees
+        const rawFees = fees.data.results || fees.data || []
+        const enrichedFees = (Array.isArray(rawFees) ? rawFees : []).map((fee: any) => {
+          const paidKey = `fee_paid_${fee.id}`
+          const storedPaid = typeof window !== "undefined" ? Number(localStorage.getItem(paidKey) || 0) : 0
+          const totalAmount = Number(fee.amount)
+          const amountPaid = fee.amount_paid ? Number(fee.amount_paid) : storedPaid
+          const balance = totalAmount - amountPaid
+          return {
+            ...fee,
+            amount_paid: amountPaid,
+            balance: balance > 0 ? balance : 0,
+            paid: fee.paid || balance <= 0,
+          }
+        })
+
+        const dueFees = enrichedFees
           .filter((fee: any) => !fee.paid)
-          .reduce((sum: number, fee: any) => sum + (parseFloat(fee.amount) || 0), 0)
+          .reduce((sum: number, fee: any) => sum + (fee.balance > 0 ? fee.balance : Number(fee.amount)), 0)
 
         const allEvents = events.data.results || events.data || []
         const allDocuments = documents.data.results || documents.data || []
@@ -76,7 +90,7 @@ export default function StudentDashboard() {
           documents: allDocuments,
           userProfile: user.data,
           examResults: allResults,
-          schoolFees: allFees,
+          schoolFees: enrichedFees,
           assignments: allAssignments,
           grades: allGrades,
         })
@@ -194,7 +208,7 @@ export default function StudentDashboard() {
     },
     {
       title: "Due Fees",
-      count: `${(data?.dueFees || 0).toFixed(2)}`,
+      count: `¢${(data?.dueFees || 0).toFixed(2)}`,
       icon: DollarSign,
       bgColor: "bg-red-500",
     },
@@ -219,25 +233,28 @@ export default function StudentDashboard() {
   ]
 
   return (
-    <div className="p-6 bg-gray-50">
+    <div className="bg-gray-50 min-h-screen">
+      <div className="w-full max-w-[1600px] mx-auto p-3 sm:p-4 md:p-6 lg:p-8 space-y-6 md:space-y-8">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-gray-800">Welcome to Akkhor School Management System</h1>
-        <p className="text-gray-600">Student Dashboard</p>
+      <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-4 sm:p-6 md:p-8">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-gray-800">
+          Welcome to Akkhor School Management System
+        </h1>
+        <p className="text-sm sm:text-base text-gray-600 mt-2">Student Dashboard</p>
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3 sm:gap-4">
         {cards.map((card, index) => {
           const Icon = card.icon
           return (
-            <div key={index} className={`${card.bgColor} text-white p-6 rounded-lg shadow-lg`}>
+            <div key={index} className={`${card.bgColor} text-white p-4 sm:p-5 rounded-xl shadow-md`}>
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium opacity-90">{card.title}</p>
-                  <p className="text-3xl font-bold mt-2">{card.count}</p>
+                  <p className="text-2xl sm:text-3xl font-bold mt-2">{card.count}</p>
                 </div>
-                <Icon className="w-12 h-12 opacity-50" />
+                <Icon className="w-9 h-9 sm:w-11 sm:h-11 opacity-50" />
               </div>
             </div>
           )
@@ -245,9 +262,9 @@ export default function StudentDashboard() {
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 md:gap-6">
         {/* My Information Section */}
-        <div className="lg:col-span-2">
+        <div className="xl:col-span-2">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
@@ -257,7 +274,7 @@ export default function StudentDashboard() {
               
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6">
                 {/* Profile Picture */}
                 <div className="flex flex-col items-center gap-3">
                   <ProfileAvatar 
@@ -273,7 +290,7 @@ export default function StudentDashboard() {
 
                 {/* Student Information */}
                 <div className="md:col-span-2 space-y-3">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <p className="text-gray-500 text-sm">Name :</p>
                       <p className="font-semibold">{data?.userProfile?.first_name} {data?.userProfile?.last_name}</p>
@@ -318,7 +335,7 @@ export default function StudentDashboard() {
                       <p className="text-gray-500 text-sm">Section :</p>
                       <p className="font-semibold">{studentClass?.section || studentProfile?.section || "-"}</p>
                     </div>
-                    <div className="col-span-2">
+                    <div className="sm:col-span-2">
                       <p className="text-gray-500 text-sm">Address :</p>
                       <p className="font-semibold">{studentProfile?.address || data?.userProfile?.address || "-"}</p>
                     </div>
@@ -369,7 +386,7 @@ export default function StudentDashboard() {
           <CardContent>
             <div className="space-y-6">
               {/* Circular Progress and Stats */}
-              <div className="flex flex-col md:flex-row items-center gap-8">
+              <div className="flex flex-col lg:flex-row items-center gap-6 lg:gap-8">
                 {/* Circular Progress */}
                 <div className="relative w-32 h-32 flex-shrink-0">
                   <svg className="w-32 h-32 transform -rotate-90">
@@ -402,7 +419,7 @@ export default function StudentDashboard() {
                 </div>
 
                 {/* Stats Cards */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 flex-1">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 flex-1 w-full">
                   <div className="bg-blue-50 rounded-lg p-4 text-center">
                     <p className="text-2xl font-bold text-blue-700">{attendance.total_days || 0}</p>
                     <p className="text-xs text-blue-600">Total Days</p>
@@ -426,7 +443,7 @@ export default function StudentDashboard() {
               {attendance.records && attendance.records.length > 0 && (
                 <div>
                   <h3 className="text-sm font-semibold text-gray-900 mb-3">Recent Attendance Records</h3>
-                  <div className="overflow-x-auto max-h-64">
+                  <div className="overflow-x-auto max-h-64 rounded-lg border border-gray-100">
                     <table className="w-full text-sm">
                       <thead className="bg-gray-50 sticky top-0">
                         <tr>
@@ -472,16 +489,16 @@ export default function StudentDashboard() {
           <CardDescription>All your assignments are listed here.</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {assignments.map((assignment) => (
-              <div key={assignment.id} className="border p-4 rounded-lg flex justify-between items-center">
-                <div>
-                  <h3 className="font-semibold">{assignment.title}</h3>
+              <div key={assignment.id} className="border p-4 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <h3 className="font-semibold text-sm sm:text-base break-words">{assignment.title}</h3>
                   <p className="text-sm text-gray-500">
                     {assignment.subject_name} - Due: {new Date(assignment.due_date).toLocaleDateString()}
                   </p>
                 </div>
-                <Button onClick={() => handleOpenModal(assignment)}>Submit</Button>
+                <Button className="w-full sm:w-auto" onClick={() => handleOpenModal(assignment)}>Submit</Button>
               </div>
             ))}
           </div>
@@ -553,7 +570,7 @@ export default function StudentDashboard() {
               </CardTitle>
               <CardDescription>Your fee status and payment history</CardDescription>
             </div>
-            <Button className="bg-secondary">Download Statement</Button>
+            <Button className="bg-secondary w-full sm:w-auto">Download Statement</Button>
           </div>
         </CardHeader>
         <CardContent>
@@ -563,29 +580,27 @@ export default function StudentDashboard() {
               <div className="bg-red-50 p-4 rounded-lg border border-red-200">
                 <p className="text-sm text-gray-600">Total Due</p>
                 <p className="text-2xl font-bold text-red-600">
-                  $
+                  ¢
                   {(
                     (data?.schoolFees || [])
-                      .filter((f: any) => !f.paid)
-                      .reduce((sum: number, f: any) => sum + (parseFloat(f.amount) || 0), 0)
+                      .reduce((sum: number, f: any) => sum + (f.paid ? 0 : (f.balance > 0 ? f.balance : Number(f.amount))), 0)
                   ).toFixed(2)}
                 </p>
               </div>
               <div className="bg-green-50 p-4 rounded-lg border border-green-200">
                 <p className="text-sm text-gray-600">Total Paid</p>
                 <p className="text-2xl font-bold text-green-600">
-                  $
+                  ¢
                   {(
                     (data?.schoolFees || [])
-                      .filter((f: any) => f.paid)
-                      .reduce((sum: number, f: any) => sum + (parseFloat(f.amount) || 0), 0)
+                      .reduce((sum: number, f: any) => sum + (f.amount_paid || 0), 0)
                   ).toFixed(2)}
                 </p>
               </div>
               <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                 <p className="text-sm text-gray-600">Total Charged</p>
                 <p className="text-2xl font-bold text-blue-600">
-                  $
+                  ¢
                   {(
                     (data?.schoolFees || [])
                       .reduce((sum: number, f: any) => sum + (parseFloat(f.amount) || 0), 0)
@@ -611,12 +626,12 @@ export default function StudentDashboard() {
                   {data?.schoolFees && data.schoolFees.length > 0 ? (
                     data.schoolFees.map((fee: any, index: number) => {
                       const feeAmount = parseFloat(fee.amount) || 0
-                      const amountPaid = fee.paid ? feeAmount : 0
-                      const balance = feeAmount - amountPaid
-                      const feeStatus = fee.paid ? "paid" : "pending"
+                      const amountPaid = fee.amount_paid || 0
+                      const balance = fee.balance > 0 ? fee.balance : feeAmount
+                      const feeStatus = fee.paid ? "paid" : (amountPaid > 0 ? "partial" : "pending")
                       const statusColor = fee.paid
                         ? "bg-green-100 text-green-800"
-                        : "bg-gray-100 text-gray-800"
+                        : (amountPaid > 0 ? "bg-yellow-100 text-yellow-800" : "bg-gray-100 text-gray-800")
 
                       return (
                         <tr key={index} className="border-b hover:bg-gray-50">
@@ -650,7 +665,7 @@ export default function StudentDashboard() {
               <p className="text-sm text-blue-800 mt-1">
                 Contact your school admin or visit the payment portal to pay your outstanding fees online.
               </p>
-              <Button className="mt-3 bg-secondary hover:bg-primary">Go to Payment Portal</Button>
+              <Button className="mt-3 bg-secondary hover:bg-primary w-full sm:w-auto">Go to Payment Portal</Button>
             </div>
           </div>
         </CardContent>
@@ -663,6 +678,7 @@ export default function StudentDashboard() {
           onClose={handleCloseModal}
         />
       )}
+      </div>
     </div>
   )
 }

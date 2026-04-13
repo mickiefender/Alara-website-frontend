@@ -2,6 +2,20 @@ import axios from "axios"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/"
 
+export const resolveImageUrl = (url?: string | null): string => {
+  if (!url) return ""
+  const trimmed = String(url).trim()
+  if (!trimmed) return ""
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed
+  }
+
+  const base = API_URL.endsWith("/") ? API_URL.slice(0, -1) : API_URL
+  const normalizedPath = trimmed.startsWith("/") ? trimmed : `/${trimmed}`
+  return `${base}${normalizedPath}`
+}
+
 export const apiClient = axios.create({
   baseURL: API_URL,
   headers: {
@@ -266,6 +280,8 @@ export const gradesAPI = {
   unlock: (id: number) => apiClient.post(`/students/grades/${id}/unlock/`),
   lock_by_class: (data: any) => apiClient.post("/students/grades/lock_by_class/", data),
   unlock_by_class: (data: any) => apiClient.post("/students/grades/unlock_by_class/", data),
+  gradeEntryData: (classId: number) => apiClient.get(`/students/grades/grade_entry_data/?class_id=${classId}`),
+  validateGradeAccess: (data: any) => apiClient.post("/students/grades/validate-grade-access/", data),
 }
 
 export const messagingAPI = {
@@ -435,11 +451,21 @@ export const billingAPI = {
   myFees: () => apiClient.get("/billing/student-fee-assignments/my_fees/"),
   markFeePaid: (id: number) => apiClient.post(`/billing/student-fee-assignments/${id}/mark_paid/`),
   manualPayments: () => apiClient.get("/billing/manual-payments/"),
-  manualPaymentsByStudent: (studentId: number) => apiClient.get(`/billing/manual-payments/by_student/?student_id=${studentId}`),
+  manualPaymentsByStudent: (studentId: number) => {
+    if (!Number.isFinite(studentId) || studentId <= 0) {
+      return Promise.reject(new Error(`Invalid studentId for manualPaymentsByStudent: ${studentId}`))
+    }
+    return apiClient.get(`/billing/manual-payments/by_student/?student_id=${studentId}`)
+  },
   manualPaymentsBySchool: () => apiClient.get("/billing/manual-payments/by_school/"),
   recordManualPayment: (data: any) => apiClient.post("/billing/manual-payments/", data),
   onlinePayments: () => apiClient.get("/billing/online-payments/"),
-  onlinePaymentsByStudent: (studentId: number) => apiClient.get(`/billing/online-payments/by_student/?student_id=${studentId}`),
+  onlinePaymentsByStudent: (studentId: number) => {
+    if (!Number.isFinite(studentId) || studentId <= 0) {
+      return Promise.reject(new Error(`Invalid studentId for onlinePaymentsByStudent: ${studentId}`))
+    }
+    return apiClient.get(`/billing/online-payments/by_student/?student_id=${studentId}`)
+  },
   onlinePaymentsBySchool: () => apiClient.get("/billing/online-payments/by_school/"),
   recordOnlinePayment: (data: any) => apiClient.post("/billing/online-payments/", data),
   invoices: () => apiClient.get("/billing/invoices/"),

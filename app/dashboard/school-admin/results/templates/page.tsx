@@ -449,125 +449,141 @@ export default function TemplatesPage() {
         </CardContent>
       </Card>
 
-      {/* Edit Dialog - Fixed Responsive */}
+      {/* Edit Dialog - Professional Responsive */}
       {editingTemplate && (
         <Dialog open={!!editingTemplate} onOpenChange={() => setEditingTemplate(null)}>
-            <DialogContent className="w-[95vw] max-w-7xl mx-auto max-h-[95vh] p-0 bg-card rounded-3xl shadow-2xl border-0 md:w-[90vw] lg:w-[85vw] xl:w-[75vw]">
-            <DialogHeader className="p-6 lg:p-8 border-b">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <DialogContent className="w-[96vw] max-w-[1400px] h-[92vh] p-0 bg-card rounded-2xl shadow-2xl border md:w-[94vw] lg:w-[92vw]">
+            <div className="h-1.5 w-full bg-gradient-to-r from-primary via-primary/70 to-secondary/70" />
+            <DialogHeader className="px-5 py-4 lg:px-8 lg:py-5 border-b bg-gradient-to-r from-primary/5 to-secondary/10">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
                 <div>
-                  <DialogTitle className="text-2xl lg:text-3xl font-bold">
-                    {editingTemplate.id ? 'Edit' : 'New'} Template
+                  <DialogTitle className="text-xl lg:text-2xl font-bold tracking-tight">
+                    {editingTemplate.id ? 'Edit' : 'Create'} Report Template
                   </DialogTitle>
-                  <p className="text-muted-foreground mt-1">Configure your report template structure</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Build a clean, school-branded template with sections and rich content.
+                  </p>
                 </div>
-                <Button variant="outline" onClick={() => setEditingTemplate(null)} className="h-10 px-6">
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Cancel
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Badge className="bg-primary/10 text-primary border border-primary/20">School Theme</Badge>
+                  <Button variant="outline" onClick={() => setEditingTemplate(null)} className="h-9 px-4">
+                    Close
+                  </Button>
+                </div>
               </div>
             </DialogHeader>
-            <div className="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden h-[calc(95vh-140px)] lg:h-[calc(95vh-160px)]">
-              {/* Editor Pane - Fixed sizing */}
-              <div className="w-full lg:w-1/3 xl:w-1/4 p-6 lg:p-8 border-b lg:border-r lg:border-b-0 bg-muted/50 min-w-0 flex-shrink-0 overflow-y-auto max-h-[70vh]">
-                <Label className="text-sm font-semibold mb-3 block text-foreground">Template Name</Label>
-                <Input
-                  value={editingTemplate.name}
-                  onChange={(e) => setEditingTemplate(t => t ? {...t, name: e.target.value} : null)}
-                  placeholder="Enter template name"
-                  className="mb-6 h-11"
-                />
-                <ReportTemplateEditor 
-                  ref={editorRef}
-                  templateId={editingTemplate?.id || 0}
-                  initialHTML={editingTemplate.htmlContent || ''}
-                  onSave={() => {}}
-                />
-              </div>
-              {/* Sections Panel - Main content */}
-              <div className="flex-1 min-h-0 p-6 lg:p-8 overflow-y-auto max-h-[70vh]">
-                <div className="mb-8 flex items-center gap-3">
-                  <Button size="sm" onClick={() => addSection('header')} className="flex-1"><Plus className="w-4 h-4 mr-2" /> Header</Button>
-                  <Button size="sm" onClick={() => addSection('student_info')} variant="outline" className="flex-1"><LayoutList className="w-4 h-4 mr-2" /> Student Info</Button>
-                  <Button size="sm" onClick={() => addSection('subjects_table')} variant="outline" className="flex-1"><FileText className="w-4 h-4 mr-2" /> Subjects</Button>
-                </div>
-                <div className="space-y-4 mb-8">
-                  {safeStructure
-                    .filter((section) => section.visible)
-                    .map((section) => (
-                      <div key={section.id} className="group border rounded-xl p-4 hover:border-primary/50 transition-all bg-card hover:bg-muted/20">
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-3">
-                            <Switch 
-                              id={`section-${section.id}`}
-                              checked={section.visible}
-                              onCheckedChange={() => toggleSection(section.id)}
-                              className="data-[state=checked]:bg-primary"
-                            />
-                            <Label htmlFor={`section-${section.id}`} className="font-semibold cursor-pointer">
-                              {section.type.replace('_', ' ').toUpperCase()}
-                            </Label>
+
+            <div className="grid grid-cols-1 xl:grid-cols-12 h-[calc(92vh-92px)] min-h-0">
+              <aside className="xl:col-span-4 2xl:col-span-3 border-b xl:border-b-0 xl:border-r bg-muted/30 min-h-0 overflow-y-auto">
+                <div className="p-5 lg:p-6 space-y-6">
+                  <div className="rounded-xl border border-primary/15 bg-background p-4">
+                    <Label className="text-sm font-semibold mb-2 block text-foreground">Template Name</Label>
+                    <Input
+                      value={editingTemplate.name}
+                      onChange={(e) => setEditingTemplate(t => t ? { ...t, name: e.target.value } : null)}
+                      placeholder="Enter template name"
+                      className="h-10"
+                    />
+                  </div>
+
+                  <div className="rounded-xl border border-primary/15 bg-background p-4">
+                    <p className="text-sm font-semibold mb-3">Quick Add Sections</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 xl:grid-cols-1 gap-2.5">
+                      <Button size="sm" onClick={() => addSection('header')} className="justify-start">
+                        <Plus className="w-4 h-4 mr-2" /> Header
+                      </Button>
+                      <Button size="sm" onClick={() => addSection('student_info')} variant="outline" className="justify-start">
+                        <LayoutList className="w-4 h-4 mr-2" /> Student Info
+                      </Button>
+                      <Button size="sm" onClick={() => addSection('subjects_table')} variant="outline" className="justify-start">
+                        <FileText className="w-4 h-4 mr-2" /> Subjects
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border border-primary/15 bg-background p-4">
+                    <p className="text-sm font-semibold mb-3">Template Sections</p>
+                    <div className="space-y-3 max-h-[280px] overflow-y-auto pr-1">
+                      {safeStructure.filter((section) => section.visible).map((section) => (
+                        <div key={section.id} className="group border rounded-lg p-3 hover:border-primary/40 transition-all bg-card">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2.5">
+                              <Switch
+                                id={`section-${section.id}`}
+                                checked={section.visible}
+                                onCheckedChange={() => toggleSection(section.id)}
+                                className="data-[state=checked]:bg-primary"
+                              />
+                              <Label htmlFor={`section-${section.id}`} className="font-medium cursor-pointer text-sm">
+                                {section.type.replace('_', ' ').toUpperCase()}
+                              </Label>
+                            </div>
+                            <Button variant="ghost" size="sm" className="h-7 px-2 opacity-60 group-hover:opacity-100">
+                              <Edit3 className="w-3.5 h-3.5" />
+                            </Button>
                           </div>
-                          <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100">
-                            <Edit3 className="w-4 h-4" />
-                          </Button>
+                          {section.type === 'custom_field' && (
+                            <div className="mt-3 pl-7 space-y-2">
+                              <Input placeholder="Field label" defaultValue={section.config?.label} />
+                              <Textarea placeholder="Custom content" rows={2} />
+                            </div>
+                          )}
                         </div>
-                        {section.type === 'custom_field' && (
-                          <div className="ml-8 p-4 bg-muted/50 rounded-lg space-y-3 mt-2">
-                            <Label className="text-sm font-medium">Custom Config</Label>
-                            <Input placeholder="Field label" defaultValue={section.config?.label} />
-                            <Textarea placeholder="Custom content" rows={2} />
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                </div>
-                <Button onClick={() => {setPreviewData(mockStudentData); setShowPreview(true);}} className="w-full h-12 text-lg mb-6">
-                  <Eye className="w-5 h-5 mr-2" />
-                  Preview Full Report
-                </Button>
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setEditingTemplate(null)} 
-                    className="flex-1 h-12"
-                  >
-                    Cancel
+                      ))}
+                    </div>
+                  </div>
+
+                  <Button onClick={() => { setPreviewData(mockStudentData); setShowPreview(true); }} className="w-full h-10">
+                    <Eye className="w-4 h-4 mr-2" />
+                    Preview Full Report
                   </Button>
-                  <Button 
-                    onClick={editingTemplate.id ? handleUpdateTemplate : handleCreateTemplate} 
-                    className="flex-1 h-12 bg-primary hover:bg-primary/90"
-                  >
-                    <Save className="w-5 h-5 mr-2" />
-                    {editingTemplate.id ? 'Update' : 'Create'} Template
-                  </Button>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <Button variant="outline" onClick={() => setEditingTemplate(null)} className="h-10">Cancel</Button>
+                    <Button onClick={editingTemplate.id ? handleUpdateTemplate : handleCreateTemplate} className="h-10 bg-primary hover:bg-primary/90">
+                      <Save className="w-4 h-4 mr-2" />
+                      {editingTemplate.id ? 'Update' : 'Create'}
+                    </Button>
+                  </div>
                 </div>
-              </div>
+              </aside>
+
+              <section className="xl:col-span-8 2xl:col-span-9 min-h-0 overflow-y-auto">
+                <div className="p-4 lg:p-6">
+                  <div className="rounded-2xl border border-primary/15 bg-gradient-to-br from-background via-background to-primary/5 p-3 lg:p-4">
+                    <ReportTemplateEditor
+                      ref={editorRef}
+                      templateId={editingTemplate?.id || 0}
+                      initialHTML={editingTemplate.htmlContent || ''}
+                      onSave={() => {}}
+                    />
+                  </div>
+                </div>
+              </section>
             </div>
           </DialogContent>
         </Dialog>
       )}
 
-      {/* Preview Dialog - Enhanced Responsive */}
+      {/* Preview Dialog - Professional Responsive */}
       {showPreview && previewData && editingTemplate && (
         <Dialog open={showPreview} onOpenChange={setShowPreview}>
-          <DialogContent className="w-[95vw] max-w-6xl mx-auto max-h-[95vh] p-4 sm:p-6 lg:p-8 bg-white shadow-2xl border rounded-3xl print:max-w-none print:shadow-none print:border-none md:w-[90vw] lg:w-[85vw]">
-            <DialogHeader className="mb-8 pb-6 border-b print:border-none">
+          <DialogContent className="w-[96vw] max-w-6xl h-[92vh] p-0 bg-white shadow-2xl border rounded-2xl print:max-w-none print:shadow-none print:border-none md:w-[94vw]">
+            <div className="h-1.5 w-full bg-gradient-to-r from-primary via-primary/70 to-secondary/70 print:hidden" />
+            <DialogHeader className="px-5 py-4 lg:px-7 lg:py-5 border-b print:border-none bg-gradient-to-r from-primary/5 to-secondary/10 print:bg-transparent">
               <div className="text-center">
-                <h2 className="text-2xl lg:text-3xl font-bold mb-2">Report Preview</h2>
-                <p className="text-muted-foreground">This is how the report will look when printed</p>
+                <h2 className="text-2xl lg:text-3xl font-bold mb-1">Report Preview</h2>
+                <p className="text-sm text-muted-foreground">Print-ready view with your school styling.</p>
               </div>
-              <div className="flex gap-2 justify-center mt-6 print:hidden">
-                <Button variant="outline" onClick={() => setShowPreview(false)}>
-                  Close Preview
-                </Button>
+              <div className="flex gap-2 justify-center mt-4 print:hidden">
+                <Button variant="outline" onClick={() => setShowPreview(false)}>Close Preview</Button>
                 <Button className="bg-primary hover:bg-primary/90">
                   <Download className="w-4 h-4 mr-2" />
                   Download PDF
                 </Button>
               </div>
             </DialogHeader>
-            <div className="overflow-y-auto max-h-[70vh] print:max-h-none pb-8 print:pb-0">
+            <div className="overflow-y-auto h-[calc(92vh-120px)] p-4 lg:p-6 print:h-auto print:p-0">
               {renderFullPreview()}
             </div>
           </DialogContent>

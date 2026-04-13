@@ -7,14 +7,13 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { gradesAPI, academicsAPI, usersAPI } from "@/lib/api"
 import { CardLoader } from "@/components/circular-loader"
 import { useRouter } from "next/navigation"
-import Link from "next/link"
-import { Badge } from "@/components/ui/badge"
 
 export function GradesManagement() {
+  const router = useRouter()
   const [grades, setGrades] = useState<any[]>([])
   const [students, setStudents] = useState<any[]>([])
   const [subjects, setSubjects] = useState<any[]>([])
@@ -81,16 +80,43 @@ export function GradesManagement() {
   }
 
   const getStudentName = (studentId: number, grade?: any) => {
-    // First try to use student_name from API if available
-    if (grade?.student_name) {
-      return grade.student_name
-    }
-    
-    const student = students.find((s) => s.id === studentId)
-    return student?.user_data?.first_name || student?.first_name || `Student ${studentId}`
+    if (grade?.student_name) return grade.student_name
+
+    const student = students.find((s) => (s.user?.id || s.id) === studentId || s.id === studentId)
+    if (!student) return `Student ${studentId}`
+
+    const firstName = student.user?.first_name || student.first_name || student.user_data?.first_name || ""
+    const lastName = student.user?.last_name || student.last_name || student.user_data?.last_name || ""
+    const fullName = `${firstName} ${lastName}`.trim()
+
+    return fullName || student.student_name || student.name || `Student ${studentId}`
   }
 
+  const studentSummaries = useMemo(() => {
+    const grouped = new Map<number, any[]>()
 
+    grades.forEach((grade) => {
+      const studentId = grade.student
+      if (!grouped.has(studentId)) grouped.set(studentId, [])
+      grouped.get(studentId)!.push(grade)
+    })
+
+    return Array.from(grouped.entries()).map(([studentId, studentGrades]) => {
+      const avgPercentage =
+        studentGrades.reduce((sum, g) => sum + (Number(g.percentage) || 0), 0) / (studentGrades.length || 1)
+      const overallGrade =
+        avgPercentage >= 90 ? "A" : avgPercentage >= 80 ? "B" : avgPercentage >= 70 ? "C" : avgPercentage >= 60 ? "D" : "F"
+      const subjectCount = new Set(studentGrades.map((g) => g.subject)).size
+
+      return {
+        studentId,
+        name: getStudentName(studentId, studentGrades[0]),
+        overallGrade,
+        avgPercentage,
+        subjectCount,
+      }
+    })
+  }, [grades, students])
 
   if (loading) return (
     <Card>
@@ -127,11 +153,14 @@ export function GradesManagement() {
                     required
                   >
                     <option value="">Select Student</option>
-                    {students.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {getStudentName(s.id)}
-                      </option>
-                    ))}
+                    {students.map((s) => {
+                      const studentId = s.user?.id || s.id
+                      return (
+                        <option key={s.id} value={studentId}>
+                          {getStudentName(studentId)}
+                        </option>
+                      )
+                    })}
                   </select>
                 </div>
 
@@ -199,15 +228,15 @@ export function GradesManagement() {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+        <div className="w-full overflow-x-auto">
+          <table className="w-full text-xs sm:text-sm">
             <thead>
               <tr className="border-b border-border dark:border-slate-800">
-                <th className="text-left py-2 px-2 text-muted-foreground dark:text-slate-400">Student</th>
-                <th className="text-left py-2 px-2 text-muted-foreground dark:text-slate-400">Overall Grade</th>
-                <th className="text-left py-2 px-2 text-muted-foreground dark:text-slate-400"># Subjects</th>
-                <th className="text-left py-2 px-2 text-muted-foreground dark:text-slate-400">Avg Score</th>
-                <th className="text-left py-2 px-2 text-muted-foreground dark:text-slate-400">Action</th>
+                <th className="text-left py-2 px-1 sm:px-3 text-muted-foreground dark:text-slate-400">Student</th>
+                <th className="hidden sm:table-cell text-left py-2 px-1 sm:px-3 text-muted-foreground dark:text-slate-400">Grade</th>
+                <th className="hidden md:table-cell text-left py-2 px-1 sm:px-3 text-muted-foreground dark:text-slate-400">Subjects</th>
+                <th className="text-left py-2 px-1 sm:px-3 text-muted-foreground dark:text-slate-400">Avg %</th>
+                <th className="text-left py-2 px-1 sm:px-3 text-muted-foreground dark:text-slate-400">Action</th>
               </tr>
             </thead>
             <tbody>
@@ -220,9 +249,22 @@ export function GradesManagement() {
               ) : (
                 studentSummaries.map(({ studentId, name, overallGrade, avgPercentage, subjectCount }) => (
                   <tr key={studentId} className="border-b border-border dark:border-slate-800 hover:bg-muted/50 dark:hover:bg-slate-800/50">
-                    <td className="py-2 px-2 text-foreground dark:text-slate-200 font-medium">{name}</td>
-                    <td className="py-2 px-2">
-                      <span className={`px-3 py-1 rounded-full text-sm font-bold ${
+                    <td className="py-2 px-1 sm:px-3 text-foreground dark:text-slate-200 font-medium text-xs sm:text-sm">
+                      <div className="truncate">{name}</div>
+                      <div className="sm:hidden text-xs text-muted-foreground dark:text-slate-400 mt-1">
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                          overallGrade === 'A' ? 'bg-green-100 text-green-800' :
+                          overallGrade === 'B' ? 'bg-blue-100 text-blue-800' :
+                          overallGrade === 'C' ? 'bg-yellow-100 text-yellow-800' :
+                          overallGrade === 'D' ? 'bg-orange-100 text-orange-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {overallGrade}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="hidden sm:table-cell py-2 px-1 sm:px-3">
+                      <span className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-bold ${
                         overallGrade === 'A' ? 'bg-green-100 text-green-800' :
                         overallGrade === 'B' ? 'bg-blue-100 text-blue-800' :
                         overallGrade === 'C' ? 'bg-yellow-100 text-yellow-800' :
@@ -232,15 +274,17 @@ export function GradesManagement() {
                         {overallGrade}
                       </span>
                     </td>
-                    <td className="py-2 px-2 text-muted-foreground dark:text-slate-400">{subjectCount}</td>
-                    <td className="py-2 px-2 font-bold text-foreground dark:text-slate-200">{avgPercentage.toFixed(1)}%</td>
-                    <td className="py-2 px-2">
+                    <td className="hidden md:table-cell py-2 px-1 sm:px-3 text-muted-foreground dark:text-slate-400 text-xs sm:text-sm">{subjectCount}</td>
+                    <td className="py-2 px-1 sm:px-3 font-bold text-foreground dark:text-slate-200 text-xs sm:text-sm">{avgPercentage.toFixed(1)}%</td>
+                    <td className="py-2 px-1 sm:px-3">
                       <Button 
                         size="sm" 
                         variant="outline"
+                        className="text-xs sm:text-sm h-8 sm:h-9 px-2 sm:px-3"
                         onClick={() => router.push(`/dashboard/school-admin/grading/${studentId}`)}
                       >
-                        View Details
+                        <span className="hidden sm:inline">View Details</span>
+                        <span className="sm:hidden">View</span>
                       </Button>
                     </td>
                   </tr>

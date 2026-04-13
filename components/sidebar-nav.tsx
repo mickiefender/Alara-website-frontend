@@ -109,7 +109,7 @@ const navSections: Record<string, NavSection[]> = {
 
         { label: "Export Results", href: "/dashboard/school-admin/results/export", icon: FileText },
         { label: "Report Templates", href: "/dashboard/school-admin/results/templates", icon: FileText },
-        { label: "Grading Policy", href: "/dashboard/school-admin/grading-policy", icon: Settings },
+        
       ],
     },
     {
@@ -362,7 +362,7 @@ function SidebarNavContent({ isCollapsed, onClose, isMobile, onToggleCollapse }:
         flex flex-col bg-sidebar 
         backdrop-blur-xl
         transition-all duration-300 ease-in-out
-        ${isMobile ? "h-[100dvh] w-[85%] max-w-[320px] shadow-2xl border-r-0" : `h-screen border-r border-sidebar-border ${isCollapsed ? "w-20" : "w-72"}`}
+        ${isMobile ? "h-[100dvh] w-full shadow-2xl border-r-0" : `h-screen border-r border-sidebar-border ${isCollapsed ? "w-20" : "w-72"}`}
       `}
     >
       {/* Header */}
