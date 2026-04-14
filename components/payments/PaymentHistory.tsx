@@ -29,7 +29,7 @@ export default function PaymentHistory({ studentId, schoolId, showStudentColumn 
       if (studentId) {
         const numericStudentId = Number(studentId)
         if (!Number.isFinite(numericStudentId) || numericStudentId <= 0) {
-          console.warn("Skipping payment fetch due to invalid studentId:", studentId)
+          if (process.env.NODE_ENV === 'development') { console.warn("Skipping payment fetch due to invalid studentId:", studentId) }
           setPayments([])
           return
         }
@@ -133,7 +133,7 @@ export default function PaymentHistory({ studentId, schoolId, showStudentColumn 
 
       setPayments(apiPayments)
     } catch (error) {
-      console.error("Failed to fetch payments:", error)
+      if (process.env.NODE_ENV === 'development') { console.error("Failed to fetch payments:", error) }
       setPayments([])
     } finally {
       setLoading(false)

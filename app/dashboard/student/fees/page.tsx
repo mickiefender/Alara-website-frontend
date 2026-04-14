@@ -91,7 +91,7 @@ export default function StudentFeesPage() {
       setFees(enrichedFees)
       setError(null)
     } catch (err: any) {
-      console.error("Error fetching fees:", err)
+      if (process.env.NODE_ENV === 'development') { console.error("Error fetching fees:", err) }
       setError("Failed to load fees")
     } finally {
       setLoading(false)

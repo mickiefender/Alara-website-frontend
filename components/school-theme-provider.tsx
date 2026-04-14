@@ -118,7 +118,7 @@ export function SchoolThemeProvider({ children }: SchoolThemeProviderProps) {
       setSchoolTheme(resolvedTheme)
       applyTheme(resolvedTheme)
     } catch (err: any) {
-      console.error('[SchoolTheme] Fetch error:', err)
+      if (process.env.NODE_ENV === 'development') { console.error('[SchoolTheme] Fetch error:', err) }
       setSchoolTheme(DEFAULT_SCHOOL_THEME)
       applyTheme(DEFAULT_SCHOOL_THEME)
       setError('Failed to load school theme')

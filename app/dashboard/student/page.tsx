@@ -102,7 +102,7 @@ export default function StudentDashboard() {
             setProfilePic(picRes.data.results[0].display_url || picRes.data.results[0].storage_url || picRes.data.results[0].picture || "")
           }
         } catch (err) {
-          console.log("No profile picture yet")
+          if (process.env.NODE_ENV === 'development') { console.log("No profile picture yet") }
         }
 
         // Fetch full student profile data
@@ -117,7 +117,7 @@ export default function StudentDashboard() {
             setStudentProfile(myProfile)
           }
         } catch (err) {
-          console.log("Could not fetch student profile details")
+          if (process.env.NODE_ENV === 'development') { console.log("Could not fetch student profile details") }
         }
 
         // Fetch student class enrollment
@@ -132,20 +132,20 @@ export default function StudentDashboard() {
             setStudentClass(myClass)
           }
         } catch (err) {
-          console.log("Could not fetch class enrollment data")
+          if (process.env.NODE_ENV === 'development') { console.log("Could not fetch class enrollment data") }
         }
 
         // Fetch attendance data
         try {
           const userId = user.data.id
           if (userId) {
-            console.log("Fetching attendance for user:", userId)
+            if (process.env.NODE_ENV === 'development') { console.log("Fetching attendance for user:", userId) }
             const attendanceRes = await attendanceAPI.studentReport(userId)
-            console.log("Attendance response:", attendanceRes.data)
+            if (process.env.NODE_ENV === 'development') { console.log("Attendance response:", attendanceRes.data) }
             setAttendance(attendanceRes.data)
           }
         } catch (err: any) {
-          console.log("No attendance data yet or error:", err?.response?.data || err.message)
+          if (process.env.NODE_ENV === 'development') { console.log("No attendance data yet or error:", err?.response?.data || err.message) }
         }
       } catch (err) {
         console.error("Error fetching dashboard data:", err)

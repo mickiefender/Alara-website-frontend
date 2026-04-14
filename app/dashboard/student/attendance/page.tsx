@@ -23,7 +23,7 @@ export default function AttendancePage() {
         setAttendance(res.data)
       } catch (err: any) {
         setError("Failed to load attendance")
-        console.error("[v0] Failed to fetch attendance:", err)
+        if (process.env.NODE_ENV === 'development') { console.error("[v0] Failed to fetch attendance:", err) }
       } finally {
         setLoading(false)
       }

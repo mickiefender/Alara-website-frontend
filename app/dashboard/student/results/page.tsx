@@ -21,7 +21,7 @@ export default function ResultsPage() {
         setGrades(res.data.results || res.data || [])
       } catch (err: any) {
         setError("Failed to load results")
-        console.error("[v0] Failed to fetch results:", err)
+        if (process.env.NODE_ENV === 'development') { console.error("[v0] Failed to fetch results:", err) }
       } finally {
         setLoading(false)
       }

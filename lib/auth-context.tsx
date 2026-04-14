@@ -56,9 +56,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter()
 
   const fetchSchool = async (schoolId: number) => {
-    console.log('[Auth] fetchSchool called with schoolId:', schoolId)
+      if (process.env.NODE_ENV === 'development') { console.log('[Auth] fetchSchool called with schoolId:', schoolId) }
     if (!schoolId) {
-      console.warn('[Auth] No schoolId provided, skipping school fetch')
+      if (process.env.NODE_ENV === 'development') { console.warn('[Auth] No schoolId provided, skipping school fetch') }
       setSchool(null)
       return
     }
@@ -67,17 +67,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const response = await schoolsAPI.list()
       const schools = response.data.results || response.data
       const schoolData = Array.isArray(schools) ? schools.find((s: any) => s.id === schoolId) : null
-      console.log('[Auth] Fetched schools, found for id', schoolId, ':', schoolData)
+      if (process.env.NODE_ENV === 'development') { console.log('[Auth] Fetched schools, found for id', schoolId, ':', schoolData) }
       setSchool(schoolData)
     } catch (error: any) {
       const status = error.response?.status
       if (status === 401) {
-        console.warn('[Auth] 401 on school fetch - likely public page or token issue')
+          if (process.env.NODE_ENV === 'development') { console.warn('[Auth] 401 on school fetch - likely public page or token issue') }
         // Don't trigger global authError, just set null
         setSchool(null)
         return
       }
-      console.error("[Auth] Failed to fetch school data:", status, error.message)
+        if (process.env.NODE_ENV === 'development') { console.error("[Auth] Failed to fetch school data:", status, error.message) }
       setSchool(null)
     }
   }
@@ -85,16 +85,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const validateToken = async () => {
       const token = sessionStorage.getItem("authToken")
       const storedUser = sessionStorage.getItem("user")
-      console.log('[Auth] validateToken: token exists?', !!token, 'storedUser exists?', !!storedUser)
+        if (process.env.NODE_ENV === 'development') { console.log('[Auth] validateToken: token exists?', !!token, 'storedUser exists?', !!storedUser) }
       if (!token || !storedUser) return false
 
       try {
-        console.log('[Auth] Calling authAPI.me() with token...')
+        if (process.env.NODE_ENV === 'development') { console.log('[Auth] Calling authAPI.me() with token...') }
         const meResponse = await authAPI.me()
         const meData = meResponse.data
-        console.log('[Auth] meResponse:', meData)
+        if (process.env.NODE_ENV === 'development') { console.log('[Auth] meResponse:', meData) }
         const parsedUser: User = { ...JSON.parse(storedUser || '{}'), ...meData, permissions: meData.permissions || meData.role_permission?.permission || [] }
-        console.log('[Auth] parsedUser school_id:', parsedUser.school_id)
+        if (process.env.NODE_ENV === 'development') { console.log('[Auth] parsedUser school_id:', parsedUser.school_id) }
         sessionStorage.setItem("user", JSON.stringify(parsedUser))
         setUser(parsedUser)
         // Only fetch school if user has school_id and is authenticated successfully
@@ -106,16 +106,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setSchool(null)
           }
         } else {
-          console.log('[Auth] No school_id, skipping fetchSchool')
+        if (process.env.NODE_ENV === 'development') { console.log('[Auth] No school_id, skipping fetchSchool') }
           setSchool(null)
         }
         setIsAuthenticated(true)
         return true
       } catch (error: any) {
         if (error.response?.status === 401) {
-          console.warn('[Auth] Token invalid/expired (401), clearing storage')
+        if (process.env.NODE_ENV === 'development') { console.warn('[Auth] Token invalid/expired (401), clearing storage') }
         } else {
-          console.warn("Token validation error:", error.response?.status, error.message)
+          if (process.env.NODE_ENV === 'development') { console.warn("Token validation error:", error.response?.status, error.message) }
         }
         sessionStorage.removeItem("authToken")
         sessionStorage.removeItem("user")
@@ -214,7 +214,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 export function useAuthContext() {
   const context = useContext(AuthContext)
   if (!context) {
-    console.warn("useAuthContext called outside AuthProvider - using safe defaults during hydration")
+    if (process.env.NODE_ENV === 'development') { console.warn("useAuthContext called outside AuthProvider - using safe defaults during hydration") }
     return {
       user: null,
       school: null,

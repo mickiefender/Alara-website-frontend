@@ -10,7 +10,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     
     const token = request.cookies.get('authToken')?.value || request.headers.get('authorization') || ''
     
-    console.log('[Catch-all Proxy] Forwarding to:', backendUrl)
+    if (process.env.NODE_ENV === 'development') { console.log('[Catch-all Proxy] Forwarding to:', backendUrl) }
     
     const backendResponse = await fetch(backendUrl, {
       method: 'GET',
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const data = await backendResponse.json()
     return NextResponse.json(data)
   } catch (error) {
-    console.error('[Proxy Error]:', error)
+    if (process.env.NODE_ENV === 'development') { console.error('[Proxy Error]:', error) }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

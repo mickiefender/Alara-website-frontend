@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
     const token = request.cookies.get('authToken')?.value || request.headers.get('authorization') || ''
     const backendUrl = `${API_URL}/assignments/submissions/`
     
-    console.log('[Proxy] Forwarding to backend:', backendUrl)
+    if (process.env.NODE_ENV === 'development') { console.log('[Proxy] Forwarding to backend:', backendUrl) }
     
     // Parse search params from request
     const url = new URL(request.url)
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     })
 
     if (!backendResponse.ok) {
-      console.error('[Proxy] Backend error:', backendResponse.status, backendResponse.statusText)
+      if (process.env.NODE_ENV === 'development') { console.error('[Proxy] Backend error:', backendResponse.status, backendResponse.statusText) }
       const errorData = await backendResponse.json().catch(() => ({}))
       return NextResponse.json(errorData, { status: backendResponse.status })
     }
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     const data = await backendResponse.json()
     return NextResponse.json(data)
   } catch (error) {
-    console.error('[Proxy] Fetch error:', error)
+    if (process.env.NODE_ENV === 'development') { console.error('[Proxy] Fetch error:', error) }
     return NextResponse.json(
       { detail: 'Proxy error', error: (error as Error).message },
       { status: 500 }
