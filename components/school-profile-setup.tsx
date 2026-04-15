@@ -228,44 +228,42 @@ export function SchoolProfileSetup() {
             <Label className="text-sm font-medium mb-2 block">School Logo</Label>
             <div className="relative group">
               {logoPreview ? (
-                <div className="relative w-32 h-32 rounded-lg overflow-hidden border-2 border-gray-200">
+                <div 
+                  className="relative w-32 h-32 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-blue-400 hover:bg-blue-50 cursor-pointer transition-all group-hover:scale-[1.02]"
+                  onClick={() => fileInputRef.current?.click()}
+                >
                   <Image 
                     src={logoPreview} 
                     alt="School Logo" 
                     fill
                     className="object-contain bg-white"
                   />
-                  {editing && (
-                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={() => fileInputRef.current?.click()}
-                        className="text-white p-2 hover:bg-white/20 rounded-full"
-                      >
-                        <Upload className="h-5 w-5" />
-                      </button>
-                    </div>
-                  )}
+                  <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <span className="text-white text-xs font-semibold bg-black/60 px-3 py-1 rounded-full">Change Logo</span>
+                  </div>
                 </div>
               ) : (
                 <div 
-                  className={`w-32 h-32 rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:border-primary transition-colors ${editing ? 'bg-gray-50' : 'bg-gray-100'}`}
-                  onClick={() => editing && fileInputRef.current?.click()}
+                  className="w-32 h-32 rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:border-primary hover:bg-primary/10 transition-all bg-gray-50"
+                  onClick={() => fileInputRef.current?.click()}
                 >
                   <Upload className="h-8 w-8 text-gray-400" />
-                  <span className="text-xs text-gray-500 mt-1">Upload Logo</span>
+                  <span className="text-xs text-gray-500 mt-1 font-medium">Upload Logo</span>
                 </div>
               )}
               
-              {/* Remove button */}
-              {editing && logoPreview && (
+              {/* Remove button - always available */}
+              {logoPreview && (
                 <button
                   onClick={handleRemoveLogo}
-                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 shadow-md"
+                  className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 shadow-md transition-colors"
+                  title="Remove Logo"
                 >
                   <X className="h-4 w-4" />
                 </button>
               )}
             </div>
+
             
             <input
               ref={fileInputRef}
@@ -273,14 +271,11 @@ export function SchoolProfileSetup() {
               accept="image/jpeg,image/png,image/webp,image/gif"
               onChange={handleLogoSelect}
               className="hidden"
-              disabled={!editing}
             />
             
-            {editing && (
-              <p className="text-xs text-muted-foreground mt-2">
+            <p className="text-xs text-muted-foreground mt-2">
                 Max 5MB. JPEG, PNG, WebP, GIF
               </p>
-            )}
           </div>
 
           {/* School Info Fields */}

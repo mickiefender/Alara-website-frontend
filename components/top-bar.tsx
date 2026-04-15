@@ -44,13 +44,16 @@ function TopBarContent({ onToggle }: TopBarProps) {
         if (pics.length > 0) {
           const picUrl = pics[0].display_url || pics[0].storage_url || pics[0].picture || ""
           setProfilePic(resolveImageUrl(picUrl))
+        } else {
+          setProfilePic('')
         }
       } catch (err) {
-        // silent
+        console.warn('Profile pic fetch failed:', err)
+        setProfilePic('')
       }
     }
     fetchProfilePic()
-  }, [user?.id])
+  }, [user?.id, user?.school_id])
 
   // Log API response for debugging
   useEffect(() => {
@@ -235,6 +238,7 @@ function TopBarContent({ onToggle }: TopBarProps) {
           >
             <ProfileAvatar 
               src={profilePic || undefined} 
+              userId={user.id}
               alt={`${user.first_name || ''} ${user.last_name || ''}`.trim() || 'User'}
               size="sm"
               schoolLogo={schoolLogo}

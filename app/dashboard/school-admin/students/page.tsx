@@ -312,6 +312,7 @@ function StudentsPageContent() {
                       <div className="flex items-center gap-3 cursor-pointer hover:text-purple-600">
                         <ProfileAvatar 
                           src={student.profile_picture_url} 
+                          userId={student.id || student.user?.id || student.user_data?.id}
                           alt={getStudentName(student)}
                           size="md"
                         />

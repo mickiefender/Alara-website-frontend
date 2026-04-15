@@ -359,6 +359,7 @@ function TeachersPageContent() {
                     <div className="flex items-center gap-3">
                       <ProfileAvatar 
                         src={teacher.profile_picture_url} 
+                        userId={teacher.id || teacher.user?.id || teacher.user_data?.id}
                         alt={getTeacherName(teacher)}
                         size="md"
                       />

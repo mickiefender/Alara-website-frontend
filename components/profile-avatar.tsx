@@ -6,6 +6,7 @@ import { resolveImageUrl } from "@/lib/api"
 
 interface ProfileAvatarProps {
   src?: string | null
+  userId?: number  // NEW: for Cloudflare unique cache-busting
   alt: string
   size?: "sm" | "md" | "lg" | "xl"
   className?: string
@@ -26,13 +27,14 @@ const sizeClassesImage = {
   xl: 64,
 }
 
-export function ProfileAvatar({ src, alt, size = "md", className = "", schoolLogo }: ProfileAvatarProps) {
+export function ProfileAvatar({ src, userId, alt, size = "md", className = "", schoolLogo }: ProfileAvatarProps) {
   const { school } = useAuthContext()
   
   // Use provided schoolLogo or get from auth context
   const logoUrl = schoolLogo || school?.logo_url || school?.logo_url_computed
   
-  const resolvedSrc = resolveImageUrl(src)
+  const cacheBust = src ? `?v=${userId}_${Date.now()}` : ''
+  const resolvedSrc = resolveImageUrl(src) + cacheBust
   const resolvedLogoUrl = resolveImageUrl(logoUrl)
   const hasImage = resolvedSrc.length > 0
   

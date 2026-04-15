@@ -115,12 +115,31 @@ export default function SchoolAdminProfilePage() {
         <CardContent className="space-y-6">
           <div className="flex flex-col md:flex-row gap-8 items-center md:items-start">
             <div className="flex flex-col items-center gap-4">
-              <ProfilePictureUpload
-                userId={profile.id}
-                userName={`${profile.first_name} ${profile.last_name}`}
-                currentPicture={profile.picture}
-                onUploadSuccess={() => setRefreshTrigger((prev) => prev + 1)}
-              />
+              <div className="relative group">
+                <div className="w-24 h-24 rounded-lg overflow-hidden bg-gray-200 border-2 border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50 cursor-pointer transition-all group-hover:scale-105">
+                  {profile.picture ? (
+                    <img
+                      src={profile.picture}
+                      alt={`${profile.first_name} ${profile.last_name}`}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs text-center p-2">
+                      No Picture
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <span className="text-white text-xs font-medium bg-black/50 px-2 py-1 rounded">Click to Edit</span>
+                  </div>
+                </div>
+                <ProfilePictureUpload
+                  userId={profile.id}
+                  userName={`${profile.first_name} ${profile.last_name}`}
+                  currentPicture={profile.picture}
+                  onUploadSuccess={() => setRefreshTrigger((prev) => prev + 1)}
+                />
+              </div>
+
               <div className="text-center">
                 <h2 className="text-2xl font-bold">{profile.first_name} {profile.last_name}</h2>
                 <p className="text-muted-foreground">School Administrator</p>
@@ -169,43 +188,77 @@ export default function SchoolAdminProfilePage() {
         <Card>
           <CardHeader>
             <CardTitle>Edit Profile</CardTitle>
-            <CardDescription>Update your profile information</CardDescription>
+            <CardDescription>Update your profile information including picture</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="firstName">First Name</Label>
-              <Input
-                id="firstName"
-                value={formData.first_name || ''}
-                onChange={(e) => setFormData({...formData, first_name: e.target.value})}
-              />
-            </div>
-            <div>
-              <Label htmlFor="lastName">Last Name</Label>
-              <Input
-                id="lastName"
-                value={formData.last_name || ''}
-                onChange={(e) => setFormData({...formData, last_name: e.target.value})}
-              />
-            </div>
-            <div>
-              <Label htmlFor="phone">Phone</Label>
-              <Input
-                id="phone"
-                value={formData.phone || ''}
-                onChange={(e) => setFormData({...formData, phone: e.target.value})}
-              />
-            </div>
-{formData.department !== undefined && (
-              <div>
-                <Label htmlFor="department">Department</Label>
-                <Input
-                  id="department"
-                  value={formData.department || ''}
-                  onChange={(e) => setFormData({...formData, department: e.target.value})}
+          <CardContent className="space-y-6">
+            <div className="flex flex-col md:flex-row gap-8 items-center md:items-start">
+              <div className="flex flex-col items-center gap-4">
+                <ProfilePictureUpload
+                  userId={profile.id}
+                  userName={`${profile.first_name} ${profile.last_name}`}
+                  currentPicture={profile.picture}
+                  onUploadSuccess={() => setRefreshTrigger((prev) => prev + 1)}
                 />
+                <div className="text-center">
+                  <h3 className="text-xl font-bold">{formData.first_name || profile.first_name} {formData.last_name || profile.last_name}</h3>
+                  <p className="text-muted-foreground">School Administrator</p>
+                </div>
               </div>
-            )}
+              <div className="grid md:grid-cols-2 gap-6 flex-1 min-w-0">
+                <div>
+                  <Label htmlFor="firstName">First Name</Label>
+                  <Input
+                    id="firstName"
+                    value={formData.first_name || ''}
+                    onChange={(e) => setFormData({...formData, first_name: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="lastName">Last Name</Label>
+                  <Input
+                    id="lastName"
+                    value={formData.last_name || ''}
+                    onChange={(e) => setFormData({...formData, last_name: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="phone">Phone</Label>
+                  <Input
+                    id="phone"
+                    value={formData.phone || ''}
+                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="employeeId">Employee ID</Label>
+                  <Input
+                    id="employeeId"
+                    value={formData.employee_id || ''}
+                    onChange={(e) => setFormData({...formData, employee_id: e.target.value})}
+                  />
+                </div>
+{formData.department !== undefined && (
+                <div className="md:col-span-2">
+                  <Label htmlFor="department">Department</Label>
+                  <Input
+                    id="department"
+                    value={formData.department || ''}
+                    onChange={(e) => setFormData({...formData, department: e.target.value})}
+                  />
+                </div>
+              )}
+{formData.bio !== undefined && (
+                <div className="md:col-span-2">
+                  <Label htmlFor="bio">Bio</Label>
+                  <Input
+                    id="bio"
+                    value={formData.bio || ''}
+                    onChange={(e) => setFormData({...formData, bio: e.target.value})}
+                  />
+                </div>
+              )}
+              </div>
+            </div>
             <div className="flex gap-2">
               <Button onClick={handleSave} disabled={saveLoading}>
                 {saveLoading ? 'Saving...' : 'Save Changes'}
@@ -218,3 +271,4 @@ export default function SchoolAdminProfilePage() {
     </div>
   )
 }
+
