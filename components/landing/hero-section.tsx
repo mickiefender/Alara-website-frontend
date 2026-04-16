@@ -92,7 +92,7 @@ export function HeroSection() {
       <div className="absolute inset-0 z-0 overflow-hidden">
         <Image
           src="/images/Hero-grid.png"
-          alt="Background"
+          alt="Alara school management software background grid"
           fill
           priority
           className="object-cover blur-[1.5px] animate-[zoomBg_20s_ease-in-out_infinite]"
@@ -131,7 +131,7 @@ export function HeroSection() {
                 asChild
                 className="h-12 px-8 text-base bg-gradient-to-r from-pink-500 to-pink-600 text-white hover:from-pink-600 hover:to-pink-700 border-0 rounded-lg font-semibold shadow-lg hover:shadow-xl transition w-full sm:w-auto"
               >
-                <Link href="/auth/register">Login</Link>
+                <Link href="/auth/login">Login</Link>
               </Button>
             </div>
           </div>
@@ -140,10 +140,10 @@ export function HeroSection() {
           <div className="relative flex items-center justify-center md:justify-end">
             <div className="relative w-full max-w-sm md:max-w-md lg:max-w-lg">
               <Image
-                src="/Featured-section/Purple and White Gradient Business Marketing Presentation Device Mockup Instagram Post (1).png"
-                alt="School management app"
-                width={500}
-                height={600}
+              src="/images/Hero-final.png"
+              alt="Alara school management dashboard screenshot"
+              width={500}
+              height={600}
                 className="w-full h-auto drop-shadow-2xl"
                 priority
               />
