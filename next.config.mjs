@@ -2,6 +2,14 @@
 const nextConfig = {
   reactStrictMode: false, // 👈 ADD THIS
 
+  experimental: {
+    turbo: {
+      loaders: {
+        '.js': ['builtin:swc-loader'],
+      }
+    }
+  },
+
   typescript: {
     ignoreBuildErrors: true,
   },

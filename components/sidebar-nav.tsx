@@ -69,6 +69,25 @@ type NavSection = {
 }
 
 const navSections: Record<string, NavSection[]> = {
+  super_admin: [
+    {
+      label: "Dashboard",
+      icon: LayoutDashboard,
+      href: "/dashboard/super-admin",
+    },
+    {
+      label: "Platform Control",
+      icon: Shield,
+      items: [
+        { label: "Super Admin Home", href: "/dashboard/super-admin", icon: LayoutDashboard },
+        { label: "Schools & Usage", href: "/dashboard/super-admin#schools-usage", icon: School },
+{ label: "School Onboarding", href: "/dashboard/super-admin/onboarding", icon: School },
+        { label: "Global Users", href: "/dashboard/super-admin#global-users", icon: Users },
+        { label: "Subscriptions & Billing", href: "/dashboard/super-admin#billing", icon: CreditCard },
+        { label: "Analytics & Reports", href: "/dashboard/super-admin#analytics", icon: BarChart },
+      ],
+    },
+  ],
   school_admin: [
     {
       label: "Dashboard",

@@ -1,106 +1,156 @@
 "use client"
 
-import { ProtectedRoute } from "@/lib/protected-route"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { SchoolsManagement } from "@/components/schools-management"
-import { useState, useEffect } from "react"
-import { schoolsAPI } from "@/lib/api"
-import { LoadingWrapper } from "@/components/loading-wrapper"
+import { useEffect, useState } from "react"
+import { billingAPI, superAdminAPI, usersAPI } from "@/lib/api"
+import { useAuthContext } from "@/lib/auth-context"
+import type { AnyObj, UserFilters } from "@/components/super-admin/types"
+import KpiCards from "@/components/super-admin/kpi-cards"
+import SchoolsUsageSection from "@/components/super-admin/schools-usage-section"
+import GlobalUsersSection from "@/components/super-admin/global-users-section"
+import BillingSection from "@/components/super-admin/billing-section"
+import AnalyticsSection from "@/components/super-admin/analytics-section"
 
-export default function SuperAdminPage() {
-  const [activeTab, setActiveTab] = useState("schools")
-  const [stats, setStats] = useState({ totalSchools: 0, activeSubscriptions: 0, monthlyRevenue: 0 })
+export default function SuperAdminDashboardPage() {
+  const { user } = useAuthContext()
   const [loading, setLoading] = useState(true)
+  const [errorMessage, setErrorMessage] = useState("")
 
-  useEffect(() => {
-    fetchStats()
-  }, [])
+  const [usage, setUsage] = useState<AnyObj[]>([])
+  const [analytics, setAnalytics] = useState<AnyObj | null>(null)
+  const [billingOverview, setBillingOverview] = useState<AnyObj | null>(null)
+  const [billingRevenue, setBillingRevenue] = useState<AnyObj | null>(null)
+  const [gatewayConfig, setGatewayConfig] = useState<AnyObj | null>(null)
 
-  const fetchStats = async () => {
+  const [users, setUsers] = useState<AnyObj[]>([])
+  const [userFilters, setUserFilters] = useState<UserFilters>({ school_id: "", role: "" })
+  const [resetPasswordState, setResetPasswordState] = useState<{ [k: number]: string }>({})
+
+  const isSuperAdmin = user?.role === "super_admin"
+
+  const extractError = (err: any, fallback: string) =>
+    err?.response?.data?.detail || err?.response?.data?.message || err?.message || fallback
+
+const fetchAll = async () => {
+    setLoading(true)
+    setErrorMessage("")
     try {
-      setLoading(true)
-      const schoolsRes = await schoolsAPI.list()
-      const schools = schoolsRes.data.results || schoolsRes.data
-      const activeCount = schools.filter((s: any) => s.is_active).length
+      // Sequential fetches to avoid Turbopack race conditions
+      const usageRes = await superAdminAPI.usage()
+      setUsage(usageRes.data?.results || [])
 
-      setStats({
-        totalSchools: schools.length,
-        activeSubscriptions: activeCount,
-        monthlyRevenue: activeCount * 650,
+      const analyticsRes = await superAdminAPI.analytics()
+      setAnalytics(analyticsRes.data || null)
+
+      const usersRes = await usersAPI.listGlobal({
+        ...(userFilters.school_id ? { school_id: userFilters.school_id } : {}),
+        ...(userFilters.role ? { role: userFilters.role } : {}),
       })
-    } catch (err) {
-      console.log("[v0] Error fetching stats:", err)
+      setUsers(usersRes.data?.results || usersRes.data || [])
+
+      const overviewRes = await billingAPI.superAdminOverview()
+      setBillingOverview(overviewRes.data || null)
+
+      const revenueRes = await billingAPI.superAdminRevenueAnalytics()
+      setBillingRevenue(revenueRes.data || null)
+
+      const gatewayRes = await billingAPI.superAdminGatewayConfig()
+      setGatewayConfig(gatewayRes.data || null)
+    } catch (err: any) {
+      setErrorMessage(extractError(err, "Failed to load super admin data."))
     } finally {
       setLoading(false)
     }
   }
 
+  useEffect(() => {
+    if (isSuperAdmin) fetchAll()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSuperAdmin])
+
+  const onFilterUsers = async () => {
+    try {
+      const res = await usersAPI.listGlobal({
+        ...(userFilters.school_id ? { school_id: userFilters.school_id } : {}),
+        ...(userFilters.role ? { role: userFilters.role } : {}),
+      })
+      setUsers(res.data?.results || res.data || [])
+    } catch (err: any) {
+      setErrorMessage(extractError(err, "Failed to filter users."))
+    }
+  }
+
+  const onBan = async (id: number) => {
+    try {
+      await usersAPI.banUser(id)
+      await onFilterUsers()
+    } catch (err: any) {
+      setErrorMessage(extractError(err, "Failed to ban user."))
+    }
+  }
+
+  const onSuspend = async (id: number) => {
+    try {
+      await usersAPI.suspendUser(id)
+      await onFilterUsers()
+    } catch (err: any) {
+      setErrorMessage(extractError(err, "Failed to suspend user."))
+    }
+  }
+
+  const onResetPassword = async (id: number) => {
+    const password = resetPasswordState[id]
+    if (!password) return
+    try {
+      await usersAPI.resetPassword(id, password)
+      setResetPasswordState((s) => ({ ...s, [id]: "" }))
+    } catch (err: any) {
+      setErrorMessage(extractError(err, "Failed to reset password."))
+    }
+  }
+
+  const onAssignRole = async (id: number, role: string) => {
+    if (!role) return
+    try {
+      await usersAPI.assignGlobalRole(id, role)
+      await onFilterUsers()
+    } catch (err: any) {
+      setErrorMessage(extractError(err, "Failed to assign role."))
+    }
+  }
+
+  if (!isSuperAdmin) return <div className="p-6">Unauthorized</div>
+  if (loading) return <div className="p-6">Loading super admin dashboard...</div>
+
   return (
-    <ProtectedRoute allowedRoles={["super_admin"]}>
-      <LoadingWrapper isLoading={loading}>
-        <div className="p-8 space-y-6">
-          <div>
-            <h1 className="text-3xl font-bold">Super Admin Dashboard</h1>
-            <p className="text-muted-foreground mt-2">Manage schools, plans, and billing</p>
-          </div>
+    <div className="p-6 space-y-8">
+      <h1 className="text-2xl font-bold">Super Admin Dashboard</h1>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Total Schools</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold">{stats.totalSchools}</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Active Subscriptions</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold">{stats.activeSubscriptions}</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Monthly Revenue</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold">¢{stats.monthlyRevenue.toLocaleString()}</p>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="space-y-4">
-            <div className="flex gap-2">
-              <button
-                onClick={() => setActiveTab("schools")}
-                className={`px-4 py-2 rounded ${activeTab === "schools" ? "bg-primary text-primary-foreground" : "bg-muted"}`}
-              >
-                Schools
-              </button>
-              <button
-                onClick={() => setActiveTab("billing")}
-                className={`px-4 py-2 rounded ${activeTab === "billing" ? "bg-primary text-primary-foreground" : "bg-muted"}`}
-              >
-                Billing
-              </button>
-            </div>
-
-            {activeTab === "schools" && <SchoolsManagement />}
-            {activeTab === "billing" && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Billing & Invoices</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">Billing management coming soon</p>
-                </CardContent>
-              </Card>
-            )}
-          </div>
+      {errorMessage ? (
+        <div className="border border-red-200 bg-red-50 text-red-700 rounded p-3 text-sm">
+          {errorMessage}
         </div>
-      </LoadingWrapper>
-    </ProtectedRoute>
+      ) : null}
+
+      <KpiCards analytics={analytics} />
+      <SchoolsUsageSection usage={usage} />
+      <GlobalUsersSection
+        users={users}
+        userFilters={userFilters}
+        setUserFilters={setUserFilters}
+        resetPasswordState={resetPasswordState}
+        setResetPasswordState={setResetPasswordState}
+        onFilterUsers={onFilterUsers}
+        onBan={onBan}
+        onSuspend={onSuspend}
+        onResetPassword={onResetPassword}
+        onAssignRole={onAssignRole}
+      />
+      <BillingSection
+        billingOverview={billingOverview}
+        billingRevenue={billingRevenue}
+        gatewayConfig={gatewayConfig}
+      />
+      <AnalyticsSection analytics={analytics} />
+    </div>
   )
 }

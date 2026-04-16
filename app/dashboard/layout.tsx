@@ -15,15 +15,14 @@ import { Menu } from "lucide-react"
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const { user } = useAuthContext()
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-const [mobileOpen, setMobileOpen] = useState(false)
-  const [isDesktop, setIsDesktop] = useState(() => typeof window !== "undefined" ? window.innerWidth >= 1024 : false);
-
-  // Sync body class with mobileOpen state
+  const [mobileOpen, setMobileOpen] = useState(false)
+  const [isDesktop, setIsDesktop] = useState(false)
 
   useEffect(() => {
     const checkSize = () => {
       setIsDesktop(window.innerWidth >= 1024);
     };
+    
     checkSize();
     window.addEventListener("resize", checkSize);
     return () => window.removeEventListener("resize", checkSize);
@@ -109,3 +108,4 @@ export default function DashboardLayout({
     </ProtectedRoute>
   )
 }
+

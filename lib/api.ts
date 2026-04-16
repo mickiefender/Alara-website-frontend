@@ -308,6 +308,12 @@ export const messagingAPI = {
 
 export const usersAPI = {
   list: () => apiClient.get("/users/users/"),
+  listGlobal: (params?: any) => apiClient.get("/users/users/", { params }),
+  banUser: (id: number) => apiClient.post(`/users/users/${id}/ban_user/`),
+  suspendUser: (id: number) => apiClient.post(`/users/users/${id}/suspend_user/`),
+  resetPassword: (id: number, new_password: string) => apiClient.post(`/users/users/${id}/reset_password/`, { new_password }),
+  assignGlobalRole: (id: number, role: string) => apiClient.post(`/users/users/${id}/assign_global_role/`, { role }),
+  globalStats: () => apiClient.get("/users/users/global_stats/"),
   getById: (id: number) => apiClient.get(`/users/users/${id}/`),
   teachers: () => apiClient.get("/users/teachers/"),
   getTeacherById: (id: number) => apiClient.get(`/users/teachers/${id}/`),
@@ -426,6 +432,11 @@ export const assignmentAPI = {
 
 export const billingAPI = {
   fees: () => apiClient.get("/billing/fees/"),
+  superAdminOverview: () => apiClient.get("/billing/super-admin/overview/"),
+  superAdminRevenueAnalytics: () => apiClient.get("/billing/super-admin/revenue_analytics/"),
+  superAdminAssignPlan: (data: { school_id: number; plan_id: number; end_date: string }) =>
+    apiClient.post("/billing/super-admin/assign_plan/", data),
+  superAdminGatewayConfig: () => apiClient.get("/billing/super-admin/gateway_config/"),
   feeTypes: () => apiClient.get("/billing/fees/"),
   createFee: (data: any) => apiClient.post("/billing/fees/", data),
   createFeeType: (data: any) => apiClient.post("/billing/fees/", data),
@@ -501,6 +512,11 @@ export const billingAPI = {
   },
 }
 
+export const superAdminAPI = {
+  usage: () => apiClient.get("/schools/schools/super_admin_usage/"),
+  analytics: () => apiClient.get("/schools/schools/super_admin_analytics/"),
+}
+
 export default {
   authAPI,
   schoolsAPI,
@@ -512,5 +528,6 @@ export default {
   usersAPI,
   timetableAPI,
   assignmentAPI,
-  billingAPI
+  billingAPI,
+  superAdminAPI
 }
