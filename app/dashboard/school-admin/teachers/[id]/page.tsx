@@ -332,12 +332,10 @@ export default function TeacherDetailPage() {
                   <Button onClick={() => { setPicPreview(''); setPicFile(null) }} variant="outline" size="sm" className="flex-1">Cancel</Button>
                 </div>
               ) : (
-                <>
-                  <input ref={fileInputRef} type="file" accept="image/*" onChange={handlePicChange} className="hidden" id="teacher-pic-upload" />
-                  <label htmlFor="teacher-pic-upload" className="flex items-center justify-center gap-2 w-full px-4 py-2 border-2 border-dashed border-secondary rounded-lg text-secondary text-sm font-medium cursor-pointer hover:bg-secondary hover:text-white transition-colors">
-                    <Camera size={16} />{profilePic ? 'Change Photo' : 'Upload Photo'}
-                  </label>
-                </>
+                <label className="flex items-center justify-center gap-2 w-full px-4 py-2 border-2 border-dashed border-secondary text-secondary rounded-lg text-sm font-medium cursor-pointer hover:bg-secondary hover:text-white transition-colors">
+                  <input ref={fileInputRef} type="file" accept="image/*" onChange={handlePicChange} className="hidden" />
+                  <Camera size={16} />{profilePic ? 'Change Photo' : 'Upload Photo'}
+                </label>
               )}
             </div>
             <div className="mt-4 text-center">

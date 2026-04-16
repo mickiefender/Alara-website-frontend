@@ -238,7 +238,9 @@ export default function StudentDashboard() {
       {/* Header */}
       <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-4 sm:p-6 md:p-8">
         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-gray-800">
-          Welcome to Akkhor School Management System
+          {data?.userProfile ? 
+            `Welcome back, ${data.userProfile.first_name || ''} ${data.userProfile.last_name || ''}`.trim() || 'Welcome, Student!' 
+            : 'Welcome to Student Dashboard'}
         </h1>
         <p className="text-sm sm:text-base text-gray-600 mt-2">Student Dashboard</p>
       </div>

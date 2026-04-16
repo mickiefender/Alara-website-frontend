@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAuthContext } from "@/lib/auth-context"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/components/ui/use-toast"
 import { ProfilePictureUpload } from "@/components/profile-picture-upload"
-import { usersAPI } from "@/lib/api"
+import { usersAPI, academicsAPI } from "@/lib/api"
 import { Loader2 } from "lucide-react"
 
 interface SchoolAdminProfile {
@@ -35,6 +35,7 @@ export default function SchoolAdminProfilePage() {
   const [saveLoading, setSaveLoading] = useState(false)
   const { toast } = useToast()
   const [refreshTrigger, setRefreshTrigger] = useState(0)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     fetchProfile()
@@ -92,6 +93,34 @@ export default function SchoolAdminProfilePage() {
     setFormData({})
   }
 
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    
+    try {
+      const formData = new FormData()
+      formData.append("user", profile.id.toString())
+      formData.append("picture", file)
+      
+      await academicsAPI.createProfilePicture(formData)
+      toast({ 
+        title: "Success", 
+        description: "Profile picture updated successfully!" 
+      })
+      setRefreshTrigger(prev => prev + 1)
+    } catch (err: any) {
+      console.error("Error updating profile picture:", err)
+      toast({
+        title: "Error",
+        description: err?.response?.data?.detail || "Failed to update profile picture",
+        variant: "destructive",
+      })
+    } finally {
+      // Reset the file input
+      if (fileInputRef.current) fileInputRef.current.value = ""
+    }
+  }
+
   if (authLoading || loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px]">
@@ -109,14 +138,20 @@ export default function SchoolAdminProfilePage() {
     <div className="space-y-6 p-6">
       <Card>
         <CardHeader>
-          <CardTitle>My Profile Information</CardTitle>
+          <CardTitle>My Profil Information</CardTitle>
           <CardDescription>View and manage your school admin profile</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex flex-col md:flex-row gap-8 items-center md:items-start">
             <div className="flex flex-col items-center gap-4">
               <div className="relative group">
-                <div className="w-24 h-24 rounded-lg overflow-hidden bg-gray-200 border-2 border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50 cursor-pointer transition-all group-hover:scale-105">
+                <div 
+                  className="w-24 h-24 rounded-lg overflow-hidden bg-gray-200 border-2 border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50 cursor-pointer transition-all group-hover:scale-105"
+                  onClick={() => fileInputRef.current?.click()}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => e.key === 'Enter' && fileInputRef.current?.click()}
+                >
                   {profile.picture ? (
                     <img
                       src={profile.picture}
@@ -132,6 +167,13 @@ export default function SchoolAdminProfilePage() {
                     <span className="text-white text-xs font-medium bg-black/50 px-2 py-1 rounded">Click to Edit</span>
                   </div>
                 </div>
+                <input 
+                  ref={fileInputRef}
+                  type="file" 
+                  accept="image/*" 
+                  className="hidden"
+                  onChange={handleLogoUpload}
+                />
                 <ProfilePictureUpload
                   userId={profile.id}
                   userName={`${profile.first_name} ${profile.last_name}`}
@@ -271,4 +313,3 @@ export default function SchoolAdminProfilePage() {
     </div>
   )
 }
-
