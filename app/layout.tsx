@@ -5,8 +5,8 @@ import type { Metadata } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import Script from "next/script"
-import "/globals.css"
-import { ClientOnlyProviders } from "@/components/ClientOnlyProviders"
+
+import { ClientProviders } from "@/components/ClientProviders"
 
 
 
@@ -90,7 +90,7 @@ export default function RootLayout({
   return (
 <html lang="en" suppressHydrationWarning>
         <body className={`font-sans antialiased`} suppressHydrationWarning>
-          <ClientOnlyProviders>{children}</ClientOnlyProviders>
+<ClientProviders>{children}</ClientProviders>
           <Analytics />
           <Script
             id="al ara-schema"
