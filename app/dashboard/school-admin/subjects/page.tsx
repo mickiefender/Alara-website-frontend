@@ -26,7 +26,7 @@ function SubjectsPageContent() {
   const [currentPage, setCurrentPage] = useState(1)
   const [isOpen, setIsOpen] = useState(false)
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null)
-  const [formData, setFormData] = useState({ name: "", description: "", credit_hours: "3" })
+  const [formData, setFormData] = useState({ name: "", code: "", description: "", credit_hours: "3" })
   const [schoolId, setSchoolId] = useState<number | null>(null)
 
   const itemsPerPage = 10
@@ -89,6 +89,11 @@ function SubjectsPageContent() {
         setError("Subject name is required")
         return
       }
+      
+      if (!formData.code) {
+        setError("Subject code is required")
+        return
+      }
 
       if (!schoolId) {
         setError("School ID not loaded. Please refresh the page.")
@@ -97,6 +102,7 @@ function SubjectsPageContent() {
 
       const data = {
         name: formData.name,
+        code: formData.code,
         description: formData.description,
         credit_hours: parseInt(formData.credit_hours, 10),
         school: schoolId,
@@ -105,13 +111,13 @@ function SubjectsPageContent() {
       console.log("[v0] Submitting subject data:", data)
 
       if (editingSubject) {
-        await academicsAPI.updateSubject(editingSubject.id, { ...data, code: editingSubject.code })
+        await academicsAPI.updateSubject(editingSubject.id, data)
       } else {
         await academicsAPI.createSubject(data)
       }
       setIsOpen(false)
       setEditingSubject(null)
-      setFormData({ name: "", description: "", credit_hours: "3" })
+      setFormData({ name: "", code: "", description: "", credit_hours: "3" })
       setError(null)
       fetchUserAndSubjects()
     } catch (err: any) {
@@ -124,6 +130,7 @@ function SubjectsPageContent() {
     setEditingSubject(subject)
     setFormData({ 
       name: subject.name, 
+      code: subject.code || "",
       description: subject.description || "",
       credit_hours: "3"
     })
@@ -177,6 +184,16 @@ function SubjectsPageContent() {
                 <Input
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  autoComplete="off"
+                />
+              </div>
+              <div>
+                <Label>Subject Code *</Label>
+                <Input
+                  value={formData.code}
+                  onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                  placeholder="e.g. MATH101"
+                  required
                   autoComplete="off"
                 />
               </div>
