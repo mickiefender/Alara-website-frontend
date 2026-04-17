@@ -4,7 +4,16 @@ import { useAuthContext } from '@/lib/auth-context'
 import { useMobileToggle } from '@/lib/mobile-toggle-context'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Menu, LayoutDashboard, Users, BookOpen, CheckSquare, ClipboardList, CalendarDays, DollarSign } from 'lucide-react'
+import {
+  Menu,
+  LayoutDashboard,
+  Users,
+  BookOpen,
+  CheckSquare,
+  ClipboardList,
+  CalendarDays,
+  DollarSign
+} from 'lucide-react'
 
 type NavItem = {
   label: string
@@ -14,16 +23,16 @@ type NavItem = {
 }
 
 const MOBILE_NAV_PERMISSION_MAP: Record<string, string> = {
-  'Students': 'manage_students',
-  'Teachers': 'manage_teachers',
-  'Academics': 'manage_timetable',
-  'Classes': 'manage_classes',
-  'Attendance': 'manage_attendance',
-  'Grades': 'manage_grades',
-  'Timetable': 'manage_timetable',
-  'Fees': 'view_fees',
-  'Dashboard': 'view_admin_dashboard',
-  'Profile': 'view_profile',
+  Students: 'manage_students',
+  Teachers: 'manage_teachers',
+  Academics: 'manage_timetable',
+  Classes: 'manage_classes',
+  Attendance: 'manage_attendance',
+  Grades: 'manage_grades',
+  Timetable: 'manage_timetable',
+  Fees: 'view_fees',
+  Dashboard: 'view_admin_dashboard',
+  Profile: 'view_profile',
 }
 
 const navItems: Record<string, NavItem[]> = {
@@ -72,49 +81,68 @@ export function MobileBottomNav() {
   const isFullAccess = ['super_admin', 'school_admin'].includes(user.role || '')
   const userPermissions = user.permissions || []
 
-const filterMobileItem = (item: NavItem): boolean => {
-    // Bypass permission check for teacher/student roles - they get core nav access
+  const filterMobileItem = (item: NavItem): boolean => {
     if (['teacher', 'student'].includes(user.role || '') || isFullAccess || item.isMenu) return true
     const permission = MOBILE_NAV_PERMISSION_MAP[item.label]
     return userPermissions.includes(permission)
   }
 
-  const items = navItems[user.role as keyof typeof navItems]?.filter(filterMobileItem).slice(0, 4) || []
+  const items =
+    navItems[user.role as keyof typeof navItems]
+      ?.filter(filterMobileItem)
+      .slice(0, 4) || []
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-sidebar-border z-40 shadow-2xl pb-[env(safe-area-inset-bottom)]">
-      <div className="flex justify-around items-center h-16 px-2">
+    <nav className="md:hidden fixed bottom-4 left-0 right-0 z-20 flex justify-center px-4">
+      {/* Floating Container */}
+      <div className="flex items-center justify-between w-full max-w-md h-16 px-2 rounded-2xl backdrop-blur-xl bg-white/80 dark:bg-black/60 shadow-xl border border-white/20">
         {items.map((item) => {
           const Icon = item.icon
           const isActive = pathname.includes(item.href.split('#')[0])
           const isMenu = item.isMenu
 
-          return isMenu ? (
-            <button
-              key="menu"
-              onClick={toggleSidebar}
-              className={`flex flex-col items-center justify-center w-full h-16 text-xs transition-colors rounded-lg ${
-                isActive
-                  ? 'bg-transparent text-sidebar-primary-foreground shadow-md'
-                  : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
-              }`}
-              aria-label="Open sidebar"
+          const baseClasses =
+            "flex flex-col items-center justify-center flex-1 h-full text-xs transition-all duration-200"
+
+          const activeClasses = isActive
+            ? "text-primary scale-105"
+            : "text-muted-foreground hover:text-foreground"
+
+          const content = (
+            <div
+              className={`${baseClasses} ${activeClasses}`}
             >
-              <Icon className="w-5 h-5 mb-1" />
-              <span className="text-xs font-medium">More</span>
-            </button>
-          ) : (
-            <Link key={item.href} href={item.href} className="flex-1">
-              <button
-                className={`flex flex-col items-center justify-center w-full h-16 text-xs transition-colors rounded-lg ${
+              <div
+                className={`flex items-center justify-center w-10 h-10 rounded-xl transition-all ${
                   isActive
-                    ? 'bg-transparent text-primary'
-                    : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                    ? "bg-primary/10 shadow-sm"
+                    : "bg-transparent"
                 }`}
               >
-                <Icon className="w-5 h-5 mb-1" />
-                <span className="text-xs font-medium">{item.label}</span>
+                <Icon className="w-5 h-5" />
+              </div>
+
+              <span className="mt-1 text-[11px] font-medium">
+                {item.label}
+              </span>
+            </div>
+          )
+
+          if (isMenu) {
+            return (
+              <button
+                key="menu"
+                onClick={toggleSidebar}
+                className="flex-1 h-full"
+              >
+                {content}
               </button>
+            )
+          }
+
+          return (
+            <Link key={item.href} href={item.href} className="flex-1 h-full">
+              {content}
             </Link>
           )
         })}
@@ -122,4 +150,3 @@ const filterMobileItem = (item: NavItem): boolean => {
     </nav>
   )
 }
-
