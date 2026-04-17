@@ -1,7 +1,7 @@
  "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from "recharts"
+import { RadialBarChart, RadialBar, PolarAngleAxis, PolarRadiusAxis, Tooltip, Legend, ResponsiveContainer } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
 import { academicsAPI } from "@/lib/api"
@@ -38,15 +38,16 @@ export function ClassPerformanceAnalytics() {
     fetchPerformanceData()
   }, [fetchPerformanceData])
 
-  const chartData = data.map((item) => ({
+  const chartData = data.map((item, index) => ({
     name: item.className,
-    "Assignments": item.assignmentsGiven,
-    "Marked": item.assignmentsMarked,
-    "Exercises": item.exercisesCompleted,
-    "Avg Score": item.averageScore,
+    performance: Math.round((item.averageScore + item.participationRate) / 2),
+    fill: ["#10b981", "#34d399", "#6ee7b7", "#bbf7d0"][index % 4],
+    className: item.className,
+    avgScore: item.averageScore,
+    participation: item.participationRate
   }))
 
-  const colors = ["#3b82f6", "#8b5cf6", "#ec4899", "#f59e0b"]
+
 
   return (
     <Card className="w-full">
@@ -83,34 +84,30 @@ export function ClassPerformanceAnalytics() {
       <CardContent>
         <div className="space-y-6">
           {/* Charts and content go here - conditional loading handled above */}
-          {/* Main Bar Chart */}
-          <div className="w-full h-80">
+          {/* Trendy RadialBar Chart */}
+          <div className="w-full h-96">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart
+              <RadialBarChart 
                 data={chartData}
-                margin={{ top: 20, right: 30, left: 0, bottom: 60 }}
+                innerRadius="20%"
+                outerRadius="80%"
+                barSize={25}
+                dataKey="performance"
               >
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis 
-                  dataKey="name" 
-                  angle={-45}
-                  textAnchor="end"
-                  height={100}
+                <PolarAngleAxis 
+                  type="category" 
+                  dataKey="name"
+                  tick={{ fontSize: 12, fill: '#64748b' }}
                 />
-                <YAxis />
-                <Tooltip 
-                  contentStyle={{
-                    backgroundColor: "#fff",
-                    border: "1px solid #ccc",
-                    borderRadius: "8px",
-                  }}
-                />
+                <PolarRadiusAxis />
+                <Tooltip />
                 <Legend />
-                <Bar dataKey="Assignments" fill={colors[0]} radius={[8, 8, 0, 0]} />
-                <Bar dataKey="Marked" fill={colors[1]} radius={[8, 8, 0, 0]} />
-                <Bar dataKey="Exercises" fill={colors[2]} radius={[8, 8, 0, 0]} />
-                <Bar dataKey="Avg Score" fill={colors[3]} radius={[8, 8, 0, 0]} />
-              </BarChart>
+                <RadialBar 
+                  dataKey="performance"
+                  background 
+                  cornerRadius={10}
+                />
+              </RadialBarChart>
             </ResponsiveContainer>
           </div>
 
