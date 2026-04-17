@@ -11,7 +11,7 @@ import { RecentPayments } from '@/components/recent-payments'
 import { StudentsManagement } from '@/components/students-management'
 import { TeachersManagement } from '@/components/teachers-management'
 import { BestPerformingClass } from '@/components/best-performing-class'
-import { BestPerformingStudent } from '@/components/best-performing-student'
+import { GenderDistributionChart } from '@/components/gender-distribution-chart'
 import { FullScreenLoader } from '@/components/circular-loader'
 import Link from 'next/link'
 import { School, BookOpen, Users2 } from 'lucide-react'
@@ -249,7 +249,7 @@ export default function SchoolAdminPage() {
 
               <div className="lg:col-span-4 space-y-6">
                 <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
-                  <BestPerformingStudent />
+                  <GenderDistributionChart />
                 </div>
 
                 <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">

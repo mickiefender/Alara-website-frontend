@@ -59,7 +59,11 @@ function StudentsPageContent() {
   const [isOpen, setIsOpen] = useState(false)
   const [editingStudent, setEditingStudent] = useState<Student | null>(null)
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
+
   const [formData, setFormData] = useState({
+
+const [formData, setFormData] = useState({
+
     username: "",
     email: "",
     first_name: "",
@@ -68,6 +72,9 @@ function StudentsPageContent() {
     phone: "",
     address: "",
   })
+
+  const [exportLoading, setExportLoading] = useState(false)
+
 
   const itemsPerPage = 10
 
@@ -189,7 +196,11 @@ function StudentsPageContent() {
     }
   }
 
+
   const toggleSelectOne = (id: number) => {
+
+const toggleSelectOne = (id: number) => {
+
     setSelectedIds((prev) => {
       const next = new Set(prev)
       if (next.has(id)) next.delete(id)
@@ -198,7 +209,65 @@ function StudentsPageContent() {
     })
   }
 
+
   const activeCount = students.filter((s) => s.is_active !== false).length
+
+  const downloadCsvFile = (fileName: string, rows: string[][]) => {
+    const csvContent = rows
+      .map((row) =>
+        row
+          .map((cell) => {
+            const safe = (cell ?? "").toString().replace(/"/g, '""')
+            return `"${safe}"`
+          })
+          .join(",")
+      )
+      .join("\n")
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    link.href = url
+    link.setAttribute("download", fileName)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }
+
+  const handleExportStudents = async () => {
+    try {
+      setExportLoading(true)
+      const today = new Date().toISOString().split('T')[0]
+      const rows: string[][] = [
+        ["Student ID", "Name", "Email", "Username", "Phone", "Address", "Status", "Enrollment Date"]
+      ]
+
+      filteredStudents.forEach((student) => {
+        rows.push([
+          student.student_id || "",
+          getStudentName(student),
+          getStudentEmail(student),
+          student.username || student.user?.username || student.user_data?.username || "",
+          student.phone || "",
+          student.address || "",
+          student.is_active !== false ? "Active" : "Inactive",
+          student.enrollment_date || ""
+        ])
+      })
+
+      downloadCsvFile(`school-students-${today}.csv`, rows)
+    } catch (err) {
+      console.error("Export error:", err)
+      // Optional: add toast error
+    } finally {
+      setExportLoading(false)
+    }
+  }
+
+  const activeCount = students.filter((s) => s.is_active !== false).length
+
+
 
   if (loading) {
     return (
@@ -252,6 +321,9 @@ function StudentsPageContent() {
           </div>
           <h1 className="text-2xl font-bold text-foreground tracking-tight flex items-center gap-2">
             <GraduationCap className="w-6 h-6 text-primary" />
+
+            <GraduationCap className="w-6 h-6 text-secondary" />
+
             Student Registry
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">
@@ -260,11 +332,26 @@ function StudentsPageContent() {
         </div>
 
         <div className="flex items-center gap-2 flex-shrink-0">
+
           <Button variant="outline" size="sm" className="gap-2 hidden sm:flex">
             <Download size={15} />
             Export
           </Button>
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
+
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="gap-2 flex" 
+            onClick={handleExportStudents}
+            disabled={exportLoading || filteredStudents.length === 0}
+          >
+            <Download size={15} />
+            {exportLoading ? "Preparing..." : "Export"}
+          </Button>
+          <Dialog open={isOpen} onOpenChange={setIsOpen}>
+
+
             <DialogTrigger asChild>
               <Button
                 className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
@@ -290,6 +377,9 @@ function StudentsPageContent() {
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
                   <GraduationCap size={18} className="text-primary" />
+
+                  <GraduationCap size={18} className="text-secondary" />
+
                   {editingStudent ? "Edit Student" : "Enrol New Student"}
                 </DialogTitle>
                 <p className="text-sm text-muted-foreground">
