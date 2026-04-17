@@ -1,6 +1,7 @@
 "use client"
 
 import { Users, UserCheck, Users2, DollarSign } from "lucide-react"
+import Link from "next/link"
 import { CircularLoader } from "@/components/circular-loader"
 
 interface DashboardStatsProps {
@@ -56,27 +57,38 @@ export function DashboardStats({ stats }: DashboardStatsProps) {
     },
   ];
 
+  const getHref = (label: string): string => {
+    switch(label) {
+      case 'Students': return '/dashboard/school-admin/students';
+      case 'Teachers': return '/dashboard/school-admin/teachers';
+      case 'Parents': return '/dashboard/school-admin/parents';
+      case 'Fee Collected': return '/dashboard/school-admin/fees';
+      default: return '/';
+    }
+  }
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       {statsData.map((stat, idx) => {
         const Icon = stat.icon;
         return (
-          <div 
-            key={idx} 
-            className={`${stat.bgColor} rounded-2xl p-6 border border-slate-200/50 dark:border-slate-700/50 backdrop-blur-sm hover:shadow-xl hover:shadow-emerald-500/10 dark:hover:shadow-emerald-500/5 transition-all duration-300 hover:-translate-y-1`}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-slate-600 dark:text-slate-400 font-medium mb-2 uppercase tracking-wide">
-                  {stat.label}
-                </p>
-                <p className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-slate-900 dark:from-white to-slate-700 dark:to-slate-200 bg-clip-text text-transparent">
-                  {stats.loading ? <CircularLoader size="sm" /> : stat.label === "Fee Collected" ? formatCurrency(stat.value) : formatNumber(stat.value)}
-                </p>
+          <Link key={idx} href={getHref(stat.label)} className="block h-full">
+            <div 
+              className={`h-full relative ${stat.bgColor} rounded-2xl p-6 border border-slate-200/50 dark:border-slate-700/50 backdrop-blur-sm hover:shadow-xl hover:shadow-emerald-500/10 dark:hover:shadow-emerald-500/5 transition-all duration-300 hover:-translate-y-1`}
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-600 dark:text-slate-400 font-medium mb-2 uppercase tracking-wide">
+                    {stat.label}
+                  </p>
+                  <p className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-slate-900 dark:from-white to-slate-700 dark:to-slate-200 bg-clip-text text-transparent">
+                    {stats.loading ? <CircularLoader size="sm" /> : stat.label === "Fee Collected" ? formatCurrency(stat.value) : formatNumber(stat.value)}
+                  </p>
+                </div>
+                <Icon className={`w-12 h-12 ${stat.iconColor} drop-shadow-lg`} />
               </div>
-              <Icon className={`w-12 h-12 ${stat.iconColor} drop-shadow-lg`} />
             </div>
-          </div>
+          </Link>
         );
       })}
     </div>
