@@ -12,7 +12,8 @@ import {
   CheckSquare,
   ClipboardList,
   CalendarDays,
-  DollarSign
+  DollarSign,
+  Sparkles,
 } from 'lucide-react'
 
 type NavItem = {
@@ -57,7 +58,7 @@ const navItems: Record<string, NavItem[]> = {
   ],
   student: [
     { label: 'Dashboard', href: '/dashboard/student', icon: LayoutDashboard },
-    { label: 'Timetable', href: '/dashboard/student/timetable', icon: CalendarDays },
+    { label: 'AI Chat', href: '/dashboard/student/ai-chat', icon: Sparkles },
     { label: 'Grades', href: '/dashboard/student/results', icon: ClipboardList },
     { label: 'Fees', href: '/dashboard/student/fees', icon: DollarSign },
     { label: 'More', href: '#', icon: Menu, isMenu: true },
