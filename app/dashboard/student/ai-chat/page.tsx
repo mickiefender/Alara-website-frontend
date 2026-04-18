@@ -520,14 +520,23 @@ export default function AIChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  // ── Lock parent <main> overflow so the chat can scroll internally ────────────
+  // ── Lock parent <main> so the chat can control its own scrolling ─────────────
   useEffect(() => {
     const main = document.querySelector("main")
     if (!main) return
-    const prev = main.style.overflow
+    const prevOverflow = main.style.overflow
+    const prevDisplay = main.style.display
+    const prevFlexDirection = main.style.flexDirection
+    const prevHeight = main.style.height
     main.style.overflow = "hidden"
+    main.style.display = "flex"
+    main.style.flexDirection = "column"
+    main.style.height = "100%"
     return () => {
-      main.style.overflow = prev
+      main.style.overflow = prevOverflow
+      main.style.display = prevDisplay
+      main.style.flexDirection = prevFlexDirection
+      main.style.height = prevHeight
     }
   }, [])
 
@@ -763,7 +772,7 @@ export default function AIChatPage() {
   const showWelcome = !activeSession || activeSession.messages.length === 0
 
   return (
-    <div className="flex h-full bg-[#f8f9fc] dark:bg-slate-950 overflow-hidden">
+    <div className="flex flex-1 h-full min-h-0 bg-[#f8f9fc] dark:bg-slate-950 overflow-hidden">
       {/* ── Left sidebar – chat history ──────────────────────────────────────── */}
       <aside
         className={`
