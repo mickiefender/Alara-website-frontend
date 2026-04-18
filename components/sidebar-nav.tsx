@@ -44,6 +44,7 @@ import {
   X,
   Shield,
   ClipboardList,
+  Sparkles,
 } from "lucide-react"
 
 import { NAV_LINK_PERMISSIONS } from "@/lib/permissions"
@@ -225,7 +226,7 @@ const navSections: Record<string, NavSection[]> = {
       href: "/dashboard/student",
       items: [
         { label: "Overview", href: "/dashboard/student", icon: LayoutDashboard },
-        
+        { label: "AI Chat", href: "/dashboard/student/ai-chat", icon: Sparkles },
         { label: "Fees & Payments", href: "/dashboard/student/fees", icon: DollarSignIcon },
         { label: "Timetable", href: "/dashboard/student/timetable", icon: Calendar },
         { label: "Notifications", href: "/dashboard/student/notifications", icon: Bell },
