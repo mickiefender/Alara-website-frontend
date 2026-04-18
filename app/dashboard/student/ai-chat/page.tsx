@@ -29,7 +29,6 @@ import {
 } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
-import { ScrollArea } from "@/components/ui/scroll-area"
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -521,6 +520,17 @@ export default function AIChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
+  // ── Lock parent <main> overflow so the chat can scroll internally ────────────
+  useEffect(() => {
+    const main = document.querySelector("main")
+    if (!main) return
+    const prev = main.style.overflow
+    main.style.overflow = "hidden"
+    return () => {
+      main.style.overflow = prev
+    }
+  }, [])
+
   // ── Load documents ──────────────────────────────────────────────────────────
   useEffect(() => {
     const load = async () => {
@@ -821,7 +831,7 @@ export default function AIChatPage() {
         </div>
 
         {/* Session list */}
-        <ScrollArea className="flex-1 px-2">
+        <div className="flex-1 min-h-0 overflow-y-auto px-2">
           <div className="space-y-0.5 pb-4">
             {sessions.map((session) => (
               <div
@@ -861,7 +871,7 @@ export default function AIChatPage() {
               </div>
             ))}
           </div>
-        </ScrollArea>
+        </div>
 
         {/* Sidebar footer */}
         <div className="p-3 border-t border-gray-100 dark:border-slate-800 flex items-center gap-2">
@@ -929,11 +939,11 @@ export default function AIChatPage() {
           </div>
         </header>
 
-        <div className="flex flex-1 overflow-hidden">
+        <div className="flex flex-1 min-h-0 overflow-hidden">
           {/* ── Chat area ────────────────────────────────────────────────────── */}
-          <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
             {/* Messages / Welcome */}
-            <ScrollArea className="flex-1 px-4 py-4 md:px-6 lg:px-8">
+            <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 md:px-6 lg:px-8">
               {showWelcome ? (
                 /* ── Welcome screen ────────────────────────────────────────── */
                 <div className="flex flex-col items-center justify-center min-h-full py-12 text-center max-w-2xl mx-auto">
@@ -1085,7 +1095,7 @@ export default function AIChatPage() {
                   <div ref={messagesEndRef} />
                 </div>
               )}
-            </ScrollArea>
+            </div>
 
             {/* ── Input bar ──────────────────────────────────────────────────── */}
             <div className="flex-shrink-0 bg-white dark:bg-slate-900 border-t border-gray-100 dark:border-slate-800 px-4 py-3 md:px-6 lg:px-8">
@@ -1163,7 +1173,7 @@ export default function AIChatPage() {
                 </div>
               </div>
 
-              <ScrollArea className="flex-1">
+              <div className="flex-1 min-h-0 overflow-y-auto">
                 {docsLoading ? (
                   <div className="flex items-center justify-center py-12">
                     <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
@@ -1278,7 +1288,7 @@ export default function AIChatPage() {
                     ))}
                   </div>
                 )}
-              </ScrollArea>
+              </div>
             </aside>
           )}
         </div>
