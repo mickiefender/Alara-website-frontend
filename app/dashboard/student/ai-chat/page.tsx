@@ -753,7 +753,7 @@ export default function AIChatPage() {
   const showWelcome = !activeSession || activeSession.messages.length === 0
 
   return (
-    <div className="flex h-full bg-[#f8f9fc] dark:bg-slate-950 overflow-hidden">
+<div className="flex h-screen bg-[#f8f9fc] dark:bg-slate-950 overflow-hidden min-h-screen">
       {/* ── Left sidebar – chat history ──────────────────────────────────────── */}
       <aside
         className={`
@@ -933,7 +933,9 @@ export default function AIChatPage() {
           {/* ── Chat area ────────────────────────────────────────────────────── */}
           <div className="flex-1 flex flex-col overflow-hidden">
             {/* Messages / Welcome */}
-            <ScrollArea className="flex-1 px-4 py-4 md:px-6 lg:px-8">
+            <ScrollArea className="flex-1 px-4 py-4 md:px-6 lg:px-8 h-full">
+
+
               {showWelcome ? (
                 /* ── Welcome screen ────────────────────────────────────────── */
                 <div className="flex flex-col items-center justify-center min-h-full py-12 text-center max-w-2xl mx-auto">
@@ -1028,7 +1030,7 @@ export default function AIChatPage() {
                 </div>
               ) : (
                 /* ── Message thread ────────────────────────────────────────── */
-                <div className="max-w-3xl mx-auto space-y-6 pb-4">
+                <div className="max-w-3xl mx-auto space-y-6 pb-20">
                   {activeSession?.messages.map((msg) => (
                     <div
                       key={msg.id}
@@ -1086,6 +1088,8 @@ export default function AIChatPage() {
                 </div>
               )}
             </ScrollArea>
+
+
 
             {/* ── Input bar ──────────────────────────────────────────────────── */}
             <div className="flex-shrink-0 bg-white dark:bg-slate-900 border-t border-gray-100 dark:border-slate-800 px-4 py-3 md:px-6 lg:px-8">
