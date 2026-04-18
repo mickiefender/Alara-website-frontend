@@ -9,7 +9,6 @@ import {
   Mic,
   BookOpen,
   FileText,
-  ImageIcon,
   Code2,
   Sparkles,
   Plus,
@@ -19,13 +18,15 @@ import {
   MessageSquare,
   Loader2,
   Download,
-  ExternalLink,
   Clock,
   Search,
   MoreHorizontal,
   Trash2,
+  Zap,
+  BookMarked,
+  HelpCircle,
+  AlignLeft,
 } from "lucide-react"
-import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -45,12 +46,38 @@ interface Document {
   class_name: string
 }
 
+interface AnyQuestion {
+  id?: number
+  question: string
+  options?: string[]
+  correct_answer?: string
+  explanation?: string
+  model_answer?: string
+  marking_points?: string[]
+  max_marks?: number
+  key_points?: string[]
+  rubric?: Record<string, string>
+}
+
+interface AIResult {
+  type: "questions" | "summary"
+  questionType?: string
+  questions?: AnyQuestion[]
+  summary?: string
+  wordCount?: number
+  count?: number
+  documentTitle?: string
+  aiName?: string
+}
+
 interface Message {
   id: string
   role: "user" | "assistant"
   content: string
   timestamp: Date
   sources?: Document[]
+  aiResult?: AIResult
+  isLoading?: boolean
 }
 
 interface ChatSession {
@@ -61,105 +88,256 @@ interface ChatSession {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Quick-action prompt tiles (mirrors the image's starter cards)
+// Normalize AI response (same logic as teacher materials page)
+// ─────────────────────────────────────────────────────────────────────────────
+function normalizeAIResponse(data: any, questionType: string): AIResult {
+  // Handle summary
+  if (questionType === "summary" && data.summary) {
+    return {
+      type: "summary",
+      questionType: "summary",
+      summary: data.summary,
+      documentTitle: data.document_title,
+      wordCount: data.word_count || 0,
+      aiName: data.ai_name || "School AI",
+    }
+  }
+
+  // Handle nested questions
+  if (data?.questions?.questions && Array.isArray(data.questions.questions)) {
+    return {
+      type: "questions",
+      questionType,
+      count: data.count ?? data.questions.questions.length,
+      questions: data.questions.questions,
+      documentTitle: data.document_title,
+      aiName: data.ai_name || "School AI",
+    }
+  }
+
+  // Handle flat questions array
+  if (Array.isArray(data?.questions)) {
+    return {
+      type: "questions",
+      questionType,
+      count: data.questions.length,
+      questions: data.questions,
+      documentTitle: data.document_title,
+      aiName: data.ai_name || "School AI",
+    }
+  }
+
+  return {
+    type: "questions",
+    questionType,
+    count: 0,
+    questions: [],
+    documentTitle: data?.document_title,
+    aiName: data?.ai_name || "School AI",
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Intent detection — figures out what the student is asking for
+// ─────────────────────────────────────────────────────────────────────────────
+type Intent =
+  | { kind: "generate_questions"; docId: number; questionType: string; numQuestions: number; difficulty: string }
+  | { kind: "generate_topic_questions"; topic: string; questionType: string; numQuestions: number; difficulty: string }
+  | { kind: "summarize_doc"; docId: number }
+  | { kind: "summarize_topic"; topic: string }
+  | { kind: "list_docs" }
+  | { kind: "general"; topic: string }
+
+function detectIntent(text: string, documents: Document[], selectedDocId: number | null): Intent {
+  const lower = text.toLowerCase()
+
+  // --- Question generation from a document ---
+  const wantsQuestions =
+    lower.includes("generat") ||
+    lower.includes("creat") ||
+    lower.includes("make") ||
+    lower.includes("give me question") ||
+    lower.includes("quiz") ||
+    lower.includes("test me") ||
+    lower.includes("practice question") ||
+    lower.includes("exam question") ||
+    lower.includes("multiple choice") ||
+    lower.includes("mcq") ||
+    lower.includes("short answer") ||
+    lower.includes("essay question")
+
+  const wantsSummary =
+    lower.includes("summar") ||
+    lower.includes("overview") ||
+    lower.includes("brief") ||
+    lower.includes("tldr") ||
+    lower.includes("what is") ||
+    lower.includes("explain") ||
+    lower.includes("describe") ||
+    lower.includes("about") ||
+    lower.includes("tell me about")
+
+  const wantsList =
+    lower.includes("list") && (lower.includes("document") || lower.includes("material") || lower.includes("file")) ||
+    (lower.includes("what") && lower.includes("document")) ||
+    (lower.includes("show") && lower.includes("document")) ||
+    (lower.includes("all") && lower.includes("document"))
+
+  // Detect question type
+  let questionType = "multiple_choice"
+  if (lower.includes("short answer") || lower.includes("short-answer")) questionType = "short_answer"
+  else if (lower.includes("essay")) questionType = "essay"
+  else if (lower.includes("summary") || lower.includes("summarize") || lower.includes("summarise")) questionType = "summary"
+
+  // Detect difficulty
+  let difficulty = "medium"
+  if (lower.includes("easy") || lower.includes("simple") || lower.includes("basic")) difficulty = "easy"
+  else if (lower.includes("hard") || lower.includes("difficult") || lower.includes("advanced") || lower.includes("challenging")) difficulty = "hard"
+
+  // Detect number of questions
+  const numMatch = lower.match(/(\d+)\s*(?:question|q|quiz|mcq|item)/i)
+  const numQuestions = numMatch ? Math.min(20, Math.max(1, parseInt(numMatch[1]))) : 5
+
+  // Check if a document is mentioned or selected
+  const mentionedDoc = documents.find((doc) => {
+    const docTitle = doc.title.toLowerCase()
+    return lower.includes(docTitle) || (docTitle.length > 4 && lower.includes(docTitle.substring(0, Math.floor(docTitle.length * 0.7))))
+  })
+
+  const targetDocId = mentionedDoc?.id ?? selectedDocId
+
+  if (wantsList) {
+    return { kind: "list_docs" }
+  }
+
+  if (wantsQuestions) {
+    if (targetDocId) {
+      return { kind: "generate_questions", docId: targetDocId, questionType, numQuestions, difficulty }
+    }
+    // Generate from topic
+    return { kind: "generate_topic_questions", topic: text, questionType, numQuestions, difficulty }
+  }
+
+  if (wantsSummary && targetDocId) {
+    return { kind: "summarize_doc", docId: targetDocId }
+  }
+
+  if (wantsSummary && !targetDocId) {
+    return { kind: "summarize_topic", topic: text }
+  }
+
+  // Default: use AI to generate a response about the topic
+  return { kind: "general", topic: text }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Build a user-friendly text response from an AI result
+// ─────────────────────────────────────────────────────────────────────────────
+function buildTextFromAIResult(result: AIResult): string {
+  if (result.type === "summary" && result.summary) {
+    return `**Summary${result.documentTitle ? ` — ${result.documentTitle}` : ""}**\n\n${result.summary}`
+  }
+
+  if (result.type === "questions" && result.questions && result.questions.length > 0) {
+    const typeLabel =
+      result.questionType === "multiple_choice"
+        ? "Multiple Choice"
+        : result.questionType === "short_answer"
+        ? "Short Answer"
+        : result.questionType === "essay"
+        ? "Essay"
+        : "Questions"
+
+    let text = `**${result.count} ${typeLabel} Question${(result.count ?? 0) > 1 ? "s" : ""}${result.documentTitle ? ` from "${result.documentTitle}"` : ""}**\n\n`
+    result.questions.slice(0, 3).forEach((q, i) => {
+      text += `**Q${i + 1}.** ${q.question}\n`
+      if (result.questionType === "multiple_choice" && q.options?.length) {
+        q.options.forEach((opt, j) => {
+          text += `  ${String.fromCharCode(65 + j)}. ${opt}\n`
+        })
+      }
+      text += "\n"
+    })
+    if ((result.count ?? 0) > 3) {
+      text += `_...and ${(result.count ?? 0) - 3} more questions shown below._`
+    }
+    return text
+  }
+
+  return "I wasn't able to generate a response. Please try rephrasing your question."
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Build fallback text when no doc/topic AI is called
+// ─────────────────────────────────────────────────────────────────────────────
+function buildFallbackResponse(text: string, documents: Document[]): string {
+  const lower = text.toLowerCase()
+
+  if (lower.includes("hello") || lower.includes("hi") || lower.includes("hey")) {
+    return `Hello! 👋 I'm your AI Study Assistant powered by real AI.\n\nI can help you:\n\n• **Generate questions** from your documents (e.g. "Give me 5 MCQs from [document name]")\n• **Summarize** documents (e.g. "Summarize [document name]")\n• **Generate questions** on any topic (e.g. "Create 3 essay questions about photosynthesis")\n• **List** your available documents\n\nYou currently have **${documents.length}** document${documents.length !== 1 ? "s" : ""} available. What would you like to explore?`
+  }
+
+  if (lower.includes("help") || lower.includes("what can you")) {
+    return `Here's what I can do for you:\n\n• **"Give me 5 multiple choice questions from [document]"** — generates MCQs from a specific document\n• **"Summarize [document name]"** — creates an AI summary of a document\n• **"Create 3 essay questions about [topic]"** — generates questions on any topic\n• **"List my documents"** — shows all your available materials\n• **"Generate short answer questions about [topic]"** — topic-based questions\n\nI use real AI to generate content, so answers are accurate and educational!`
+  }
+
+  if (lower.includes("document") || lower.includes("material") || lower.includes("file")) {
+    if (documents.length === 0) {
+      return `Your teachers haven't uploaded any documents yet. Once they do, I'll be able to help you generate questions, summaries, and more!`
+    }
+    const grouped: Record<string, Document[]> = {}
+    documents.forEach((doc) => {
+      const key = doc.subject_name || doc.document_type || "General"
+      if (!grouped[key]) grouped[key] = []
+      grouped[key].push(doc)
+    })
+    let content = `You have **${documents.length}** document${documents.length !== 1 ? "s" : ""} available:\n\n`
+    Object.entries(grouped).forEach(([subject, docs]) => {
+      content += `**${subject}** (${docs.length})\n`
+      docs.slice(0, 3).forEach((d) => (content += `  • ${d.title}\n`))
+      if (docs.length > 3) content += `  • _+${docs.length - 3} more_\n`
+      content += "\n"
+    })
+    content += `\nTry asking: _"Summarize [document name]"_ or _"Give me 5 quiz questions from [document name]"_`
+    return content
+  }
+
+  // Generic topic — let the user know they can ask for questions on that topic
+  return `I understand you're asking about: **"${text}"**\n\nHere's how I can help:\n\n• Ask me to **generate questions** on this topic: _"Give me 5 MCQs about ${text}"_\n• Ask me to **summarize** a related document from your library\n• Or ask me to **explain** this topic: _"Create short answer questions about ${text}"_\n\nI'll use real AI to create accurate educational content!`
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Quick-action prompt tiles
 // ─────────────────────────────────────────────────────────────────────────────
 const QUICK_ACTIONS = [
   {
-    icon: FileText,
-    label: "Write copy",
+    icon: HelpCircle,
+    label: "Quiz me",
     color: "bg-amber-100 text-amber-600",
-    prompt: "Help me write a study note or summary for one of my documents.",
+    prompt: "Generate 5 multiple choice questions from my documents",
   },
   {
-    icon: ImageIcon,
-    label: "Image generation",
+    icon: AlignLeft,
+    label: "Summarize",
     color: "bg-blue-100 text-blue-600",
-    prompt: "Describe a diagram or visual concept from my study material.",
+    prompt: "Summarize my latest document",
   },
   {
-    icon: User,
-    label: "Create avatar",
+    icon: BookMarked,
+    label: "Study notes",
     color: "bg-emerald-100 text-emerald-600",
-    prompt: "Suggest a creative study persona or study plan for me.",
+    prompt: "Create 5 short answer questions to help me study",
   },
   {
     icon: Code2,
-    label: "Write code",
+    label: "Topic questions",
     color: "bg-pink-100 text-pink-600",
-    prompt: "Help me write or debug code related to my coursework.",
+    prompt: "Give me 3 essay questions about a topic of my choice",
   },
 ]
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Simulated AI response (replace with real API when available)
-// ─────────────────────────────────────────────────────────────────────────────
-function buildAIResponse(userMessage: string, documents: Document[]): { content: string; sources: Document[] } {
-  const lower = userMessage.toLowerCase()
-  const relevantDocs = documents.filter((doc) => {
-    const haystack = `${doc.title} ${doc.description ?? ""} ${doc.subject_name ?? ""} ${doc.document_type}`.toLowerCase()
-    return lower.split(" ").some((word) => word.length > 3 && haystack.includes(word))
-  })
-
-  const topDocs = relevantDocs.slice(0, 3)
-
-  let content = ""
-
-  if (topDocs.length > 0) {
-    content = `Based on your uploaded documents, here is what I found:\n\n`
-    topDocs.forEach((doc) => {
-      content += `**${doc.title}** (${doc.subject_name || doc.document_type})\n`
-      if (doc.description) content += `${doc.description}\n`
-      content += `\n`
-    })
-    content += `\nI've referenced the documents above. Would you like me to dive deeper into any specific topic or document?`
-  } else if (lower.includes("hello") || lower.includes("hi") || lower.includes("hey")) {
-    content = `Hello! 👋 I'm your AI Study Assistant. I can help you:\n\n• **Summarise** your uploaded documents\n• **Explain** complex topics from your materials\n• **Generate** study notes and summaries\n• **Answer questions** based on your course content\n\nYou currently have **${documents.length}** document${documents.length !== 1 ? "s" : ""} available. What would you like to explore?`
-  } else if (lower.includes("summarize") || lower.includes("summary") || lower.includes("summarise")) {
-    if (documents.length === 0) {
-      content = `There are no documents available yet. Once your teachers upload materials, I'll be able to summarise them for you.`
-    } else {
-      content = `Here's a quick overview of your available documents:\n\n`
-      documents.slice(0, 5).forEach((doc) => {
-        content += `• **${doc.title}** — ${doc.subject_name || doc.document_type}${doc.uploaded_by_name ? ` (by ${doc.uploaded_by_name})` : ""}\n`
-      })
-      if (documents.length > 5) {
-        content += `\n_...and ${documents.length - 5} more documents._`
-      }
-      content += `\n\nAsk me about any specific document or topic and I'll give you a detailed summary!`
-    }
-  } else if (lower.includes("document") || lower.includes("material") || lower.includes("file")) {
-    if (documents.length === 0) {
-      content = `Your teachers haven't uploaded any documents yet. Once they do, I'll be able to help you study and understand the materials.`
-    } else {
-      content = `You have **${documents.length}** document${documents.length !== 1 ? "s" : ""} available from your teachers:\n\n`
-      const grouped: Record<string, Document[]> = {}
-      documents.forEach((doc) => {
-        const key = doc.subject_name || doc.document_type || "General"
-        if (!grouped[key]) grouped[key] = []
-        grouped[key].push(doc)
-      })
-      Object.entries(grouped).forEach(([subject, docs]) => {
-        content += `**${subject}** (${docs.length})\n`
-        docs.slice(0, 3).forEach((d) => content += `  • ${d.title}\n`)
-        if (docs.length > 3) content += `  • _+${docs.length - 3} more_\n`
-        content += `\n`
-      })
-    }
-  } else {
-    content = `I understand you're asking about: "${userMessage}"\n\n`
-    if (documents.length > 0) {
-      content += `I searched through your **${documents.length}** available document${documents.length !== 1 ? "s" : ""} but didn't find an exact match.\n\n`
-      content += `You can try:\n• Being more specific about the topic\n• Mentioning the subject name (e.g., "Mathematics", "Science")\n• Asking me to list all your documents\n\nOr I can answer general questions about any academic topic!`
-    } else {
-      content = `I'm your AI Study Assistant! I can help with academic topics, explain concepts, and assist with your studies. Your teachers haven't uploaded any documents yet, but feel free to ask me anything!\n\nWhat would you like to learn about?`
-    }
-  }
-
-  return { content, sources: topDocs }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Markdown-style renderer (lightweight, no external lib needed)
+// Markdown-style renderer (lightweight)
 // ─────────────────────────────────────────────────────────────────────────────
 function RenderMessage({ content }: { content: string }) {
   const lines = content.split("\n")
@@ -167,17 +345,19 @@ function RenderMessage({ content }: { content: string }) {
     <div className="space-y-1 text-sm leading-relaxed">
       {lines.map((line, i) => {
         if (!line.trim()) return <div key={i} className="h-2" />
-        // Bold **text**
         const parts = line.split(/(\*\*[^*]+\*\*)/)
         const rendered = parts.map((part, j) => {
           if (part.startsWith("**") && part.endsWith("**")) {
             return <strong key={j}>{part.slice(2, -2)}</strong>
           }
-          // Italic _text_
           const italicParts = part.split(/(_[^_]+_)/)
           return italicParts.map((p, k) => {
             if (p.startsWith("_") && p.endsWith("_")) {
-              return <em key={k} className="text-gray-500">{p.slice(1, -1)}</em>
+              return (
+                <em key={k} className="text-gray-500">
+                  {p.slice(1, -1)}
+                </em>
+              )
             }
             return <span key={k}>{p}</span>
           })
@@ -198,6 +378,132 @@ function RenderMessage({ content }: { content: string }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// AI Result Renderer — renders questions/summaries inline in chat
+// ─────────────────────────────────────────────────────────────────────────────
+function RenderAIResult({ result }: { result: AIResult }) {
+  if (result.type === "summary" && result.summary) {
+    return (
+      <div className="mt-3 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
+        <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-2 uppercase tracking-wide">
+          AI Summary {result.documentTitle ? `— ${result.documentTitle}` : ""}
+        </p>
+        <p className="text-sm text-gray-800 dark:text-gray-200 leading-relaxed">{result.summary}</p>
+        {result.wordCount ? (
+          <p className="text-xs text-gray-400 mt-2">{result.wordCount} words · Generated by {result.aiName}</p>
+        ) : null}
+      </div>
+    )
+  }
+
+  if (result.type === "questions" && result.questions && result.questions.length > 0) {
+    return (
+      <div className="mt-3 space-y-3">
+        <p className="text-xs font-semibold text-teal-600 dark:text-teal-400 uppercase tracking-wide">
+          {result.count} {result.questionType === "multiple_choice" ? "Multiple Choice" : result.questionType === "short_answer" ? "Short Answer" : result.questionType === "essay" ? "Essay" : ""} Question{(result.count ?? 0) !== 1 ? "s" : ""}
+          {result.documentTitle ? ` — ${result.documentTitle}` : ""}
+        </p>
+        {result.questions.map((q, idx) => (
+          <div
+            key={idx}
+            className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4 shadow-sm"
+          >
+            <div className="flex items-start gap-3">
+              <span className="flex-shrink-0 w-7 h-7 bg-teal-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                {idx + 1}
+              </span>
+              <div className="flex-1">
+                <p className="font-medium text-gray-900 dark:text-white text-sm leading-relaxed">{q.question}</p>
+
+                {/* Multiple Choice Options */}
+                {result.questionType === "multiple_choice" && q.options && q.options.length > 0 && (
+                  <div className="mt-3 space-y-1.5">
+                    {q.options.map((opt, optIdx) => {
+                      const letter = String.fromCharCode(65 + optIdx)
+                      const isCorrect =
+                        q.correct_answer === opt ||
+                        q.correct_answer === letter ||
+                        (q.correct_answer?.startsWith(letter + ".") ?? false)
+                      return (
+                        <div
+                          key={optIdx}
+                          className={`flex items-center gap-2 p-2 rounded-lg text-xs ${
+                            isCorrect
+                              ? "bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-300"
+                              : "bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 text-gray-700 dark:text-gray-300"
+                          }`}
+                        >
+                          <span className="font-semibold w-5 flex-shrink-0">{letter}.</span>
+                          <span className="flex-1">{opt}</span>
+                          {isCorrect && (
+                            <span className="text-green-600 dark:text-green-400 text-xs font-semibold ml-auto">✓</span>
+                          )}
+                        </div>
+                      )
+                    })}
+                    {q.explanation && (
+                      <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg text-xs text-blue-800 dark:text-blue-300">
+                        <span className="font-semibold">Explanation: </span>
+                        {q.explanation}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Short Answer */}
+                {result.questionType === "short_answer" && (
+                  <div className="mt-2 space-y-1.5">
+                    {q.model_answer && (
+                      <div className="p-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg text-xs text-green-800 dark:text-green-300">
+                        <span className="font-semibold">Model Answer: </span>
+                        {q.model_answer}
+                      </div>
+                    )}
+                    {q.marking_points && q.marking_points.length > 0 && (
+                      <div className="p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg text-xs text-blue-800 dark:text-blue-300">
+                        <p className="font-semibold mb-1">Key Points:</p>
+                        <ul className="list-disc list-inside space-y-0.5">
+                          {q.marking_points.map((pt, ptIdx) => (
+                            <li key={ptIdx}>{pt}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {q.max_marks && (
+                      <span className="text-xs text-gray-400">[{q.max_marks} marks]</span>
+                    )}
+                  </div>
+                )}
+
+                {/* Essay */}
+                {result.questionType === "essay" && (
+                  <div className="mt-2 space-y-1.5">
+                    {q.key_points && q.key_points.length > 0 && (
+                      <div className="p-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg text-xs text-green-800 dark:text-green-300">
+                        <p className="font-semibold mb-1">Key Points to Cover:</p>
+                        <ul className="list-disc list-inside space-y-0.5">
+                          {q.key_points.map((pt, ptIdx) => (
+                            <li key={ptIdx}>{pt}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {q.max_marks && (
+                      <span className="text-xs text-gray-400">[{q.max_marks} marks]</span>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  return null
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Main page
 // ─────────────────────────────────────────────────────────────────────────────
 export default function AIChatPage() {
@@ -210,6 +516,7 @@ export default function AIChatPage() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [docsPanelOpen, setDocsPanelOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
+  const [selectedDocId, setSelectedDocId] = useState<number | null>(null)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -250,66 +557,170 @@ export default function AIChatPage() {
     setActiveSessionId(id)
   }, [])
 
-  // ── Send message ─────────────────────────────────────────────────────────────
-  const sendMessage = useCallback(async (text: string = input) => {
-    const trimmed = text.trim()
-    if (!trimmed || isTyping) return
+  // ── Send message using real AI API ───────────────────────────────────────────
+  const sendMessage = useCallback(
+    async (text: string = input) => {
+      const trimmed = text.trim()
+      if (!trimmed || isTyping) return
 
-    // Ensure a session exists
-    let sessionId = activeSessionId
-    if (!sessionId) {
-      const id = crypto.randomUUID()
-      const session: ChatSession = {
-        id,
-        title: trimmed.slice(0, 40) || "New Chat",
-        messages: [],
-        createdAt: new Date(),
-      }
-      setSessions((prev) => [session, ...prev])
-      setActiveSessionId(id)
-      sessionId = id
-    }
-
-    const userMsg: Message = {
-      id: crypto.randomUUID(),
-      role: "user",
-      content: trimmed,
-      timestamp: new Date(),
-    }
-
-    setSessions((prev) =>
-      prev.map((s) => {
-        if (s.id !== sessionId) return s
-        const updated: ChatSession = {
-          ...s,
-          messages: [...s.messages, userMsg],
-          title: s.messages.length === 0 ? trimmed.slice(0, 40) : s.title,
+      // Ensure a session exists
+      let sessionId = activeSessionId
+      if (!sessionId) {
+        const id = crypto.randomUUID()
+        const session: ChatSession = {
+          id,
+          title: trimmed.slice(0, 40) || "New Chat",
+          messages: [],
+          createdAt: new Date(),
         }
-        return updated
-      })
-    )
-    setInput("")
-    setIsTyping(true)
+        setSessions((prev) => [session, ...prev])
+        setActiveSessionId(id)
+        sessionId = id
+      }
 
-    // Simulate AI latency
-    await new Promise((r) => setTimeout(r, 900 + Math.random() * 800))
+      const userMsg: Message = {
+        id: crypto.randomUUID(),
+        role: "user",
+        content: trimmed,
+        timestamp: new Date(),
+      }
 
-    const { content, sources } = buildAIResponse(trimmed, documents)
-    const aiMsg: Message = {
-      id: crypto.randomUUID(),
-      role: "assistant",
-      content,
-      timestamp: new Date(),
-      sources,
-    }
+      // Add a loading placeholder for the AI reply
+      const loadingMsgId = crypto.randomUUID()
+      const loadingMsg: Message = {
+        id: loadingMsgId,
+        role: "assistant",
+        content: "",
+        timestamp: new Date(),
+        isLoading: true,
+      }
 
-    setSessions((prev) =>
-      prev.map((s) =>
-        s.id === sessionId ? { ...s, messages: [...s.messages, aiMsg] } : s
+      setSessions((prev) =>
+        prev.map((s) => {
+          if (s.id !== sessionId) return s
+          return {
+            ...s,
+            messages: [...s.messages, userMsg, loadingMsg],
+            title: s.messages.length === 0 ? trimmed.slice(0, 40) : s.title,
+          }
+        })
       )
-    )
-    setIsTyping(false)
-  }, [activeSessionId, input, isTyping, documents])
+      setInput("")
+      setIsTyping(true)
+
+      // Detect intent
+      const intent = detectIntent(trimmed, documents, selectedDocId)
+
+      try {
+        let aiContent = ""
+        let aiResult: AIResult | undefined
+
+        if (intent.kind === "generate_questions") {
+          const res = await academicsAPI.generateQuestionsFromDocument(intent.docId, {
+            question_type: intent.questionType,
+            num_questions: intent.numQuestions,
+            difficulty: intent.difficulty,
+          })
+          const normalized = normalizeAIResponse(res.data, intent.questionType)
+          aiResult = normalized
+          aiContent = buildTextFromAIResult(normalized)
+        } else if (intent.kind === "generate_topic_questions") {
+          const res = await academicsAPI.generateQuestionsFromTopic({
+            topic: intent.topic,
+            question_type: intent.questionType,
+            num_questions: intent.numQuestions,
+            difficulty: intent.difficulty,
+          })
+          const normalized = normalizeAIResponse(res.data, intent.questionType)
+          aiResult = normalized
+          aiContent = buildTextFromAIResult(normalized)
+        } else if (intent.kind === "summarize_doc") {
+          const res = await academicsAPI.generateSummaryFromDocument(intent.docId, {
+            question_type: "summary",
+            max_words: 300,
+          })
+          const normalized = normalizeAIResponse(res.data, "summary")
+          aiResult = normalized
+          aiContent = buildTextFromAIResult(normalized)
+        } else if (intent.kind === "summarize_topic") {
+          // For topic-based summaries, generate short answer questions as a study guide
+          const res = await academicsAPI.generateQuestionsFromTopic({
+            topic: intent.topic,
+            question_type: "short_answer",
+            num_questions: 3,
+            difficulty: "medium",
+          })
+          const normalized = normalizeAIResponse(res.data, "short_answer")
+          aiResult = normalized
+          aiContent = `Here's what I found about **"${intent.topic}"**:\n\n` + buildTextFromAIResult(normalized)
+        } else if (intent.kind === "list_docs") {
+          aiContent = buildFallbackResponse("document list", documents)
+        } else {
+          // general — try generating topic questions or return helpful fallback
+          try {
+            const res = await academicsAPI.generateQuestionsFromTopic({
+              topic: intent.topic,
+              question_type: "short_answer",
+              num_questions: 3,
+              difficulty: "medium",
+            })
+            const normalized = normalizeAIResponse(res.data, "short_answer")
+            if (normalized.count && normalized.count > 0) {
+              aiResult = normalized
+              aiContent =
+                `Here's what AI generated about **"${trimmed}"**:\n\n` +
+                buildTextFromAIResult(normalized)
+            } else {
+              aiContent = buildFallbackResponse(trimmed, documents)
+            }
+          } catch {
+            aiContent = buildFallbackResponse(trimmed, documents)
+          }
+        }
+
+        // Replace loading message with actual response
+        const aiMsg: Message = {
+          id: loadingMsgId,
+          role: "assistant",
+          content: aiContent,
+          timestamp: new Date(),
+          aiResult,
+        }
+
+        setSessions((prev) =>
+          prev.map((s) =>
+            s.id === sessionId
+              ? { ...s, messages: s.messages.map((m) => (m.id === loadingMsgId ? aiMsg : m)) }
+              : s
+          )
+        )
+      } catch (err: any) {
+        const errorMsg =
+          err?.response?.data?.error ||
+          err?.response?.data?.detail ||
+          err?.message ||
+          "Failed to get AI response. Please check your connection or try again."
+
+        const errMessage: Message = {
+          id: loadingMsgId,
+          role: "assistant",
+          content: `❌ **Error:** ${errorMsg}`,
+          timestamp: new Date(),
+        }
+
+        setSessions((prev) =>
+          prev.map((s) =>
+            s.id === sessionId
+              ? { ...s, messages: s.messages.map((m) => (m.id === loadingMsgId ? errMessage : m)) }
+              : s
+          )
+        )
+      } finally {
+        setIsTyping(false)
+      }
+    },
+    [activeSessionId, input, isTyping, documents, selectedDocId]
+  )
 
   // ── Delete session ────────────────────────────────────────────────────────────
   const deleteSession = (id: string) => {
@@ -368,9 +779,7 @@ export default function AIChatPage() {
 
         {/* Nav links */}
         <div className="p-3 space-y-0.5">
-          <button
-            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-sm font-medium"
-          >
+          <button className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-sm font-medium">
             <MessageSquare className="w-4 h-4" />
             AI Chat
           </button>
@@ -419,9 +828,10 @@ export default function AIChatPage() {
                 key={session.id}
                 className={`
                   group flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer transition-colors
-                  ${activeSessionId === session.id
-                    ? "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
-                    : "hover:bg-gray-50 dark:hover:bg-slate-800 text-gray-700 dark:text-slate-300"
+                  ${
+                    activeSessionId === session.id
+                      ? "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
+                      : "hover:bg-gray-50 dark:hover:bg-slate-800 text-gray-700 dark:text-slate-300"
                   }
                 `}
                 onClick={() => setActiveSessionId(session.id)}
@@ -431,12 +841,19 @@ export default function AIChatPage() {
                   <p className="text-sm font-medium truncate">{session.title}</p>
                   {session.messages.length > 0 && (
                     <p className="text-xs text-gray-400 dark:text-slate-500 truncate">
-                      {session.messages[session.messages.length - 1].content.slice(0, 35)}…
+                      {session.messages
+                        .filter((m) => !m.isLoading)
+                        .at(-1)
+                        ?.content.slice(0, 35)}
+                      …
                     </p>
                   )}
                 </div>
                 <button
-                  onClick={(e) => { e.stopPropagation(); deleteSession(session.id) }}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    deleteSession(session.id)
+                  }}
                   className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-red-50 hover:text-red-500 transition-all"
                 >
                   <Trash2 className="w-3 h-3" />
@@ -474,29 +891,42 @@ export default function AIChatPage() {
             <div className="w-6 h-6 bg-blue-600 rounded-md flex items-center justify-center">
               <Sparkles className="w-3.5 h-3.5 text-white" />
             </div>
-            <h1 className="font-bold text-gray-900 dark:text-white text-base">AI Chat</h1>
+            <h1 className="font-bold text-gray-900 dark:text-white text-base">AI Study Assistant</h1>
           </div>
+
+          {/* Selected document badge */}
+          {selectedDocId && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-teal-50 dark:bg-teal-900/30 border border-teal-200 dark:border-teal-800 rounded-lg">
+              <FileText className="w-3 h-3 text-teal-600" />
+              <span className="text-xs font-medium text-teal-700 dark:text-teal-300 truncate max-w-[140px]">
+                {documents.find((d) => d.id === selectedDocId)?.title ?? "Document selected"}
+              </span>
+              <button onClick={() => setSelectedDocId(null)} className="text-teal-500 hover:text-teal-700">
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          )}
+
           <div className="flex-1" />
           <button
             onClick={() => setDocsPanelOpen(!docsPanelOpen)}
             className={`
               flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors
-              ${docsPanelOpen
-                ? "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300"
-                : "bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-600"
+              ${
+                docsPanelOpen
+                  ? "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300"
+                  : "bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-600"
               }
             `}
           >
             <FileText className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">My Documents</span>
-            <Badge className="bg-blue-600 text-white border-0 text-xs px-1.5 py-0 ml-0.5">
-              {documents.length}
-            </Badge>
+            <Badge className="bg-blue-600 text-white border-0 text-xs px-1.5 py-0 ml-0.5">{documents.length}</Badge>
           </button>
-          <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Upgrade</span>
-          </button>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800 text-teal-700 dark:text-teal-300 text-xs font-medium">
+            <Zap className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Real AI</span>
+          </div>
         </header>
 
         <div className="flex flex-1 overflow-hidden">
@@ -507,13 +937,19 @@ export default function AIChatPage() {
               {showWelcome ? (
                 /* ── Welcome screen ────────────────────────────────────────── */
                 <div className="flex flex-col items-center justify-center min-h-full py-12 text-center max-w-2xl mx-auto">
+                  <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-teal-500 rounded-2xl flex items-center justify-center mb-4 shadow-lg">
+                    <Sparkles className="w-7 h-7 text-white" />
+                  </div>
                   <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white mb-3">
-                    Welcome to AI Chat
+                    AI Study Assistant
                   </h2>
-                  <p className="text-gray-500 dark:text-slate-400 mb-10 text-sm sm:text-base">
-                    Get started by asking a question and the AI can do the rest.{" "}
-                    <span className="text-gray-400">Not sure where to start?</span>
+                  <p className="text-gray-500 dark:text-slate-400 mb-2 text-sm sm:text-base">
+                    Powered by real AI — generate questions, summaries, and study materials instantly.
                   </p>
+                  <div className="flex items-center gap-1.5 mb-8 px-3 py-1.5 bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-700 rounded-full">
+                    <Zap className="w-3.5 h-3.5 text-teal-600" />
+                    <span className="text-xs font-medium text-teal-700 dark:text-teal-300">Connected to School AI</span>
+                  </div>
 
                   {/* Quick action tiles */}
                   <div className="grid grid-cols-2 gap-3 w-full max-w-md">
@@ -528,7 +964,9 @@ export default function AIChatPage() {
                           }}
                           className="flex items-center gap-3 px-4 py-3 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl shadow-sm hover:shadow-md hover:border-blue-200 dark:hover:border-blue-700 transition-all group text-left"
                         >
-                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${action.color}`}>
+                          <div
+                            className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${action.color}`}
+                          >
                             <Icon className="w-4 h-4" />
                           </div>
                           <span className="text-sm font-medium text-gray-700 dark:text-slate-300 group-hover:text-blue-700 dark:group-hover:text-blue-400">
@@ -544,13 +982,16 @@ export default function AIChatPage() {
                   {!docsLoading && documents.length > 0 && (
                     <div className="mt-8 w-full max-w-md">
                       <p className="text-xs text-gray-400 mb-3 font-medium uppercase tracking-wide">
-                        Your teacher's documents · {documents.length} available
+                        Your teacher's documents · {documents.length} available · click to select
                       </p>
                       <div className="space-y-2">
                         {documents.slice(0, 3).map((doc) => (
                           <button
                             key={doc.id}
-                            onClick={() => sendMessage(`Tell me about the document: ${doc.title}`)}
+                            onClick={() => {
+                              setSelectedDocId(doc.id)
+                              sendMessage(`Give me 5 multiple choice questions from the document: ${doc.title}`)
+                            }}
                             className="w-full flex items-center gap-3 px-3 py-2.5 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-lg hover:border-blue-200 dark:hover:border-blue-700 transition-colors text-left group"
                           >
                             <FileText className="w-4 h-4 text-blue-500 flex-shrink-0" />
@@ -560,7 +1001,9 @@ export default function AIChatPage() {
                                 {doc.subject_name || doc.document_type} · {doc.uploaded_by_name}
                               </p>
                             </div>
-                            <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-blue-500 flex-shrink-0" />
+                            <span className="text-xs text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity font-medium">
+                              Generate →
+                            </span>
                           </button>
                         ))}
                         {documents.length > 3 && (
@@ -571,6 +1014,17 @@ export default function AIChatPage() {
                       </div>
                     </div>
                   )}
+
+                  {/* Tips */}
+                  <div className="mt-6 w-full max-w-md p-4 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-xl text-left">
+                    <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 mb-2">💡 Try these prompts:</p>
+                    <ul className="text-xs text-amber-800 dark:text-amber-300 space-y-1">
+                      <li>• "Give me 5 MCQs from [document name]"</li>
+                      <li>• "Summarize [document name]"</li>
+                      <li>• "Create 3 essay questions about photosynthesis"</li>
+                      <li>• "Give me short answer questions about World War 2"</li>
+                    </ul>
+                  </div>
                 </div>
               ) : (
                 /* ── Message thread ────────────────────────────────────────── */
@@ -581,54 +1035,39 @@ export default function AIChatPage() {
                       className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                     >
                       {msg.role === "assistant" && (
-                        <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0 mt-1">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-teal-500 flex items-center justify-center flex-shrink-0 mt-1">
                           <Bot className="w-4 h-4 text-white" />
                         </div>
                       )}
 
-                      <div className={`max-w-[80%] space-y-2 ${msg.role === "user" ? "items-end" : "items-start"} flex flex-col`}>
+                      <div
+                        className={`max-w-[85%] space-y-2 ${msg.role === "user" ? "items-end" : "items-start"} flex flex-col`}
+                      >
                         <div
                           className={`
                             rounded-2xl px-4 py-3 text-sm leading-relaxed
-                            ${msg.role === "user"
-                              ? "bg-blue-600 text-white rounded-tr-sm"
-                              : "bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-200 border border-gray-100 dark:border-slate-700 rounded-tl-sm shadow-sm"
+                            ${
+                              msg.role === "user"
+                                ? "bg-blue-600 text-white rounded-tr-sm"
+                                : "bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-200 border border-gray-100 dark:border-slate-700 rounded-tl-sm shadow-sm"
                             }
                           `}
                         >
-                          {msg.role === "assistant" ? (
-                            <RenderMessage content={msg.content} />
+                          {msg.isLoading ? (
+                            <div className="flex gap-1 items-center py-1">
+                              <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce [animation-delay:0ms]" />
+                              <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce [animation-delay:150ms]" />
+                              <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce [animation-delay:300ms]" />
+                            </div>
+                          ) : msg.role === "assistant" ? (
+                            <>
+                              <RenderMessage content={msg.content} />
+                              {msg.aiResult && <RenderAIResult result={msg.aiResult} />}
+                            </>
                           ) : (
                             <p>{msg.content}</p>
                           )}
                         </div>
-
-                        {/* Source documents */}
-                        {msg.sources && msg.sources.length > 0 && (
-                          <div className="space-y-1.5 w-full">
-                            <p className="text-xs text-gray-400 font-medium">Referenced documents:</p>
-                            {msg.sources.map((doc) => (
-                              <div
-                                key={doc.id}
-                                className="flex items-center gap-2 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800"
-                              >
-                                <FileText className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
-                                <span className="text-xs font-medium text-blue-800 dark:text-blue-300 flex-1 truncate">
-                                  {doc.title}
-                                </span>
-                                <a
-                                  href={doc.file}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="p-1 rounded hover:bg-blue-100 dark:hover:bg-blue-800 text-blue-600 transition-colors"
-                                  title="Open document"
-                                >
-                                  <ExternalLink className="w-3 h-3" />
-                                </a>
-                              </div>
-                            ))}
-                          </div>
-                        )}
 
                         <span className="text-xs text-gray-300 dark:text-slate-600">
                           {msg.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
@@ -643,21 +1082,6 @@ export default function AIChatPage() {
                     </div>
                   ))}
 
-                  {/* Typing indicator */}
-                  {isTyping && (
-                    <div className="flex gap-3 justify-start">
-                      <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0">
-                        <Bot className="w-4 h-4 text-white" />
-                      </div>
-                      <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
-                        <div className="flex gap-1 items-center">
-                          <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce [animation-delay:0ms]" />
-                          <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce [animation-delay:150ms]" />
-                          <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce [animation-delay:300ms]" />
-                        </div>
-                      </div>
-                    </div>
-                  )}
                   <div ref={messagesEndRef} />
                 </div>
               )}
@@ -672,7 +1096,11 @@ export default function AIChatPage() {
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder="Summarise the latest…"
+                    placeholder={
+                      selectedDocId
+                        ? `Ask about "${documents.find((d) => d.id === selectedDocId)?.title ?? "selected document"}"…`
+                        : "Ask me to generate questions, summarize a document, or quiz you on any topic…"
+                    }
                     rows={1}
                     className="flex-1 bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 resize-none text-sm text-gray-800 dark:text-white placeholder:text-gray-400 min-h-[24px] max-h-40 py-0 px-0"
                     style={{ lineHeight: "1.5" }}
@@ -682,11 +1110,7 @@ export default function AIChatPage() {
                     disabled={!input.trim() || isTyping}
                     className="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white transition-colors flex-shrink-0"
                   >
-                    {isTyping ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Send className="w-4 h-4" />
-                    )}
+                    {isTyping ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                   </button>
                 </div>
                 <div className="flex items-center gap-4 mt-2 px-1">
@@ -705,13 +1129,11 @@ export default function AIChatPage() {
                     <BookOpen className="w-3.5 h-3.5" />
                     <span className="hidden sm:inline">Browse Documents</span>
                   </button>
-                  <span className="ml-auto text-xs text-gray-300 dark:text-slate-600">
-                    {input.length} / 3,000
-                  </span>
+                  <span className="ml-auto text-xs text-gray-300 dark:text-slate-600">{input.length} / 3,000</span>
                 </div>
               </div>
               <p className="text-center text-xs text-gray-300 dark:text-slate-600 mt-2">
-                AI may generate inaccurate information about people, places, or facts. Model: AI v1.3
+                AI generates content using your school's AI engine. Results may vary. Always verify important information.
               </p>
             </div>
           </div>
@@ -721,9 +1143,7 @@ export default function AIChatPage() {
             <aside className="w-72 xl:w-80 flex-shrink-0 bg-white dark:bg-slate-900 border-l border-gray-100 dark:border-slate-800 flex flex-col">
               <div className="p-4 border-b border-gray-100 dark:border-slate-800">
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-semibold text-gray-900 dark:text-white text-sm">
-                    Teacher Documents
-                  </h3>
+                  <h3 className="font-semibold text-gray-900 dark:text-white text-sm">Teacher Documents</h3>
                   <button
                     onClick={() => setDocsPanelOpen(false)}
                     className="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-400"
@@ -763,23 +1183,39 @@ export default function AIChatPage() {
                     {filteredDocs.map((doc) => (
                       <div
                         key={doc.id}
-                        className="group p-3 bg-gray-50 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-xl border border-gray-100 dark:border-slate-700 hover:border-blue-200 dark:hover:border-blue-800 transition-all cursor-pointer"
+                        className={`group p-3 rounded-xl border transition-all cursor-pointer ${
+                          selectedDocId === doc.id
+                            ? "bg-teal-50 dark:bg-teal-900/20 border-teal-300 dark:border-teal-700"
+                            : "bg-gray-50 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 border-gray-100 dark:border-slate-700 hover:border-blue-200 dark:hover:border-blue-800"
+                        }`}
                         onClick={() => {
-                          sendMessage(`Tell me about the document: ${doc.title}`)
+                          setSelectedDocId(doc.id)
                           setDocsPanelOpen(false)
                         }}
                       >
                         <div className="flex items-start gap-2.5">
-                          <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/40 rounded-lg flex items-center justify-center flex-shrink-0">
-                            <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                          <div
+                            className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                              selectedDocId === doc.id
+                                ? "bg-teal-100 dark:bg-teal-900/40"
+                                : "bg-blue-100 dark:bg-blue-900/40"
+                            }`}
+                          >
+                            <FileText
+                              className={`w-4 h-4 ${
+                                selectedDocId === doc.id
+                                  ? "text-teal-600 dark:text-teal-400"
+                                  : "text-blue-600 dark:text-blue-400"
+                              }`}
+                            />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-800 dark:text-white truncate">
-                              {doc.title}
-                            </p>
+                            <p className="text-sm font-medium text-gray-800 dark:text-white truncate">{doc.title}</p>
                             <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                               <Badge
-                                className={`text-xs px-1.5 py-0 border-0 ${docTypeColor[doc.document_type] ?? "bg-gray-100 text-gray-600"}`}
+                                className={`text-xs px-1.5 py-0 border-0 ${
+                                  docTypeColor[doc.document_type] ?? "bg-gray-100 text-gray-600"
+                                }`}
                               >
                                 {doc.document_type}
                               </Badge>
@@ -803,12 +1239,24 @@ export default function AIChatPage() {
                           <button
                             onClick={(e) => {
                               e.stopPropagation()
-                              sendMessage(`Summarise the document: ${doc.title}`)
+                              setSelectedDocId(doc.id)
+                              sendMessage(`Give me 5 multiple choice questions from the document: ${doc.title}`)
                               setDocsPanelOpen(false)
                             }}
                             className="flex-1 text-xs px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
                           >
-                            Ask AI
+                            Quiz Me
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setSelectedDocId(doc.id)
+                              sendMessage(`Summarize the document: ${doc.title}`)
+                              setDocsPanelOpen(false)
+                            }}
+                            className="flex-1 text-xs px-2 py-1 bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-colors"
+                          >
+                            Summarize
                           </button>
                           <a
                             href={doc.file}
@@ -821,6 +1269,11 @@ export default function AIChatPage() {
                             <Download className="w-3.5 h-3.5" />
                           </a>
                         </div>
+                        {selectedDocId === doc.id && (
+                          <p className="text-xs text-teal-600 dark:text-teal-400 mt-1.5 font-medium flex items-center gap-1">
+                            <Zap className="w-3 h-3" /> Selected — questions will use this document
+                          </p>
+                        )}
                       </div>
                     ))}
                   </div>
