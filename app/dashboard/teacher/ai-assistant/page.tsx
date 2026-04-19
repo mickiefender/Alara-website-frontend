@@ -14,16 +14,12 @@ import {
   Copy,
   Printer,
   BookOpen,
-  ChevronLeft,
   FileText,
   MessageSquare,
-  Settings2,
   CheckCircle,
   AlertCircle,
   Loader2,
   ArrowLeft,
-  Image as ImageIcon,
-  Code,
   BookOpenCheck,
 } from "lucide-react"
 import { CircularLoader } from "@/components/circular-loader"
@@ -167,17 +163,6 @@ ${body}
 }
 
 /* ─────────────────────────────────────────────────────────── */
-/*  Sidebar quick-action cards (like the image's action grid)  */
-/* ─────────────────────────────────────────────────────────── */
-
-const QUICK_ACTIONS = [
-  { label: "Write copy", icon: <FileText size={18} />, color: "from-amber-400 to-orange-400" },
-  { label: "Image generation", icon: <ImageIcon size={18} />, color: "from-purple-400 to-pink-400" },
-  { label: "Create avatar", icon: <Code size={18} />, color: "from-green-400 to-teal-400" },
-  { label: "Write code", icon: <BookOpenCheck size={18} />, color: "from-rose-400 to-red-400" },
-]
-
-/* ─────────────────────────────────────────────────────────── */
 /*  Main Page Component                                         */
 /* ─────────────────────────────────────────────────────────── */
 
@@ -196,7 +181,6 @@ function AIAssistantInner() {
   const [aiSubject, setAiSubject] = useState("")
   const [searchQuery, setSearchQuery] = useState("")
   const [chatInput, setChatInput] = useState("")
-  const [showSettings, setShowSettings] = useState(false)
 
   const [aiSettings, setAiSettings] = useState({
     num_questions: 5,
@@ -235,7 +219,7 @@ function AIAssistantInner() {
   /* ── generate ── */
   const handleGenerate = async (overrideDocId?: number) => {
     const docId = overrideDocId ?? selectedDocId
-    if (aiMode === "document" && !docId) { setAiError("Select a document from the left panel first."); return }
+    if (aiMode === "document" && !docId) { setAiError("Select a document from the Documents panel on the right first."); return }
     if (aiMode === "topic" && !aiTopic.trim()) { setAiError("Please enter a topic."); return }
     try {
       setAiLoading(true); setAiError(null); setNormalized(null)
@@ -301,13 +285,6 @@ function AIAssistantInner() {
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
-            <button
-              onClick={() => setShowSettings(!showSettings)}
-              className={`p-2 rounded-lg transition ${showSettings ? "bg-indigo-50 text-indigo-600" : "hover:bg-gray-100 text-gray-500"}`}
-              title="Settings"
-            >
-              <Settings2 size={18} />
-            </button>
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-400 to-indigo-500 flex items-center justify-center text-white text-sm font-bold shadow-sm">
               AI
             </div>
@@ -317,151 +294,6 @@ function AIAssistantInner() {
         {/* ── Body: Two-column on desktop, stacked on mobile ── */}
         <div className="flex flex-1 min-h-0 overflow-hidden">
 
-          {/* ─── LEFT SETTINGS PANEL (collapsible) ─── */}
-          {showSettings && (
-            <aside className="w-full sm:w-80 xl:w-96 bg-white border-r border-gray-100 flex flex-col overflow-hidden flex-shrink-0 absolute sm:relative z-20 h-full">
-              <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-                <h2 className="font-semibold text-gray-900">Settings</h2>
-                <button onClick={() => setShowSettings(false)} className="text-gray-400 hover:text-gray-600">
-                  <ChevronLeft size={18} />
-                </button>
-              </div>
-
-              <div className="flex-1 overflow-y-auto p-5 space-y-6">
-                {/* Mode */}
-                <div>
-                  <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-3">Mode</Label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {(["document", "topic"] as const).map((m) => (
-                      <button
-                        key={m}
-                        onClick={() => { setAiMode(m); setNormalized(null); setAiError(null) }}
-                        className={`py-2 px-3 rounded-lg text-sm font-medium border transition capitalize ${
-                          aiMode === m
-                            ? "bg-indigo-600 text-white border-indigo-600"
-                            : "bg-white text-gray-600 border-gray-200 hover:border-indigo-300"
-                        }`}
-                      >
-                        {m === "document" ? "From Document" : "From Topic"}
-                      </button>
-                    ))}
-                  </div>
-                  {aiMode === "document" && selectedDocId && (
-                    <p className="text-xs text-indigo-700 mt-2 bg-indigo-50 px-3 py-1.5 rounded-lg">
-                      📄 {documents.find((d) => d.id === selectedDocId)?.title ?? `Doc #${selectedDocId}`}
-                    </p>
-                  )}
-                  {aiMode === "document" && !selectedDocId && (
-                    <p className="text-xs text-amber-600 mt-2 bg-amber-50 px-3 py-1.5 rounded-lg">
-                      ← Select a document from the project list
-                    </p>
-                  )}
-                </div>
-
-                {/* Topic input */}
-                {aiMode === "topic" && (
-                  <div className="space-y-3">
-                    <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block">Topic</Label>
-                    <Textarea
-                      value={aiTopic}
-                      onChange={(e) => setAiTopic(e.target.value)}
-                      placeholder="Enter topic or concept..."
-                      rows={3}
-                      className="text-sm resize-none"
-                    />
-                    <div>
-                      <Label className="text-xs text-gray-500 block mb-1">Subject (optional)</Label>
-                      <select
-                        value={aiSubject}
-                        onChange={(e) => setAiSubject(e.target.value)}
-                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
-                      >
-                        <option value="">Select Subject</option>
-                        {subjects.map((s) => <option key={s.id} value={s.name || s.id}>{s.name}</option>)}
-                      </select>
-                    </div>
-                  </div>
-                )}
-
-                {/* Question count */}
-                <div>
-                  <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-2">
-                    Number of Questions
-                  </Label>
-                  <Input
-                    type="number" min="1" max="20"
-                    value={aiSettings.num_questions}
-                    onChange={(e) => setAiSettings({ ...aiSettings, num_questions: parseInt(e.target.value) || 5 })}
-                    className="text-sm"
-                  />
-                </div>
-
-                {/* Content type */}
-                <div>
-                  <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-2">
-                    Content Type
-                  </Label>
-                  <select
-                    value={aiSettings.question_type}
-                    onChange={(e) => setAiSettings({ ...aiSettings, question_type: e.target.value as any })}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
-                  >
-                    <option value="multiple_choice">Multiple Choice</option>
-                    <option value="short_answer">Short Answer</option>
-                    <option value="essay">Essay</option>
-                    <option value="summary">Summary</option>
-                  </select>
-                  {aiSettings.question_type === "summary" && (
-                    <div className="mt-3">
-                      <Label className="text-xs text-gray-500 block mb-1">Max Words</Label>
-                      <Input
-                        type="number" min="50" max="1000" step="50"
-                        value={aiSettings.max_words}
-                        onChange={(e) => setAiSettings({ ...aiSettings, max_words: parseInt(e.target.value) || 300 })}
-                        className="text-sm"
-                      />
-                    </div>
-                  )}
-                </div>
-
-                {/* Difficulty */}
-                <div>
-                  <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-2">
-                    Difficulty
-                  </Label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {(["easy", "medium", "hard"] as const).map((d) => (
-                      <button
-                        key={d}
-                        onClick={() => setAiSettings({ ...aiSettings, difficulty: d })}
-                        className={`py-1.5 rounded-lg text-xs font-medium border capitalize transition ${
-                          aiSettings.difficulty === d
-                            ? d === "easy" ? "bg-green-500 text-white border-green-500"
-                              : d === "medium" ? "bg-amber-500 text-white border-amber-500"
-                              : "bg-red-500 text-white border-red-500"
-                            : "bg-white text-gray-500 border-gray-200 hover:border-gray-400"
-                        }`}
-                      >
-                        {d}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Generate Button */}
-                <Button
-                  onClick={() => handleGenerate()}
-                  disabled={aiLoading}
-                  className="w-full bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-600 hover:to-indigo-700 text-white font-semibold rounded-xl py-3 shadow-md transition"
-                >
-                  {aiLoading
-                    ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Generating…</>
-                    : <><Zap className="w-4 h-4 mr-2" /> Generate</>
-                  }
-                </Button>
-              </div>
-            </aside>
-          )}
 
           {/* ─── CENTRE: Welcome / Results ─── */}
           <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
@@ -482,10 +314,10 @@ function AIAssistantInner() {
                     {/* Quick-action cards */}
                     <div className="grid grid-cols-2 gap-3 sm:gap-4 max-w-md mx-auto">
                       {[
-                        { label: "Generate from Document", desc: "Select a document from the project list", icon: <FileText size={20} />, color: "from-amber-400 to-orange-500", action: () => { setAiMode("document"); setShowSettings(true) } },
-                        { label: "Generate from Topic", desc: "Type any topic or concept", icon: <MessageSquare size={20} />, color: "from-purple-400 to-pink-500", action: () => { setAiMode("topic"); setShowSettings(true) } },
-                        { label: "Multiple Choice", desc: "Classic MCQ format", icon: <CheckCircle size={20} />, color: "from-green-400 to-teal-500", action: () => { setAiSettings(s => ({ ...s, question_type: "multiple_choice" })); setShowSettings(true) } },
-                        { label: "Summary", desc: "Summarise any material", icon: <BookOpenCheck size={20} />, color: "from-rose-400 to-red-500", action: () => { setAiSettings(s => ({ ...s, question_type: "summary" })); setShowSettings(true) } },
+                        { label: "Generate from Document", desc: "Select a document from the panel on the right", icon: <FileText size={20} />, color: "from-amber-400 to-orange-500", action: () => { setAiMode("document") } },
+                        { label: "Generate from Topic", desc: "Type any topic or concept", icon: <MessageSquare size={20} />, color: "from-purple-400 to-pink-500", action: () => { setAiMode("topic") } },
+                        { label: "Multiple Choice", desc: "Classic MCQ format", icon: <CheckCircle size={20} />, color: "from-green-400 to-teal-500", action: () => { setAiSettings(s => ({ ...s, question_type: "multiple_choice" })) } },
+                        { label: "Summary", desc: "Summarise any material", icon: <BookOpenCheck size={20} />, color: "from-rose-400 to-red-500", action: () => { setAiSettings(s => ({ ...s, question_type: "summary" })) } },
                       ].map((card) => (
                         <button
                           key={card.label}
@@ -733,12 +565,6 @@ function AIAssistantInner() {
                 <div className="flex items-center justify-between mt-2 px-1">
                   <div className="flex gap-4 text-xs text-gray-400">
                     <button
-                      onClick={() => setShowSettings(!showSettings)}
-                      className="hover:text-indigo-600 transition flex items-center gap-1"
-                    >
-                      <Settings2 size={12} /> Settings
-                    </button>
-                    <button
                       onClick={() => handleGenerate()}
                       disabled={aiLoading}
                       className="hover:text-indigo-600 transition flex items-center gap-1"
@@ -757,58 +583,195 @@ function AIAssistantInner() {
             </div>
           </main>
 
-          {/* ── RIGHT: Document List Panel (desktop) ── */}
-          <aside className="hidden xl:flex flex-col w-72 bg-white border-l border-gray-100 flex-shrink-0 overflow-hidden">
-            <div className="px-5 py-4 border-b border-gray-100">
-              <h3 className="font-semibold text-gray-900 text-sm">Documents</h3>
-              <p className="text-xs text-gray-400 mt-0.5">Select to generate from</p>
-            </div>
-            <div className="px-4 py-3 border-b border-gray-50">
-              <div className="relative">
-                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search materials…"
-                  className="w-full pl-8 pr-3 py-2 text-xs border border-gray-200 rounded-xl bg-gray-50 focus:outline-none focus:border-indigo-300"
-                />
+          {/* ── RIGHT: Settings + Document List Panel (desktop) ── */}
+          <aside className="hidden xl:flex flex-col w-80 bg-white border-l border-gray-100 flex-shrink-0 overflow-hidden">
+
+            {/* ── Settings Section ── */}
+            <div className="flex-shrink-0 border-b border-gray-100">
+              <div className="px-5 py-4 border-b border-gray-100">
+                <h3 className="font-semibold text-gray-900 text-sm">Settings</h3>
+                <p className="text-xs text-gray-400 mt-0.5">Configure generation options</p>
+              </div>
+              <div className="px-5 py-4 space-y-4">
+                {/* Mode */}
+                <div>
+                  <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-2">Mode</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {(["document", "topic"] as const).map((m) => (
+                      <button
+                        key={m}
+                        onClick={() => { setAiMode(m); setNormalized(null); setAiError(null) }}
+                        className={`py-2 px-3 rounded-lg text-xs font-medium border transition capitalize ${
+                          aiMode === m
+                            ? "bg-indigo-600 text-white border-indigo-600"
+                            : "bg-white text-gray-600 border-gray-200 hover:border-indigo-300"
+                        }`}
+                      >
+                        {m === "document" ? "From Document" : "From Topic"}
+                      </button>
+                    ))}
+                  </div>
+                  {aiMode === "document" && selectedDocId && (
+                    <p className="text-xs text-indigo-700 mt-2 bg-indigo-50 px-3 py-1.5 rounded-lg">
+                      📄 {documents.find((d) => d.id === selectedDocId)?.title ?? `Doc #${selectedDocId}`}
+                    </p>
+                  )}
+                  {aiMode === "document" && !selectedDocId && (
+                    <p className="text-xs text-amber-600 mt-2 bg-amber-50 px-3 py-1.5 rounded-lg">
+                      Select a document below
+                    </p>
+                  )}
+                </div>
+
+                {/* Topic input */}
+                {aiMode === "topic" && (
+                  <div className="space-y-2">
+                    <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block">Topic</Label>
+                    <Textarea
+                      value={aiTopic}
+                      onChange={(e) => setAiTopic(e.target.value)}
+                      placeholder="Enter topic or concept..."
+                      rows={2}
+                      className="text-xs resize-none"
+                    />
+                    <select
+                      value={aiSubject}
+                      onChange={(e) => setAiSubject(e.target.value)}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs"
+                    >
+                      <option value="">Select Subject (optional)</option>
+                      {subjects.map((s) => <option key={s.id} value={s.name || s.id}>{s.name}</option>)}
+                    </select>
+                  </div>
+                )}
+
+                {/* Question count + Content type in a row */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-1">Questions</Label>
+                    <Input
+                      type="number" min="1" max="20"
+                      value={aiSettings.num_questions}
+                      onChange={(e) => setAiSettings({ ...aiSettings, num_questions: parseInt(e.target.value) || 5 })}
+                      className="text-xs h-8"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-1">Type</Label>
+                    <select
+                      value={aiSettings.question_type}
+                      onChange={(e) => setAiSettings({ ...aiSettings, question_type: e.target.value as any })}
+                      className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs h-8"
+                    >
+                      <option value="multiple_choice">MCQ</option>
+                      <option value="short_answer">Short Ans</option>
+                      <option value="essay">Essay</option>
+                      <option value="summary">Summary</option>
+                    </select>
+                  </div>
+                </div>
+
+                {aiSettings.question_type === "summary" && (
+                  <div>
+                    <Label className="text-xs text-gray-500 block mb-1">Max Words</Label>
+                    <Input
+                      type="number" min="50" max="1000" step="50"
+                      value={aiSettings.max_words}
+                      onChange={(e) => setAiSettings({ ...aiSettings, max_words: parseInt(e.target.value) || 300 })}
+                      className="text-xs h-8"
+                    />
+                  </div>
+                )}
+
+                {/* Difficulty */}
+                <div>
+                  <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-1">Difficulty</Label>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {(["easy", "medium", "hard"] as const).map((d) => (
+                      <button
+                        key={d}
+                        onClick={() => setAiSettings({ ...aiSettings, difficulty: d })}
+                        className={`py-1 rounded-lg text-xs font-medium border capitalize transition ${
+                          aiSettings.difficulty === d
+                            ? d === "easy" ? "bg-green-500 text-white border-green-500"
+                              : d === "medium" ? "bg-amber-500 text-white border-amber-500"
+                              : "bg-red-500 text-white border-red-500"
+                            : "bg-white text-gray-500 border-gray-200 hover:border-gray-400"
+                        }`}
+                      >
+                        {d}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Generate Button */}
+                <Button
+                  onClick={() => handleGenerate()}
+                  disabled={aiLoading}
+                  className="w-full bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-600 hover:to-indigo-700 text-white font-semibold rounded-xl py-2 shadow-md transition text-xs"
+                >
+                  {aiLoading
+                    ? <><Loader2 className="w-3 h-3 mr-1.5 animate-spin" /> Generating…</>
+                    : <><Zap className="w-3 h-3 mr-1.5" /> Generate</>
+                  }
+                </Button>
               </div>
             </div>
-            <div className="flex-1 overflow-y-auto py-2">
-              {filteredDocs.length > 0 ? filteredDocs.map((doc) => (
-                <button
-                  key={doc.id}
-                  onClick={() => { setSelectedDocId(doc.id); setAiMode("document"); setNormalized(null); setAiError(null) }}
-                  className={`w-full text-left px-4 py-3 transition group ${
-                    selectedDocId === doc.id
-                      ? "bg-indigo-50 border-r-2 border-indigo-500"
-                      : "hover:bg-gray-50"
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                      selectedDocId === doc.id ? "bg-indigo-100" : "bg-gray-100"
-                    }`}>
-                      <FileText size={14} className={selectedDocId === doc.id ? "text-indigo-600" : "text-gray-500"} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className={`text-xs font-semibold truncate ${selectedDocId === doc.id ? "text-indigo-900" : "text-gray-900"}`}>
-                        {doc.title}
-                      </p>
-                      <p className="text-xs text-gray-400 mt-0.5 capitalize truncate">{doc.document_type}</p>
-                      <p className="text-xs text-gray-300 mt-0.5">{new Date(doc.created_at).toLocaleDateString()}</p>
-                    </div>
-                  </div>
-                </button>
-              )) : (
-                <div className="px-4 py-8 text-center">
-                  <FileText size={24} className="text-gray-200 mx-auto mb-2" />
-                  <p className="text-xs text-gray-400">
-                    {searchQuery ? "No matching documents" : "No documents yet"}
-                  </p>
+
+            {/* ── Documents Section ── */}
+            <div className="flex flex-col flex-1 min-h-0">
+              <div className="px-5 py-3 border-b border-gray-100">
+                <h3 className="font-semibold text-gray-900 text-sm">Documents</h3>
+                <p className="text-xs text-gray-400 mt-0.5">Select to generate from</p>
+              </div>
+              <div className="px-4 py-2 border-b border-gray-50">
+                <div className="relative">
+                  <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search materials…"
+                    className="w-full pl-8 pr-3 py-1.5 text-xs border border-gray-200 rounded-xl bg-gray-50 focus:outline-none focus:border-indigo-300"
+                  />
                 </div>
-              )}
+              </div>
+              <div className="flex-1 overflow-y-auto py-1">
+                {filteredDocs.length > 0 ? filteredDocs.map((doc) => (
+                  <button
+                    key={doc.id}
+                    onClick={() => { setSelectedDocId(doc.id); setAiMode("document"); setNormalized(null); setAiError(null) }}
+                    className={`w-full text-left px-4 py-2.5 transition group ${
+                      selectedDocId === doc.id
+                        ? "bg-indigo-50 border-r-2 border-indigo-500"
+                        : "hover:bg-gray-50"
+                    }`}
+                  >
+                    <div className="flex items-start gap-2.5">
+                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                        selectedDocId === doc.id ? "bg-indigo-100" : "bg-gray-100"
+                      }`}>
+                        <FileText size={13} className={selectedDocId === doc.id ? "text-indigo-600" : "text-gray-500"} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-xs font-semibold truncate ${selectedDocId === doc.id ? "text-indigo-900" : "text-gray-900"}`}>
+                          {doc.title}
+                        </p>
+                        <p className="text-xs text-gray-400 mt-0.5 capitalize truncate">{doc.document_type}</p>
+                        <p className="text-xs text-gray-300 mt-0.5">{new Date(doc.created_at).toLocaleDateString()}</p>
+                      </div>
+                    </div>
+                  </button>
+                )) : (
+                  <div className="px-4 py-8 text-center">
+                    <FileText size={24} className="text-gray-200 mx-auto mb-2" />
+                    <p className="text-xs text-gray-400">
+                      {searchQuery ? "No matching documents" : "No documents yet"}
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
           </aside>
         </div>
