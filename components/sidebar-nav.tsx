@@ -211,6 +211,7 @@ const navSections: Record<string, NavSection[]> = {
         { label: "Attendance", href: "/dashboard/teacher/attendance", icon: CheckSquare },
         { label: "Grades", href: "/dashboard/teacher/grades", icon: ClipboardEdit },
         { label: "Assignments", href: "/dashboard/teacher/assignments", icon: ClipboardCheck },
+        { label: "Ai Chat", href: "/dashboard/teacher/ai-assistant", icon: Sparkles }, 
         { label: "Submissions", href: "/dashboard/teacher/submissions", icon: BookOpen },
         { label: "Performance", href: "/dashboard/teacher/performance", icon: BarChart},
         { label: "Materials", href: "/dashboard/teacher/materials", icon: UploadCloud },
