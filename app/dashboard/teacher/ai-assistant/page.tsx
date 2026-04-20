@@ -27,6 +27,7 @@ import {
   Code,
   BookOpenCheck,
 } from "lucide-react"
+import Image from "next/image"
 import { CircularLoader } from "@/components/circular-loader"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
@@ -314,9 +315,14 @@ function AIAssistantInner() {
             >
               <Settings2 size={18} />
             </button>
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-400 to-indigo-500 flex items-center justify-center text-white text-sm font-bold shadow-sm">
-              AI
-            </div>
+            <Image
+              src="/Featured-section/Ai.png"
+              alt="Alara AI Assistant"
+              width={32}
+              height={32}
+              className="w-8 h-8 rounded-full object-cover shadow-sm flex-shrink-0"
+              priority
+            />
           </div>
         </header>
 

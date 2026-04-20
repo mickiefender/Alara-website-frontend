@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react"
 import { academicsAPI } from "@/lib/api"
+import Image from "next/image"
 import {
   Bot,
   Send,
@@ -764,9 +765,14 @@ export default function AIChatPage() {
       >
         <div className="p-4 border-b border-gray-100 dark:border-slate-800 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center">
-              <Sparkles className="w-4 h-4 text-white" />
-            </div>
+            <Image
+              src="/logos/ai logo.png"
+              alt="AI Study Assistant"
+              width={28}
+              height={28}
+              className="w-7 h-7 rounded-lg object-cover flex-shrink-0"
+              priority
+            />
             <span className="font-bold text-gray-900 dark:text-white text-sm">AI Chat</span>
           </div>
           <button
@@ -888,9 +894,14 @@ export default function AIChatPage() {
             </button>
           )}
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-blue-600 rounded-md flex items-center justify-center">
-              <Sparkles className="w-3.5 h-3.5 text-white" />
-            </div>
+            <Image
+              src="/logos/ai logo.png"
+              alt="AI Study Assistant"
+              width={24}
+              height={24}
+              className="w-6 h-6 rounded-md object-cover flex-shrink-0"
+              priority
+            />
             <h1 className="font-bold text-gray-900 dark:text-white text-base">AI Study Assistant</h1>
           </div>
 
@@ -939,9 +950,14 @@ export default function AIChatPage() {
               {showWelcome ? (
                 /* ── Welcome screen ────────────────────────────────────────── */
                 <div className="flex flex-col items-center justify-center min-h-full py-12 text-center max-w-2xl mx-auto">
-                  <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-teal-500 rounded-2xl flex items-center justify-center mb-4 shadow-lg">
-                    <Sparkles className="w-7 h-7 text-white" />
-                  </div>
+                  <Image
+                    src="/logos/ai logo.png"
+                    alt="AI Study Assistant"
+                    width={56}
+                    height={56}
+                    className="w-14 h-14 rounded-2xl object-cover shadow-lg flex-shrink-0 mb-4"
+                    priority
+                  />
                   <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white mb-3">
                     AI Study Assistant
                   </h2>
@@ -1019,7 +1035,7 @@ export default function AIChatPage() {
 
                   {/* Tips */}
                   <div className="mt-6 w-full max-w-md p-4 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-xl text-left">
-                    <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 mb-2">💡 Try these prompts:</p>
+                    <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 mb-2">Try these prompts:</p>
                     <ul className="text-xs text-amber-800 dark:text-amber-300 space-y-1">
                       <li>• "Give me 5 MCQs from [document name]"</li>
                       <li>• "Summarize [document name]"</li>
@@ -1037,9 +1053,14 @@ export default function AIChatPage() {
                       className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                     >
                       {msg.role === "assistant" && (
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-teal-500 flex items-center justify-center flex-shrink-0 mt-1">
-                          <Bot className="w-4 h-4 text-white" />
-                        </div>
+                        <Image
+                          src="/logos/ai logo.png"
+                          alt="AI Assistant"
+                          width={32}
+                          height={32}
+                          className="w-8 h-8 rounded-full object-cover flex-shrink-0 mt-1"
+                          priority
+                        />
                       )}
 
                       <div
