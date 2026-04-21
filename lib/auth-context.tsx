@@ -163,8 +163,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const adminStaffRoles = ['academic_admin', 'exam_officer', 'finance_officer', 'ct_admin_support'] as const
       if (fullUserData.role && adminStaffRoles.includes(fullUserData.role as any)) {
         router.push("/dashboard/admin-staff")
+        router.refresh()
       } else {
         router.push("/dashboard")
+        router.refresh()
       }
 
     } catch (error) {
@@ -200,8 +202,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const adminStaffRoles = ['academic_admin', 'exam_officer', 'finance_officer', 'ct_admin_support'] as const
       if (userData.role && adminStaffRoles.includes(userData.role as any)) {
         router.push("/dashboard/admin-staff")
+        router.refresh()
       } else {
         router.push("/dashboard")
+        router.refresh()
       }
     } catch (error) {
       throw new Error("Registration failed")

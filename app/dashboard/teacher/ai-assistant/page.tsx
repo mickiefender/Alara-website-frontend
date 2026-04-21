@@ -316,7 +316,7 @@ function AIAssistantInner() {
               <Settings2 size={18} />
             </button>
             <Image
-              src="/Featured-section/Ai.png"
+              src="/logos/ai logo.png"
               alt="Alara AI Assistant"
               width={32}
               height={32}
