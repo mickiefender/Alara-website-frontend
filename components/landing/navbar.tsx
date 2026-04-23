@@ -64,13 +64,7 @@ export function Navbar() {
                 <Link href="/auth/login">Log In</Link>
               </Button>
 
-              <Button
-                size="sm"
-                asChild
-                className="homepage-secondary text-white hover:opacity-90 border-0"
-              >
-                <Link href="/auth/register">Sign Up</Link>
-              </Button>
+             
             </div>
 
             {/* Mobile Menu Button */}
