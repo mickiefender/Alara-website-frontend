@@ -123,10 +123,10 @@ export default function JoinTeamPage() {
                   <Users className="h-12 w-12 text-green-600" />
                 </div>
                 <h1 className="text-4xl md:text-5xl font-bold text-green-800 mb-6">
-                  Thank You for Applying!
+                  Thank You for Applying! ✅
                 </h1>
                 <p className="text-xl text-green-700 mb-12 max-w-2xl mx-auto leading-relaxed">
-                  Our team will review your application and get back to you within 3-5 business days if there's a good fit.
+                  Your application has been submitted successfully. We'll review and get back to you within 3-5 business days if there's a good fit.
                 </p>
                 <Button asChild size="lg" className="bg-green-600 hover:bg-green-700">
                   <Link href="/">

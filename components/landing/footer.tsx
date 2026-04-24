@@ -28,14 +28,7 @@ export function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
           {/* Brand */}
           <div className="col-span-2">
-            <Link href="/" className="flex items-center gap-2.5 mb-4">
-              <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-[#6366f1] to-[#ec4899]">
-                <GraduationCap className="h-5 w-5 text-white" />
-              </div>
-              <span className="text-xl font-bold text-foreground tracking-tight">
-                Ala<span className="text-[#6366f1]">ra</span>
-              </span>
-            </Link>
+            
             <p className="text-sm text-muted-foreground max-w-xs leading-relaxed">
               Complete multi-tenant SaaS platform for modern schools. Manage everything from a single dashboard.
             </p>

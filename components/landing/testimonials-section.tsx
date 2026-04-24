@@ -22,7 +22,6 @@ const testimonials = [
       "I absolutely love the platform. It's not only stylish but also very functional.",
     author: "Sonia & Nick",
     role: "2 days ago",
-    ratingLabel: "4.0/5.0",
     image: "/testimonial-img/nico-black&yellow.JPG",
   },
   {
@@ -32,7 +31,6 @@ const testimonials = [
       "I received the product quickly. I appreciate the care taken in delivery.",
     author: "Frank Agyepong",
     date: "17 June 2024",
-    ratingLabel: "4.5",
     image: "/testimonial-img/Untitled design (57).png",
   },
   {
@@ -48,7 +46,6 @@ const testimonials = [
     id: 4,
     type: "service-rating",
     label: "Service Rating",
-    ratingValue: "5/5",
     ratingCount: "from 419 customers",
     badge: "99+",
   },
