@@ -7,6 +7,7 @@ import { Menu, X } from "lucide-react"
 import { useState, useEffect } from "react"
 
 const navLinks = [
+  { label: "Home", href: "/"},
   { label: "Features", href: "#features" },
   { label: "About", href: "#about" },
   { label: "Pricing", href: "#pricing" },
