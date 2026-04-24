@@ -9,6 +9,7 @@ import SchoolsUsageSection from "@/components/super-admin/schools-usage-section"
 import GlobalUsersSection from "@/components/super-admin/global-users-section"
 import BillingSection from "@/components/super-admin/billing-section"
 import AnalyticsSection from "@/components/super-admin/analytics-section"
+import TeamApplicationsSection from "@/components/super-admin/team-applications-section"
 
 export default function SuperAdminDashboardPage() {
   const { user } = useAuthContext()
@@ -151,6 +152,7 @@ const fetchAll = async () => {
         gatewayConfig={gatewayConfig}
       />
       <AnalyticsSection analytics={analytics} />
+      <TeamApplicationsSection />
     </div>
   )
 }

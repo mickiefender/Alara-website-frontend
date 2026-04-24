@@ -13,7 +13,6 @@ interface ThemeProviderProps extends React.PropsWithChildren<Record<string, any>
 export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
   return (
     <NextThemesProvider 
-      themes={['light', 'dark', 'system']}
       {...props}
     >
       {children}

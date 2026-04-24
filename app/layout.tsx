@@ -61,10 +61,6 @@ export const metadata: Metadata = {
       "max-snippet": -1,
     },
   },
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#EC4899" },
-    { media: "(prefers-color-scheme: dark)", color: "#A855F7" },
-  ],
   icons: {
     icon: [
       { url: "/favicon.svg", sizes: "any" },
@@ -73,10 +69,20 @@ export const metadata: Metadata = {
     shortcut: "/favicon.svg",
     apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
   },
-  viewport: "width=device-width, initial-scale=1",
   verification: {
     google: "your-google-verification",
   },
+}
+
+export function generateViewport() {
+  return {
+    width: 'device-width',
+    initialScale: 1,
+    themeColor: [
+      { media: '(prefers-color-scheme: light)', color: '#EC4899' },
+      { media: '(prefers-color-scheme: dark)', color: '#A855F7' },
+    ],
+  }
 }
 
 export default function RootLayout({

@@ -2,11 +2,10 @@
 const nextConfig = {
   reactStrictMode: false, // 👈 ADD THIS
 
-  experimental: {
-    turbo: {
-      loaders: {
-        '.js': ['builtin:swc-loader'],
-      }
+  turbo: {
+    root: process.cwd(),
+    loaders: {
+      '.js': ['builtin:swc-loader'],
     }
   },
 

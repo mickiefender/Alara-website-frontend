@@ -8,7 +8,7 @@ export default function DashboardPage() {
   const { user, loading } = useAuthContext()
 
   if (loading) {
-    return <LoadingWrapper isLoading={true} />
+    return <LoadingWrapper isLoading={true}><></></LoadingWrapper>
   }
 
   if (!user) {
