@@ -9,7 +9,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { useState, useEffect } from "react"
 import { billingAPI } from "@/lib/api"
 import { useAuthContext } from "@/lib/auth-context"
-import { CircularLoader, CardLoader } from "@/components/circular-loader"
 
 interface Fee {
   id: number
@@ -193,13 +192,7 @@ export function FeesManagement() {
               </tr>
             </thead>
             <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={5} className="text-center py-8">
-                    <CardLoader />
-                  </td>
-                </tr>
-              ) : fees.length === 0 ? (
+              {fees.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="text-center py-4 text-muted-foreground dark:text-slate-500">
                     No fees found. Add your first fee.

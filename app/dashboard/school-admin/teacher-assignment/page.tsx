@@ -94,12 +94,7 @@ export default function TeacherAssignmentsPage() {
       </div>
 
       {/* Classes Grid */}
-      {loading ? (
-        <div className="text-center py-12">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-secondary"></div>
-          <p className="text-gray-600 mt-4">Loading classes...</p>
-        </div>
-      ) : filteredClasses.length === 0 ? (
+      {filteredClasses.length === 0 ? (
         <Card className="border-0 shadow-sm">
           <CardContent className="p-12 text-center">
             <Users className="mx-auto h-12 w-12 text-gray-300 mb-4" />

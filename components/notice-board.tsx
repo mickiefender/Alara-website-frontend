@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react"
 import { messagingAPI } from "@/lib/api"
 import { Bell, Megaphone, Pin, AlertCircle, Info, AlertTriangle } from "lucide-react"
-import { CardLoader } from "@/components/circular-loader"
 
 interface Notice {
   id: number
@@ -116,20 +115,6 @@ export function NoticeBoard() {
     if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`
     if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} days ago`
     return date.toLocaleDateString()
-  }
-
-  if (loading) {
-    return (
-      <div className="p-4">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-            <Bell className="w-4 h-4 text-slate-500" />
-            Notice Board
-          </h3>
-        </div>
-        <CardLoader />
-      </div>
-    )
   }
 
   if (error) {

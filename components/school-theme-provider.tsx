@@ -19,9 +19,9 @@ interface SchoolThemeContextType {
 }
 
 const DEFAULT_SCHOOL_THEME: SchoolTheme = {
-  primary_color: '#008484',
-  secondary_color: '#f1f5f9',
-  sidebar_color: '#1e293b',
+  primary_color: '#ff0000',
+  secondary_color: '#292929',
+  sidebar_color: '#ffffff',
 }
 
 const SchoolThemeContext = createContext<SchoolThemeContextType | null>(null)

@@ -252,7 +252,6 @@ export default function TeacherDetailPage() {
   const assignedClassIds = new Set(classes.map((c: any) => c.class_obj))
   const availableClassesForAssignment = allClasses.filter((c: any) => !assignedClassIds.has(c.id))
 
-  if (loading) return <div className="flex items-center justify-center min-h-screen"><p className="text-gray-600">Loading...</p></div>
   if (error || !teacher) return (
     <div className="flex items-center justify-center min-h-screen">
       <div className="text-red-600 flex flex-col items-center gap-4">
@@ -473,11 +472,7 @@ export default function TeacherDetailPage() {
               </Dialog>
             </div>
             
-            {classesLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div>
-              </div>
-            ) : classes.length > 0 ? (
+            {classes.length > 0 ? (
               <div className="space-y-2">
                 {classes.map((c: any, i: number) => (
                   <div key={i} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-100">
@@ -511,11 +506,7 @@ export default function TeacherDetailPage() {
             <h2 className="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
               <FileText size={16} className="text-secondary" />Subjects Teaching
             </h2>
-            {subjectsLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div>
-              </div>
-            ) : subjects.length > 0 ? (
+            {subjects.length > 0 ? (
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 {subjects.map((s: any, i: number) => (
                   <div key={i} className="bg-purple-50 border border-purple-100 rounded-lg p-3 text-center">

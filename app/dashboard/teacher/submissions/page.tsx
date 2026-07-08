@@ -4,7 +4,6 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Search, FileText } from "lucide-react"
-import Loader from "@/components/loader"
 import { assignmentAPI } from "@/lib/api"
 
 function SubmissionsContent() {
@@ -30,13 +29,6 @@ function SubmissionsContent() {
     (s.student_name || "").toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
- if (loading) {
-  return (
-    <div className="flex items-center justify-center min-h-screen">
-      <Loader size="md" color="#3b82f6" />
-    </div>
-  )
-}
   return (
     <div className="space-y-6">
       <div>

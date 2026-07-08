@@ -4,18 +4,9 @@ import { useAuthContext } from "@/lib/auth-context"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { LayoutDashboard, ClipboardList, CheckCircle, Clock, AlertCircle } from "lucide-react"
-import { CircularLoader } from "@/components/circular-loader"
 
 export default function AdminStaffTasksPage() {
   const { user, loading } = useAuthContext()
-
-  if (loading || !user) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <CircularLoader />
-      </div>
-    )
-  }
 
   const mockTasks = [
     { id: 1, title: "Review attendance records", status: "pending", priority: "high", due: "Today" },

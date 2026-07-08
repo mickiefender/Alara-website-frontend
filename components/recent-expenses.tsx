@@ -14,7 +14,7 @@ export function RecentExpenses() {
     enabled: !!schoolId 
   })
 
-  if (loading || !expenses.length) {
+  if (!expenses.length) {
     return null
   }
 

@@ -114,20 +114,6 @@ export function BestPerformingStudent() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5">
-        <div className="flex items-center gap-2 mb-4">
-          <GraduationCap className="w-5 h-5 text-slate-500" />
-          <h3 className="font-semibold text-slate-900 dark:text-white">Top Performing Students</h3>
-        </div>
-        <div className="flex items-center justify-center py-8">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
-        </div>
-      </div>
-    )
-  }
-
   if (error && topStudents.length === 0) {
     return (
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5">

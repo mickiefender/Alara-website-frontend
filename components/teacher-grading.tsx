@@ -587,42 +587,6 @@ const [bulkMaxScore, setBulkMaxScore] = useState('100')
     students: students.length,
   }
 
-  if (loading) {
-    return (
-      <Card className="border-0 shadow-lg">
-        <CardContent className="flex items-center justify-center min-h-[400px]">
-          <div className="flex flex-col items-center gap-3">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-            <p className="text-muted-foreground">Loading grading system...</p>
-          </div>
-
-          {filteredGrades.length > 0 && (
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mt-4">
-              <div className="text-sm text-slate-600">
-                Showing {(safeCurrentPage - 1) * pageSize + 1}-{Math.min(safeCurrentPage * pageSize, filteredGrades.length)} of {filteredGrades.length}
-              </div>
-              <div className="flex items-center gap-2">
-                <Select value={pageSize.toString()} onValueChange={(v) => { setPageSize(parseInt(v)); setCurrentPage(1) }}>
-                  <SelectTrigger className="w-[110px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="10">10 / page</SelectItem>
-                    <SelectItem value="20">20 / page</SelectItem>
-                    <SelectItem value="50">50 / page</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button variant="outline" size="sm" onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={safeCurrentPage <= 1}>Previous</Button>
-                <span className="text-sm px-2">Page {safeCurrentPage} of {totalPages}</span>
-                <Button variant="outline" size="sm" onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={safeCurrentPage >= totalPages}>Next</Button>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    )
-  }
-
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

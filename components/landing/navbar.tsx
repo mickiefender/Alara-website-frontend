@@ -1,18 +1,19 @@
 "use client"
 
 import Link from "next/link"
-import Image from "next/image"
 import { Button } from "@/components/ui/button"
+import { AlaraLogo } from "@/components/alara-logo"
 import { Menu, X } from "lucide-react"
 import { useState, useEffect } from "react"
 
 const navLinks = [
-  { label: "Home", href: "/"},
-  { label: "Features", href: "#features" },
-  { label: "About", href: "#about" },
-  { label: "Pricing", href: "#pricing" },
-  { label: "Testimonials", href: "#testimonials" },
-{ label: "Contact", href: "/join-team" },
+  { label: "Home", href: "/" },
+  { label: "Features", href: "/#features" },
+  { label: "About", href: "/about" },
+  { label: "Careers", href: "/careers" },
+  { label: "Join Team", href: "/join-team" },
+  { label: "Testimonials", href: "/#testimonials" },
+  { label: "Contact", href: "/contact" },
 ]
 
 export function Navbar() {
@@ -36,26 +37,19 @@ export function Navbar() {
             
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2">
-              <Image
-                src="/logos/Alara-logo.png"
-                alt="Alara Logo"
-                height={48}
-                width={226}
-                className="h-12 w-auto"
-                priority
-              />
+              <AlaraLogo height={48} width={226} className="h-12 w-auto" priority />
             </Link>
 
             {/* Desktop Nav */}
             <nav className="hidden md:flex items-center gap-8">
               {navLinks.map((link) => (
-                <a
+                <Link
                   key={link.label}
                   href={link.href}
                   className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
                 >
                   {link.label}
-                </a>
+                </Link>
               ))}
             </nav>
 
@@ -97,13 +91,7 @@ export function Navbar() {
       >
         {/* Sidebar Header */}
         <div className="flex items-center justify-between p-4 border-b border-border">
-          <Image
-            src="/logos/Alara-logo.png"
-            alt="Alara Logo"
-            height={40}
-            width={180}
-            className="h-10 w-auto"
-          />
+          <AlaraLogo height={40} width={180} className="h-10 w-auto" />
 
           <button onClick={() => setMobileOpen(false)}>
             <X className="h-6 w-6" />
@@ -113,14 +101,14 @@ export function Navbar() {
         {/* Nav Links (BIG) */}
         <nav className="flex flex-col gap-6 p-6">
           {navLinks.map((link) => (
-            <a
+            <Link
               key={link.label}
               href={link.href}
               onClick={() => setMobileOpen(false)}
               className="text-xl font-semibold text-foreground hover:text-primary transition-colors"
             >
               {link.label}
-            </a>
+            </Link>
           ))}
         </nav>
 

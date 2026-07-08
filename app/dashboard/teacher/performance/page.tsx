@@ -56,24 +56,6 @@ export default function PerformancePage() {
     fetchPerformance()
   }, [])
 
-  if (loading) {
-    return (
-      <ProtectedRoute allowedRoles={["teacher"]}>
-        <div className="space-y-6">
-          <div className="space-y-2">
-            <div className="h-8 w-64 bg-muted rounded-md animate-pulse" />
-            <div className="h-4 w-96 bg-muted rounded-md animate-pulse" />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="h-32 bg-muted rounded-xl animate-pulse" />
-            ))}
-          </div>
-        </div>
-      </ProtectedRoute>
-    )
-  }
-
   return (
     <ProtectedRoute allowedRoles={["teacher"]}>
       <div className="space-y-6">

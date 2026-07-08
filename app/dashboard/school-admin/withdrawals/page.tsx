@@ -518,11 +518,7 @@ export default function WithdrawalsPage() {
             <CardTitle>Withdrawal History</CardTitle>
           </CardHeader>
           <CardContent>
-            {withdrawalsLoading ? (
-              <div className="p-8 text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-              </div>
-            ) : withdrawals.length === 0 ? (
+            {withdrawals.length === 0 ? (
               <div className="p-8 text-center text-gray-500">
                 No withdrawal records yet
               </div>

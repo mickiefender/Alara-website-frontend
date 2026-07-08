@@ -10,7 +10,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useAuthContext } from "@/lib/auth-context"
 import { usersAPI, billingAPI } from "@/lib/api"
-import { CircularLoader } from "@/components/circular-loader"
 import { DollarSign, Search, User, Receipt, CreditCard, Building2, Smartphone, Wallet, FileText, Check, X, Printer, Mail } from "lucide-react"
 
 interface Student {
@@ -277,11 +276,7 @@ const getStudentUserId = (student: Student): number => {
             </div>
             
             <div className="max-h-[500px] overflow-y-auto space-y-2">
-              {loading ? (
-                <div className="flex justify-center py-8">
-                  <CircularLoader />
-                </div>
-              ) : filteredStudents.length === 0 ? (
+              {filteredStudents.length === 0 ? (
                 <p className="text-center text-gray-500 py-4">No students found</p>
               ) : (
                 filteredStudents.map((student) => (
@@ -316,10 +311,6 @@ const getStudentUserId = (student: Student): number => {
               <div className="text-center py-12 text-gray-500">
                 <User className="h-12 w-12 mx-auto mb-4 text-gray-300" />
                 <p>Select a student from the list to view their payment dashboard</p>
-              </div>
-            ) : feesLoading ? (
-              <div className="flex justify-center py-12">
-                <CircularLoader />
               </div>
             ) : (
               <div className="space-y-6">

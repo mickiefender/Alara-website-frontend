@@ -12,7 +12,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import Loader from "@/components/loader"
 
 type Tab = 'mark' | 'summary'
 
@@ -261,14 +260,6 @@ const [studentNames, setStudentNames] = useState<Record<number, string>>({})
   }
 
   const statusCounts = getStatusCounts()
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader size="md" color="#f5c607" />
-      </div>
-    )
-  }
 
   return (
     <div className="space-y-6">
@@ -601,11 +592,7 @@ const [studentNames, setStudentNames] = useState<Record<number, string>>({})
               </div>
             </CardHeader>
             <CardContent>
-              {summaryLoading ? (
-                <div className="flex items-center justify-center py-12">
-                  <Loader size="md" color="#f5c607" />
-                </div>
-              ) : summaryData.length > 0 ? (
+              {summaryData.length > 0 ? (
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>

@@ -109,10 +109,6 @@ export default function ManageDocumentsPage() {
     }
   }
 
-  if (loading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>
-  }
-
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">

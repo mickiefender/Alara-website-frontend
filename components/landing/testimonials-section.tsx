@@ -25,15 +25,6 @@ const testimonials = [
     image: "/testimonial-img/nico-black&yellow.JPG",
   },
   {
-    id: 2,
-    type: "quote-only",
-    quote:
-      "I received the product quickly. I appreciate the care taken in delivery.",
-    author: "Frank Agyepong",
-    date: "17 June 2024",
-    image: "/testimonial-img/Untitled design (57).png",
-  },
-  {
     id: 3,
     type: "featured",
     quote: "Prompt and helpful responses to my inquiry!",
@@ -42,22 +33,13 @@ const testimonials = [
     role: "Headmistress, Accra International School",
     image: "/testimonial-img/mistress.png",
   },
-  {
-    id: 4,
-    type: "service-rating",
-    label: "Service Rating",
-    ratingCount: "from 419 customers",
-    badge: "99+",
-  },
 ]
 
 // ─── Sizes ───────────────────────────────────────────────────────────────────
 const BASE_SIZES: Record<number, { w: string; h: number }> = {
-  0: { w: "col-span-1", h: 300 },
-  1: { w: "col-span-2", h: 180 },
-  2: { w: "col-span-1", h: 200 },
-  3: { w: "col-span-2", h: 260 },
-  4: { w: "col-span-1", h: 130 },
+  0: { w: "col-span-1", h: 240 },
+  1: { w: "col-span-1", h: 220 },
+  3: { w: "col-span-1", h: 260 },
 }
 
 const DOMINANT_SCALE = 1.06
@@ -156,21 +138,6 @@ function StandardCard({ t, dominant }: any) {
   )
 }
 
-function QuoteOnlyCard({ t }: any) {
-  return (
-    <div className="p-4 flex flex-col justify-between h-full">
-      <p className="text-xs">{t.quote}</p>
-      <div className="flex justify-end items-center gap-2 mt-2">
-        <div className="text-right">
-          <p className="text-xs font-semibold">{t.author}</p>
-          <p className="text-xs text-gray-500">{t.date}</p>
-        </div>
-        <Avatar size="sm" src={t.image} name={t.author} />
-      </div>
-    </div>
-  )
-}
-
 function FeaturedCard({ t, dominant }: any) {
   return (
     <div className="p-5 flex flex-col justify-between h-full">
@@ -187,16 +154,6 @@ function FeaturedCard({ t, dominant }: any) {
       <p className={`mt-3 font-bold ${dominant ? "text-2xl" : "text-lg"}`}>
         {t.quote}
       </p>
-    </div>
-  )
-}
-
-function ServiceRatingCard({ t }: any) {
-  return (
-    <div className="p-4">
-      <p className="font-bold">{t.label}</p>
-      <p>{t.ratingValue}</p>
-      <p className="text-xs text-gray-500">{t.ratingCount}</p>
     </div>
   )
 }
@@ -220,8 +177,8 @@ export function TestimonialsSection() {
   }, [])
 
   return (
-    <section className="py-16 bg-white">
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-w-7xl mx-auto px-4">
+    <section id="testimonials" className="py-16 bg-background">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto px-4">
         {testimonials.map((t) => {
           const isDominant = t.id === dominantId
           const base = BASE_SIZES[t.id]
@@ -237,9 +194,7 @@ export function TestimonialsSection() {
             >
               {t.type === "rating-tags" && <RatingTagsCard t={t} dominant={isDominant} />}
               {t.type === "standard" && <StandardCard t={t} dominant={isDominant} />}
-              {t.type === "quote-only" && <QuoteOnlyCard t={t} />}
               {t.type === "featured" && <FeaturedCard t={t} dominant={isDominant} />}
-              {t.type === "service-rating" && <ServiceRatingCard t={t} />}
             </div>
           )
         })}

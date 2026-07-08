@@ -27,7 +27,6 @@ import {
   Eye,
 } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
-import Loader from "@/components/loader"
 
 interface Document {
   id: number
@@ -168,14 +167,6 @@ export default function StudentDocumentsPage() {
     if (!url) return "FILE"
     const parts = url.split(".")
     return parts[parts.length - 1].toUpperCase().slice(0, 4)
-  }
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader size="md" color="#3b82f6" />
-      </div>
-    )
   }
 
   return (

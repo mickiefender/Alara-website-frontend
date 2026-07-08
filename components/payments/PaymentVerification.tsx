@@ -247,12 +247,7 @@ export default function PaymentVerification() {
   }
 
   if (paymentStatus === "verifying" || loading) {
-    return (
-      <div className="max-w-md mx-auto text-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-        <p className="text-gray-600">Verifying your payment...</p>
-      </div>
-    )
+    return null
   }
 
   if (paymentStatus === "success") {

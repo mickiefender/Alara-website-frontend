@@ -108,10 +108,6 @@ export default function ManageProfilePicturesPage() {
 
   const allUsers = [...students.map((s) => ({ id: s.user, name: `${s.first_name} ${s.last_name}`, type: "Student" })), ...teachers.map((t) => ({ id: t.user, name: `${t.first_name} ${t.last_name}`, type: "Teacher" }))]
 
-  if (loading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>
-  }
-
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">

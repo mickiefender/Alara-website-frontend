@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft } from "lucide-react"
 import { gradesAPI, academicsAPI, usersAPI } from "@/lib/api"
-import { FullScreenLoader } from "@/components/circular-loader"
 
 interface Grade {
   id: number
@@ -91,10 +90,6 @@ export default function StudentGradesDetail() {
       default: 'bg-gray-100 text-gray-800'
     }
     return colors[grade] || colors.default
-  }
-
-  if (loading) {
-    return <FullScreenLoader />
   }
 
   const avgPercentage = grades.length > 0 

@@ -11,7 +11,6 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Plus, Trash2, Download, Sparkles, FolderOpen, ArrowRight, Zap, MessageSquare, BookOpen } from "lucide-react"
-import { CircularLoader } from "@/components/circular-loader"
 import TeacherFileExplorer from "@/components/teacher-file-explorer"
 import Link from "next/link"
 
@@ -101,14 +100,6 @@ export default function TeacherDocumentsPage() {
     if (!confirm("Are you sure you want to delete this material?")) return
     try { await academicsAPI.deleteDocument(id); fetchData() }
     catch { setError("Failed to delete document.") }
-  }
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-cyan-50 to-indigo-50">
-        <CircularLoader size="md" color="#41e0e0" />
-      </div>
-    )
   }
 
   return (

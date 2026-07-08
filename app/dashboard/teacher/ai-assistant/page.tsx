@@ -28,7 +28,6 @@ import {
   BookOpenCheck,
 } from "lucide-react"
 import Image from "next/image"
-import { CircularLoader } from "@/components/circular-loader"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { Suspense } from "react"
@@ -272,15 +271,6 @@ function AIAssistantInner() {
     setAiMode("topic")
     setChatInput("")
     handleGenerate()
-  }
-
-  /* ── loading state ── */
-  if (pageLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50">
-        <CircularLoader size="md" color="#41e0e0" />
-      </div>
-    )
   }
 
   const recentProjects = documents.slice(0, 7)
@@ -831,11 +821,7 @@ function AIAssistantInner() {
 
 export default function AIAssistantPage() {
   return (
-    <Suspense fallback={
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50">
-        <CircularLoader size="md" color="#41e0e0" />
-      </div>
-    }>
+    <Suspense fallback={null}>
       <AIAssistantInner />
     </Suspense>
   )

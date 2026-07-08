@@ -15,7 +15,6 @@ import { FileText, LayoutList, Eye, Save, Trash2, Copy, Download, Plus, Edit3 } 
 import { academicsAPI } from '@/lib/api'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAuthContext } from '@/lib/auth-context'
-import Loader from '@/components/loader'
 import { ReportTemplateEditor, type TemplateEditorRef } from '@/components/ReportTemplateEditor'
 import { VariableInserter } from '@/components/VariableInserter'
 import { useToast } from '@/hooks/use-toast'
@@ -366,8 +365,6 @@ export default function TemplatesPage() {
       </div>
     );
   };
-
-  if (loading) return <Loader className="min-h-screen flex items-center justify-center" />;
 
   return (
     <div className="container mx-auto py-8 px-4 lg:px-8 space-y-6">

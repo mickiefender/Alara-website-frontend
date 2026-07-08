@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from 'react'
 import { useAuthContext } from '@/lib/auth-context'
 import { SchoolExpense, ExpenseFilters } from '@/types/expense'
 import { apiClient } from '@/lib/api'
-import { Loader } from '@/components/loader'
 
 interface UseSchoolExpensesProps {
   schoolId?: string

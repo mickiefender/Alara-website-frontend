@@ -72,14 +72,6 @@ export function FeesChart() {
     return null
   }
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-[280px]">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-emerald-500"></div>
-      </div>
-    )
-  }
-
   if (!hasData) {
     return (
       <div className="rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 p-10 text-center">

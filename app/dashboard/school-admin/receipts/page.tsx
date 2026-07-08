@@ -8,7 +8,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import Loader from '@/components/loader'
 import { Download, Filter, Search } from 'lucide-react'
 import { Label } from '@/components/ui/label'
 import { useReceipts } from '@/hooks/useReceipts'
@@ -67,10 +66,6 @@ export default function ReceiptsPage() {
     a.download = `school-receipts-${new Date().toISOString().slice(0,10)}.csv`
     a.click()
     URL.revokeObjectURL(url)
-  }
-
-  if (loading) {
-    return <Loader />
   }
 
   if (error) {

@@ -9,7 +9,6 @@ import { Label } from "@/components/ui/label"
 import { useToast } from "@/components/ui/use-toast"
 import { ProfilePictureUpload } from "@/components/profile-picture-upload"
 import { usersAPI, academicsAPI } from "@/lib/api"
-import { Loader2 } from "lucide-react"
 
 interface SchoolAdminProfile {
   id: number
@@ -119,15 +118,6 @@ export default function SchoolAdminProfilePage() {
       // Reset the file input
       if (fileInputRef.current) fileInputRef.current.value = ""
     }
-  }
-
-  if (authLoading || loading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin" />
-        <p className="mt-2 text-muted-foreground">Loading profile...</p>
-      </div>
-    )
   }
 
   if (!profile) {

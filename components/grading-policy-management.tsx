@@ -255,10 +255,6 @@ export function GradingPolicyManagement() {
 
   const isValidWeightage = calculateTotalWeightage() === 100
 
-  if (loading && sessions.length > 0) {
-    return <div className="text-center py-4">Loading grading policies...</div>
-  }
-
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">

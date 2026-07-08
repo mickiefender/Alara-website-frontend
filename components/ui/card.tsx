@@ -7,7 +7,13 @@ function Card({ className, ...props }: React.ComponentProps<'div'>) {
     <div
       data-slot="card"
       className={cn(
-        'bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm',
+        'bg-card/60 supports-[backdrop-filter]:bg-card/50 backdrop-blur-xl text-card-foreground flex flex-col gap-6 rounded-2xl border border-white/45 dark:border-white/10 py-6',
+        'shadow-[inset_0_1px_0_0_rgba(255,255,255,0.45),0_1px_1px_rgba(20,20,20,0.03),0_8px_24px_-12px_rgba(20,20,20,0.18)]',
+        'dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.07),0_1px_1px_rgba(0,0,0,0.2),0_12px_32px_-12px_rgba(0,0,0,0.55)]',
+        'transition-[box-shadow,border-color,transform] duration-300 ease-out',
+        'hover:border-white/60 dark:hover:border-white/15 hover:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.5),0_2px_4px_rgba(20,20,20,0.04),0_16px_40px_-12px_rgba(20,20,20,0.24)]',
+        'dark:hover:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.09),0_2px_4px_rgba(0,0,0,0.25),0_20px_48px_-12px_rgba(0,0,0,0.65)]',
+        'animate-glass-in',
         className,
       )}
       {...props}

@@ -1,20 +1,18 @@
 import Link from 'next/link'
 import { Linkedin, Twitter, Facebook } from 'lucide-react'
+import { AlaraLogo } from '@/components/alara-logo'
 
 export function Footer() {
   const currentYear = new Date().getFullYear()
 
   return (
-    <footer className="bg-foreground text-white">
+    <footer className="bg-secondary-dark text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="grid grid-cols-1 md:grid-cols-5 gap-8 mb-12">
           {/* Company Info */}
           <div>
-            <div className="flex items-center space-x-2 mb-4">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">A</span>
-              </div>
-              <span className="font-bold text-xl">Alara</span>
+            <div className="flex items-center mb-4">
+              <AlaraLogo width={226} height={48} className="h-12 w-auto" forceVariant="dark" />
             </div>
             <p className="text-gray-300 text-sm">
               Intelligent school management platform by Vertex Blueprint Technology

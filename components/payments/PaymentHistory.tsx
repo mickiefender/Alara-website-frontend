@@ -177,11 +177,7 @@ export default function PaymentHistory({ studentId, schoolId, showStudentColumn 
         </div>
       </CardHeader>
       <CardContent>
-        {loading ? (
-          <div className="p-8 text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-          </div>
-        ) : payments.length === 0 ? (
+        {payments.length === 0 ? (
           <div className="p-8 text-center text-gray-500">
             No payment records found
           </div>

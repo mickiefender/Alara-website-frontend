@@ -126,10 +126,6 @@ export function PositionReport() {
     )
   }
 
-  if (loading) {
-    return <div className="text-center py-4">Loading position report...</div>
-  }
-
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">

@@ -58,19 +58,6 @@ export default function TeamApplicationsSection() {
     }
   }
 
-  if (loading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Team Applications</CardTitle>
-        </CardHeader>
-        <CardContent className="p-6">
-          <p>Loading applications...</p>
-        </CardContent>
-      </Card>
-    )
-  }
-
   const pendingCount = applications.filter(app => !app.viewed || app.status === 'pending').length
 
   return (

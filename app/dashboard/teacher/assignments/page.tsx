@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Search, Plus, Calendar } from "lucide-react"
-import Loader from "@/components/loader"
 
 function AssignmentsContent() {
   const [assignments, setAssignments] = useState<any[]>([])
@@ -62,13 +61,6 @@ function AssignmentsContent() {
   }
 
   const filteredAssignments = assignments.filter((a) => a.title.toLowerCase().includes(searchTerm.toLowerCase()))
-if (loading) {
-  return (
-    <div className="flex items-center justify-center min-h-screen">
-      <Loader size="md" color="#3b82f6" />
-    </div>
-  )
-}
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">

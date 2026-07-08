@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button"
 import { apiClient } from "@/lib/api"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
-import { CircularLoader } from "@/components/circular-loader"
 
 export default function AnnouncementsPage() {
   const [announcements, setAnnouncements] = useState<any[]>([])
@@ -30,12 +29,6 @@ export default function AnnouncementsPage() {
 
     fetchAnnouncements()
   }, [])
-
-  if (loading) return (
-    <div className="flex items-center justify-center min-h-screen">
-      <CircularLoader size="lg" />
-    </div>
-  )
 
   return (
     <ProtectedRoute allowedRoles={["student"]}>

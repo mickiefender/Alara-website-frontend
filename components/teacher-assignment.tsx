@@ -4,7 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useState, useEffect } from "react"
 import { academicsAPI, usersAPI } from "@/lib/api"
-import { CardLoader } from "@/components/circular-loader"
 
 interface TeacherAssignment {
   id: number
@@ -60,19 +59,6 @@ export function TeacherAssignment() {
         console.error("[v0] Failed to create assignment:", error)
       }
     }
-  }
-
-  if (loading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Teacher Assignments</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <CardLoader />
-        </CardContent>
-      </Card>
-    )
   }
 
   return (

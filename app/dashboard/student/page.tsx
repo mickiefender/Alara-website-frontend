@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { CountUp } from "@/components/ui/count-up"
 import { Button } from "@/components/ui/button"
 import { academicsAPI, authAPI, assignmentAPI, billingAPI, gradesAPI, attendanceAPI, usersAPI } from "@/lib/api"
 import { BookOpen, DollarSign, Calendar, FileText, Edit2, Download, Share2, ClipboardList, UserCheck } from "lucide-react"
 import Image from "next/image"
 import { ProfileAvatar } from "@/components/profile-avatar"
-import Loader from '@/components/loader'
 import { NoticeBoard } from "@/components/notice-board"
 import AssignmentSubmissionModal from "@/components/AssignmentSubmissionModal"
 import { UpcomingExams } from "@/components/upcoming-exams"
@@ -199,64 +199,73 @@ export default function StudentDashboard() {
     setIsModalOpen(false)
   }
 
-  const cards: { title: string; count: string | number; icon: React.ElementType; bgColor: string }[] = [
+  const cards: { title: string; count: string | number; icon: React.ElementType; chipBg: string; iconColor: string }[] = [
     {
       title: "Upcoming Exams",
       count: data?.upcomingExams?.length || 0,
       icon: BookOpen,
-      bgColor: "bg-secondary",
+      chipBg: "bg-secondary/15 dark:bg-secondary/25",
+      iconColor: "text-secondary dark:text-secondary-foreground",
     },
     {
       title: "Due Fees",
       count: `¢${(data?.dueFees || 0).toFixed(2)}`,
       icon: DollarSign,
-      bgColor: "bg-red-500",
+      chipBg: "bg-red-500/15 dark:bg-red-400/15",
+      iconColor: "text-red-600 dark:text-red-400",
     },
     {
       title: "Attendance",
       count: `${attendance?.presence_percentage?.toFixed(1) || 0}%`,
       icon: UserCheck,
-      bgColor: "bg-blue-500",
+      chipBg: "bg-blue-500/15 dark:bg-blue-400/15",
+      iconColor: "text-blue-600 dark:text-blue-400",
     },
     {
       title: "Assignments",
       count: assignments.length,
       icon: ClipboardList,
-      bgColor: "bg-purple-500",
+      chipBg: "bg-purple-500/15 dark:bg-purple-400/15",
+      iconColor: "text-purple-600 dark:text-purple-400",
     },
     {
       title: "Documents",
       count: data?.documents?.length || 0,
       icon: FileText,
-      bgColor: "bg-yellow-500",
+      chipBg: "bg-amber-500/15 dark:bg-amber-400/15",
+      iconColor: "text-amber-600 dark:text-amber-400",
     },
   ]
 
   return (
-    <div className="bg-gray-50 min-h-screen">
+    <div className="min-h-screen">
       <div className="w-full max-w-[1600px] mx-auto p-3 sm:p-4 md:p-6 lg:p-8 space-y-6 md:space-y-8">
       {/* Header */}
-      <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-4 sm:p-6 md:p-8">
-        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-gray-800">
-          {data?.userProfile ? 
-            `Welcome back, ${data.userProfile.first_name || ''} ${data.userProfile.last_name || ''}`.trim() || 'Welcome, Student!' 
+      <div className="glass-card animate-glass-in p-4 sm:p-6 md:p-8">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-foreground">
+          {data?.userProfile ?
+            `Welcome back, ${data.userProfile.first_name || ''} ${data.userProfile.last_name || ''}`.trim() || 'Welcome, Student!'
             : 'Welcome to Student Dashboard'}
         </h1>
-        <p className="text-sm sm:text-base text-gray-600 mt-2">Student Dashboard</p>
+        <p className="text-sm sm:text-base text-muted-foreground mt-2">Student Dashboard</p>
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3 sm:gap-4">
+      <div className="stagger grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3 sm:gap-4">
         {cards.map((card, index) => {
           const Icon = card.icon
           return (
-            <div key={index} className={`${card.bgColor} text-white p-4 sm:p-5 rounded-xl shadow-md`}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium opacity-90">{card.title}</p>
-                  <p className="text-2xl sm:text-3xl font-bold mt-2">{card.count}</p>
+            <div key={index} className="glass-card glass-hover p-4 sm:p-5">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{card.title}</p>
+                  <p className="text-2xl sm:text-3xl font-bold tracking-tight mt-2 tabular-nums">
+                    {typeof card.count === "number" ? <CountUp value={card.count} /> : card.count}
+                  </p>
                 </div>
-                <Icon className="w-9 h-9 sm:w-11 sm:h-11 opacity-50" />
+                <div className={`shrink-0 w-12 h-12 rounded-2xl ${card.chipBg} border border-white/30 dark:border-white/10 flex items-center justify-center`}>
+                  <Icon className={`w-6 h-6 ${card.iconColor}`} />
+                </div>
               </div>
             </div>
           )
@@ -294,23 +303,23 @@ export default function StudentDashboard() {
                 <div className="md:col-span-2 space-y-3">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <p className="text-gray-500 text-sm">Name :</p>
+                      <p className="text-muted-foreground text-sm">Name :</p>
                       <p className="font-semibold">{data?.userProfile?.first_name} {data?.userProfile?.last_name}</p>
                     </div>
                     <div>
-                      <p className="text-gray-500 text-sm">Gender :</p>
+                      <p className="text-muted-foreground text-sm">Gender :</p>
                       <p className="font-semibold">{studentProfile?.gender || data?.userProfile?.gender || "-"}</p>
                     </div>
                     <div>
-                      <p className="text-gray-500 text-sm">Father Name :</p>
+                      <p className="text-muted-foreground text-sm">Father Name :</p>
                       <p className="font-semibold">{studentProfile?.father_name || data?.userProfile?.father_name || "-"}</p>
                     </div>
                     <div>
-                      <p className="text-gray-500 text-sm">Mother Name :</p>
+                      <p className="text-muted-foreground text-sm">Mother Name :</p>
                       <p className="font-semibold">{studentProfile?.mother_name || data?.userProfile?.mother_name || "-"}</p>
                     </div>
                     <div>
-                      <p className="text-gray-500 text-sm">Date Of Birth :</p>
+                      <p className="text-muted-foreground text-sm">Date Of Birth :</p>
                       <p className="font-semibold">
                         {studentProfile?.date_of_birth || data?.userProfile?.date_of_birth
                           ? new Date(studentProfile?.date_of_birth || data?.userProfile?.date_of_birth).toLocaleDateString()
@@ -318,35 +327,35 @@ export default function StudentDashboard() {
                       </p>
                     </div>
                     <div>
-                      <p className="text-gray-500 text-sm">Religion :</p>
+                      <p className="text-muted-foreground text-sm">Religion :</p>
                       <p className="font-semibold">{studentProfile?.religion || data?.userProfile?.religion || "-"}</p>
                     </div>
                     <div>
-                      <p className="text-gray-500 text-sm">E-mail :</p>
+                      <p className="text-muted-foreground text-sm">E-mail :</p>
                       <p className="font-semibold text-sm">{data?.userProfile?.email}</p>
                     </div>
                     <div>
-                      <p className="text-gray-500 text-sm">Class :</p>
+                      <p className="text-muted-foreground text-sm">Class :</p>
                       <p className="font-semibold">{studentClass?.class_name || studentClass?.class_obj_name || studentProfile?.class_name || "-"}</p>
                     </div>
                     <div>
-                      <p className="text-gray-500 text-sm">Roll :</p>
+                      <p className="text-muted-foreground text-sm">Roll :</p>
                       <p className="font-semibold">{studentClass?.roll_number || studentProfile?.roll_number || studentProfile?.student_id || "-"}</p>
                     </div>
                     <div>
-                      <p className="text-gray-500 text-sm">Section :</p>
+                      <p className="text-muted-foreground text-sm">Section :</p>
                       <p className="font-semibold">{studentClass?.section || studentProfile?.section || "-"}</p>
                     </div>
                     <div className="sm:col-span-2">
-                      <p className="text-gray-500 text-sm">Address :</p>
+                      <p className="text-muted-foreground text-sm">Address :</p>
                       <p className="font-semibold">{studentProfile?.address || data?.userProfile?.address || "-"}</p>
                     </div>
                     <div>
-                      <p className="text-gray-500 text-sm">Phone :</p>
+                      <p className="text-muted-foreground text-sm">Phone :</p>
                       <p className="font-semibold">{data?.userProfile?.phone || studentProfile?.phone || "-"}</p>
                     </div>
                     <div>
-                      <p className="text-gray-500 text-sm">Student ID :</p>
+                      <p className="text-muted-foreground text-sm">Student ID :</p>
                       <p className="font-semibold">{studentProfile?.student_id || data?.userProfile?.student_id || "-"}</p>
                     </div>
                   </div>
@@ -399,7 +408,7 @@ export default function StudentDashboard() {
                       stroke="currentColor"
                       strokeWidth="10"
                       fill="none"
-                      className="text-gray-200"
+                      className="text-muted"
                     />
                     <circle
                       cx="64"
@@ -421,22 +430,22 @@ export default function StudentDashboard() {
                 </div>
 
                 {/* Stats Cards */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 flex-1 w-full">
-                  <div className="bg-blue-50 rounded-lg p-4 text-center">
-                    <p className="text-2xl font-bold text-blue-700">{attendance.total_days || 0}</p>
-                    <p className="text-xs text-blue-600">Total Days</p>
+                <div className="stagger grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 flex-1 w-full">
+                  <div className="bg-blue-500/10 dark:bg-blue-400/10 border border-white/30 dark:border-white/10 backdrop-blur-sm rounded-xl p-4 text-center transition-transform duration-200 hover:scale-[1.03]">
+                    <p className="text-2xl font-bold text-blue-700 dark:text-blue-400 tabular-nums"><CountUp value={attendance.total_days || 0} /></p>
+                    <p className="text-xs text-blue-600 dark:text-blue-500">Total Days</p>
                   </div>
-                  <div className="bg-green-50 rounded-lg p-4 text-center">
-                    <p className="text-2xl font-bold text-green-700">{attendance.present_days || 0}</p>
-                    <p className="text-xs text-green-600">Present</p>
+                  <div className="bg-green-500/10 dark:bg-green-400/10 border border-white/30 dark:border-white/10 backdrop-blur-sm rounded-xl p-4 text-center transition-transform duration-200 hover:scale-[1.03]">
+                    <p className="text-2xl font-bold text-green-700 dark:text-green-400 tabular-nums"><CountUp value={attendance.present_days || 0} /></p>
+                    <p className="text-xs text-green-600 dark:text-green-500">Present</p>
                   </div>
-                  <div className="bg-red-50 rounded-lg p-4 text-center">
-                    <p className="text-2xl font-bold text-red-700">{attendance.absent_days || 0}</p>
-                    <p className="text-xs text-red-600">Absent</p>
+                  <div className="bg-red-500/10 dark:bg-red-400/10 border border-white/30 dark:border-white/10 backdrop-blur-sm rounded-xl p-4 text-center transition-transform duration-200 hover:scale-[1.03]">
+                    <p className="text-2xl font-bold text-red-700 dark:text-red-400 tabular-nums"><CountUp value={attendance.absent_days || 0} /></p>
+                    <p className="text-xs text-red-600 dark:text-red-500">Absent</p>
                   </div>
-                  <div className="bg-yellow-50 rounded-lg p-4 text-center">
-                    <p className="text-2xl font-bold text-yellow-700">{attendance.late_days || 0}</p>
-                    <p className="text-xs text-yellow-600">Late</p>
+                  <div className="bg-amber-500/10 dark:bg-amber-400/10 border border-white/30 dark:border-white/10 backdrop-blur-sm rounded-xl p-4 text-center transition-transform duration-200 hover:scale-[1.03]">
+                    <p className="text-2xl font-bold text-amber-700 dark:text-amber-400 tabular-nums"><CountUp value={attendance.late_days || 0} /></p>
+                    <p className="text-xs text-amber-600 dark:text-amber-500">Late</p>
                   </div>
                 </div>
               </div>
@@ -447,7 +456,7 @@ export default function StudentDashboard() {
                   <h3 className="text-sm font-semibold text-gray-900 mb-3">Recent Attendance Records</h3>
                   <div className="overflow-x-auto max-h-64 rounded-lg border border-gray-100">
                     <table className="w-full text-sm">
-                      <thead className="bg-gray-50 sticky top-0">
+                      <thead className="bg-muted/40 backdrop-blur-sm sticky top-0">
                         <tr>
                           <th className="px-3 py-2 text-left font-medium text-gray-600">Date</th>
                           <th className="px-3 py-2 text-left font-medium text-gray-600">Subject</th>
@@ -458,7 +467,7 @@ export default function StudentDashboard() {
                       </thead>
                       <tbody className="divide-y divide-gray-100">
                         {attendance.records.slice(0, 10).map((record: any, idx: number) => (
-                          <tr key={idx} className="hover:bg-gray-50">
+                          <tr key={idx} className="hover:bg-primary/[0.04] dark:hover:bg-primary/[0.07] transition-colors">
                             <td className="px-3 py-2">{record.date}</td>
                             <td className="px-3 py-2">{record.subject_name || 'N/A'}</td>
                             <td className="px-3 py-2">{record.class_name || 'N/A'}</td>
@@ -539,7 +548,7 @@ export default function StudentDashboard() {
                 </thead>
                 <tbody>
                   {grades.map((grade: any, index: number) => (
-                    <tr key={index} className="border-b hover:bg-gray-50">
+                    <tr key={index} className="border-b hover:bg-primary/[0.04] dark:hover:bg-primary/[0.07] transition-colors">
                       <td className="py-3 px-4 font-medium">{grade.subject_name || grade.subject}</td>
                       <td className="py-3 px-4 capitalize">{grade.assessment_type}</td>
                       <td className="py-3 px-4">{grade.score}/{grade.max_score}</td>
@@ -578,10 +587,10 @@ export default function StudentDashboard() {
         <CardContent>
           <div className="space-y-6">
             {/* Fee Summary Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-red-50 p-4 rounded-lg border border-red-200">
-                <p className="text-sm text-gray-600">Total Due</p>
-                <p className="text-2xl font-bold text-red-600">
+            <div className="stagger grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-red-500/10 dark:bg-red-400/10 backdrop-blur-sm p-4 rounded-xl border border-red-500/25">
+                <p className="text-sm text-muted-foreground">Total Due</p>
+                <p className="text-2xl font-bold text-red-600 dark:text-red-400 tabular-nums">
                   ¢
                   {(
                     (data?.schoolFees || [])
@@ -589,9 +598,9 @@ export default function StudentDashboard() {
                   ).toFixed(2)}
                 </p>
               </div>
-              <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                <p className="text-sm text-gray-600">Total Paid</p>
-                <p className="text-2xl font-bold text-green-600">
+              <div className="bg-green-500/10 dark:bg-green-400/10 backdrop-blur-sm p-4 rounded-xl border border-green-500/25">
+                <p className="text-sm text-muted-foreground">Total Paid</p>
+                <p className="text-2xl font-bold text-green-600 dark:text-green-400 tabular-nums">
                   ¢
                   {(
                     (data?.schoolFees || [])
@@ -599,9 +608,9 @@ export default function StudentDashboard() {
                   ).toFixed(2)}
                 </p>
               </div>
-              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                <p className="text-sm text-gray-600">Total Charged</p>
-                <p className="text-2xl font-bold text-blue-600">
+              <div className="bg-blue-500/10 dark:bg-blue-400/10 backdrop-blur-sm p-4 rounded-xl border border-blue-500/25">
+                <p className="text-sm text-muted-foreground">Total Charged</p>
+                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400 tabular-nums">
                   ¢
                   {(
                     (data?.schoolFees || [])
@@ -615,7 +624,7 @@ export default function StudentDashboard() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b bg-gray-50">
+                  <tr className="border-b bg-muted/40">
                     <th className="text-left py-3 px-4 font-semibold">Fee Type</th>
                     <th className="text-left py-3 px-4 font-semibold">Amount Due</th>
                     <th className="text-left py-3 px-4 font-semibold">Amount Paid</th>
@@ -636,7 +645,7 @@ export default function StudentDashboard() {
                         : (amountPaid > 0 ? "bg-yellow-100 text-yellow-800" : "bg-gray-100 text-gray-800")
 
                       return (
-                        <tr key={index} className="border-b hover:bg-gray-50">
+                        <tr key={index} className="border-b hover:bg-primary/[0.04] dark:hover:bg-primary/[0.07] transition-colors">
                           <td className="py-3 px-4 font-medium">{fee.fee_name}</td>
                           <td className="py-3 px-4">¢{feeAmount.toFixed(2)}</td>
                           <td className="py-3 px-4 text-green-600 font-medium">¢{amountPaid.toFixed(2)}</td>
@@ -662,9 +671,9 @@ export default function StudentDashboard() {
             </div>
 
             {/* Payment Methods Info */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <p className="text-sm font-semibold text-blue-900">Need to Pay?</p>
-              <p className="text-sm text-blue-800 mt-1">
+            <div className="bg-blue-500/10 dark:bg-blue-400/10 backdrop-blur-sm border border-blue-500/25 rounded-xl p-4">
+              <p className="text-sm font-semibold text-blue-900 dark:text-blue-300">Need to Pay?</p>
+              <p className="text-sm text-blue-800 dark:text-blue-400 mt-1">
                 Contact your school admin or visit the payment portal to pay your outstanding fees online.
               </p>
               <Button className="mt-3 bg-secondary hover:bg-primary w-full sm:w-auto">Go to Payment Portal</Button>

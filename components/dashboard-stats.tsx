@@ -2,7 +2,7 @@
 
 import { Users, UserCheck, Users2, DollarSign } from "lucide-react"
 import Link from "next/link"
-import { CircularLoader } from "@/components/circular-loader"
+import { CountUp } from "@/components/ui/count-up"
 
 interface DashboardStatsProps {
   stats: {
@@ -27,33 +27,37 @@ export function DashboardStats({ stats }: DashboardStatsProps) {
   const formatCurrency = (num: number) => `GH₵${formatNumber(num)}`
 
   const statsData = [
-    { 
-      label: "Students", 
-      value: stats.students, 
+    {
+      label: "Students",
+      value: stats.students,
       icon: Users,
-      bgColor: "bg-purple-100 dark:bg-purple-900/30",
-      iconColor: "text-purple-600 dark:text-purple-400"
+      chipBg: "bg-purple-500/15 dark:bg-purple-400/15",
+      iconColor: "text-purple-600 dark:text-purple-400",
+      glow: "hover:shadow-purple-500/15",
     },
-    { 
-      label: "Teachers", 
-      value: stats.teachers, 
+    {
+      label: "Teachers",
+      value: stats.teachers,
       icon: UserCheck,
-      bgColor: "bg-blue-100 dark:bg-blue-900/30",
-      iconColor: "text-blue-600 dark:text-blue-400"
+      chipBg: "bg-blue-500/15 dark:bg-blue-400/15",
+      iconColor: "text-blue-600 dark:text-blue-400",
+      glow: "hover:shadow-blue-500/15",
     },
-    { 
-      label: "Parents", 
-      value: stats.parents, 
+    {
+      label: "Parents",
+      value: stats.parents,
       icon: Users2,
-      bgColor: "bg-orange-100 dark:bg-orange-900/30",
-      iconColor: "text-orange-600 dark:text-orange-400"
+      chipBg: "bg-orange-500/15 dark:bg-orange-400/15",
+      iconColor: "text-orange-600 dark:text-orange-400",
+      glow: "hover:shadow-orange-500/15",
     },
-    { 
-      label: "Fee Collected", 
-      value: stats.earnings, 
+    {
+      label: "Fee Collected",
+      value: stats.earnings,
       icon: DollarSign,
-      bgColor: "bg-emerald-100 dark:bg-emerald-900/30",
-      iconColor: "text-emerald-600 dark:text-emerald-400"
+      chipBg: "bg-emerald-500/15 dark:bg-emerald-400/15",
+      iconColor: "text-emerald-600 dark:text-emerald-400",
+      glow: "hover:shadow-emerald-500/15",
     },
   ];
 
@@ -68,24 +72,33 @@ export function DashboardStats({ stats }: DashboardStatsProps) {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="stagger grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       {statsData.map((stat, idx) => {
         const Icon = stat.icon;
         return (
-          <Link key={idx} href={getHref(stat.label)} className="block h-full">
-            <div 
-              className={`h-full relative ${stat.bgColor} rounded-2xl p-6 border border-slate-200/50 dark:border-slate-700/50 backdrop-blur-sm hover:shadow-xl hover:shadow-emerald-500/10 dark:hover:shadow-emerald-500/5 transition-all duration-300 hover:-translate-y-1`}
+          <Link key={idx} href={getHref(stat.label)} className="block h-full group">
+            <div
+              className={`glass-card glass-hover h-full relative p-6 hover:shadow-2xl ${stat.glow}`}
             >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-slate-600 dark:text-slate-400 font-medium mb-2 uppercase tracking-wide">
+              <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="text-xs text-muted-foreground font-medium mb-2 uppercase tracking-wider">
                     {stat.label}
                   </p>
-                  <p className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-slate-900 dark:from-white to-slate-700 dark:to-slate-200 bg-clip-text text-transparent">
-                    {stats.loading ? <CircularLoader size="sm" /> : stat.label === "Fee Collected" ? formatCurrency(stat.value) : formatNumber(stat.value)}
+                  <p className="text-3xl lg:text-4xl font-bold tracking-tight text-foreground tabular-nums">
+                    {stats.loading ? (
+                      <span className="inline-block h-9 w-20 rounded-lg bg-accent/70 shimmer align-middle" />
+                    ) : (
+                      <CountUp
+                        value={stat.value}
+                        format={stat.label === "Fee Collected" ? formatCurrency : formatNumber}
+                      />
+                    )}
                   </p>
                 </div>
-                <Icon className={`w-12 h-12 ${stat.iconColor} drop-shadow-lg`} />
+                <div className={`shrink-0 w-14 h-14 rounded-2xl ${stat.chipBg} border border-white/30 dark:border-white/10 flex items-center justify-center transition-transform duration-300 group-hover:scale-110`}>
+                  <Icon className={`w-7 h-7 ${stat.iconColor}`} />
+                </div>
               </div>
             </div>
           </Link>

@@ -9,7 +9,6 @@ import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { useState, useEffect } from "react"
 import { assignmentAPI, academicsAPI } from "@/lib/api"
-import { CardLoader } from "@/components/circular-loader"
 
 export function AssignmentManagement() {
   const [assignments, setAssignments] = useState<any[]>([])
@@ -86,17 +85,6 @@ export function AssignmentManagement() {
     const subject = subjects.find((s) => s.id === subjectId)
     return subject?.name || `Subject ${subjectId}`
   }
-
-  if (loading) return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Assignments</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <CardLoader />
-      </CardContent>
-    </Card>
-  )
 
   return (
     <Card>

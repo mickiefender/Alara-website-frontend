@@ -10,7 +10,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { useState, useEffect } from "react"
 import { usersAPI } from "@/lib/api"
 import { useAuthContext } from "@/lib/auth-context"
-import { CircularLoader, CardLoader } from "@/components/circular-loader"
 
 interface Teacher {
   id: number
@@ -194,19 +193,6 @@ export function TeachersManagement() {
 
   const getTeacherEmail = (teacher: Teacher) => {
     return teacher.email || teacher.user_email || teacher.user_data?.email || teacher.user?.email || "N/A"
-  }
-
-  if (loading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Teachers Management</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <CardLoader />
-        </CardContent>
-      </Card>
-    )
   }
 
   return (

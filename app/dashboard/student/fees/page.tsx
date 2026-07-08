@@ -9,7 +9,6 @@ import { billingAPI } from "@/lib/api"
 import { useAuthContext } from "@/lib/auth-context"
 import { usePayment } from "@/hooks/usePayment"
 import { DollarSign, Download } from "lucide-react"
-import Loader from "@/components/loader"
 import PaymentHistory from "@/components/payments/PaymentHistory"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
@@ -151,10 +150,6 @@ export default function StudentFeesPage() {
   }
 
   const { totalDue, totalPaid, totalCharged } = calculateTotals()
-
-  if (loading) {
-    return <Loader />
-  }
 
   return (
     <div className="p-6 space-y-6">

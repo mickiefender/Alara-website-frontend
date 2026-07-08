@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { ProtectedRoute } from "@/lib/protected-route"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { CountUp } from "@/components/ui/count-up"
 import { 
   BookOpen, 
   Users, 
@@ -29,7 +30,6 @@ import {
 import { academicsAPI, assignmentAPI, usersAPI, attendanceAPI, gradesAPI, resolveImageUrl } from "@/lib/api"
 import { useAuthContext as useAuth } from "@/lib/auth-context"
 import { NoticeBoard } from "@/components/notice-board"
-import { CircularLoader } from "@/components/circular-loader"
 import {
   PieChart,
   Pie,
@@ -256,23 +256,10 @@ export default function TeacherPage() {
     ...bottomPerformersChart.map(s => ({ ...s, type: "Needs Improvement" }))
   ]
 
-  if (loading) {
-    return (
-      <ProtectedRoute allowedRoles={["teacher"]}>
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <CircularLoader size="lg" />
-            <p className="text-muted-foreground mt-4">Loading dashboard...</p>
-          </div>
-        </div>
-      </ProtectedRoute>
-    )
-  }
-
   return (
     <ProtectedRoute allowedRoles={["teacher"]}>
       <div className="w-full max-w-[1600px] mx-auto p-3 sm:p-4 md:p-6 lg:p-8 space-y-5 md:space-y-6">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-2">
+        <div className="animate-glass-in flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-2">
           <div>
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground dark:text-white tracking-tight">
               Welcome back, {user?.first_name || "Teacher"}! 
@@ -302,53 +289,53 @@ export default function TeacherPage() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="border-0 shadow-md bg-gradient-to-br from-cyan-50 to-cyan-100 dark:from-slate-800 dark:to-slate-900">
+        <div className="stagger grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="glass-hover bg-cyan-500/10 dark:bg-cyan-400/10 hover:shadow-cyan-500/15">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-cyan-700 dark:text-cyan-400">My Classes</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl sm:text-4xl font-bold text-cyan-700 dark:text-cyan-300">{stats.classes}</p>
+              <p className="text-3xl sm:text-4xl font-bold tracking-tight text-cyan-700 dark:text-cyan-300 tabular-nums"><CountUp value={stats.classes} /></p>
               <p className="text-xs text-cyan-600 dark:text-cyan-500 mt-1">Classes assigned to you</p>
             </CardContent>
           </Card>
 
-          <Card className="border-0 shadow-md bg-gradient-to-br from-green-50 to-green-100 dark:from-slate-800 dark:to-slate-900">
+          <Card className="glass-hover bg-green-500/10 dark:bg-green-400/10 hover:shadow-green-500/15">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-green-700 dark:text-green-400">My Students</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-baseline gap-2">
-                <p className="text-3xl sm:text-4xl font-bold text-green-700 dark:text-green-300">{stats.students}</p>
+                <p className="text-3xl sm:text-4xl font-bold tracking-tight text-green-700 dark:text-green-300 tabular-nums"><CountUp value={stats.students} /></p>
               </div>
               <p className="text-xs text-green-600 dark:text-green-500 mt-1">Students in your classes</p>
             </CardContent>
           </Card>
 
-          <Card className="border-0 shadow-md bg-gradient-to-br from-purple-50 to-purple-100 dark:from-slate-800 dark:to-slate-900">
+          <Card className="glass-hover bg-purple-500/10 dark:bg-purple-400/10 hover:shadow-purple-500/15">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-purple-700 dark:text-purple-400">Active Assignments</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl sm:text-4xl font-bold text-purple-700 dark:text-purple-300">{stats.assignmentsGiven}</p>
+              <p className="text-3xl sm:text-4xl font-bold tracking-tight text-purple-700 dark:text-purple-300 tabular-nums"><CountUp value={stats.assignmentsGiven} /></p>
               <p className="text-xs text-purple-600 dark:text-purple-500 mt-1">Assignments to complete</p>
             </CardContent>
           </Card>
 
-          <Card className="border-0 shadow-md bg-gradient-to-br from-orange-50 to-orange-100 dark:from-slate-800 dark:to-slate-900">
+          <Card className="glass-hover bg-orange-500/10 dark:bg-orange-400/10 hover:shadow-orange-500/15">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-orange-700 dark:text-orange-400">Pending Reviews</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl sm:text-4xl font-bold text-orange-700 dark:text-orange-300">{stats.assignmentsPending}</p>
+              <p className="text-3xl sm:text-4xl font-bold tracking-tight text-orange-700 dark:text-orange-300 tabular-nums"><CountUp value={stats.assignmentsPending} /></p>
               <p className="text-xs text-orange-600 dark:text-orange-500 mt-1">Submissions awaiting review</p>
             </CardContent>
           </Card>
         </div>
 
         {/* Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
-          <Card className="border-0 shadow-md">
+        <div className="stagger grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
+          <Card>
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <PieChartIcon className="h-5 w-5 text-secondary" />
@@ -374,7 +361,7 @@ export default function TeacherPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-0 shadow-md">
+          <Card>
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <Users2 className="h-5 w-5 text-pink-600" />
@@ -410,7 +397,7 @@ export default function TeacherPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-0 shadow-md">
+          <Card>
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <Activity className="h-5 w-5 text-secondary" />
@@ -442,7 +429,7 @@ export default function TeacherPage() {
         </div>
 
         {/* Performance Chart */}
-        <Card className="border-0 shadow-md">
+        <Card>
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2 text-lg">
@@ -478,8 +465,8 @@ export default function TeacherPage() {
         </Card>
 
         {/* Quick Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="border-0 shadow-sm bg-card dark:bg-slate-900">
+        <div className="stagger grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card>
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -493,7 +480,7 @@ export default function TeacherPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-0 shadow-sm bg-card dark:bg-slate-900">
+          <Card>
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -507,7 +494,7 @@ export default function TeacherPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-0 shadow-sm bg-card dark:bg-slate-900">
+          <Card>
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -525,7 +512,7 @@ export default function TeacherPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-0 shadow-sm bg-card dark:bg-slate-900">
+          <Card>
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -545,8 +532,8 @@ export default function TeacherPage() {
         </div>
 
         {/* Quick Actions & Resources */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-6">
-          <Card className="border-0 shadow-md">
+        <div className="stagger grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-6">
+          <Card>
             <CardHeader className="pb-4 border-b border-border dark:border-slate-800">
               <CardTitle className="flex items-center gap-2 text-foreground dark:text-white">
                 <TrendingUp className="h-5 w-5 text-secondary dark:text-cyan-400" />
@@ -590,7 +577,7 @@ export default function TeacherPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-0 shadow-md">
+          <Card>
             <CardHeader className="pb-4 border-b border-border dark:border-slate-800">
               <CardTitle className="flex items-center gap-2 text-foreground dark:text-white">
                 <Award className="h-5 w-5 text-secondary dark:text-green-400" />
@@ -640,7 +627,7 @@ export default function TeacherPage() {
         </div>
 
         {/* Students List */}
-        <Card className="border-0 shadow-md">
+        <Card>
           <CardHeader className="pb-4">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <CardTitle className="flex items-center gap-2 text-xl">

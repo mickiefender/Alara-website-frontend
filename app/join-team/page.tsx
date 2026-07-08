@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Navbar } from '@/components/landing/navbar'
-import { Footer } from '@/components/landing/footer'
+import { Footer } from '@/components/footer'
 import { ArrowRight, Users, Mail, Phone } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import type { NewTeamApplication } from '@/types/team-application'
@@ -157,8 +157,13 @@ export default function JoinTeamPage() {
               Help us build the future of education technology. We're looking for passionate people to join our mission.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center max-w-md mx-auto">
-              <Button size="lg" variant="outline" className="border-2 border-primary px-8 py-6 text-lg font-semibold rounded-xl hover:bg-primary/5 hover:border-primary/80">
-                Current Openings
+              <Button
+                size="lg"
+                variant="outline"
+                asChild
+                className="border-2 border-primary px-8 py-6 text-lg font-semibold rounded-xl hover:bg-primary/5 hover:border-primary/80"
+              >
+                <Link href="/careers">Current Openings</Link>
               </Button>
             </div>
           </div>

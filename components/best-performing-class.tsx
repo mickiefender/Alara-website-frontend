@@ -173,20 +173,6 @@ export function BestPerformingClass() {
     )
   }
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="flex flex-col items-center gap-3">
-          <div className="relative h-10 w-10">
-            <div className="absolute inset-0 rounded-full border-4 border-indigo-100 dark:border-indigo-900/30" />
-            <div className="absolute inset-0 rounded-full border-4 border-indigo-500 border-t-transparent animate-spin" />
-          </div>
-          <p className="text-sm text-slate-400 animate-pulse">Loading performance data...</p>
-        </div>
-      </div>
-    )
-  }
-
   const rankColors = [
     { bg: "bg-amber-100 dark:bg-amber-900/40", text: "text-amber-600 dark:text-amber-400", bar: "#f59e0b" },
     { bg: "bg-slate-100 dark:bg-slate-700/50", text: "text-slate-500 dark:text-slate-400", bar: "#94a3b8" },

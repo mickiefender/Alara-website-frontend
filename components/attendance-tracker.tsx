@@ -8,7 +8,6 @@ import { useState, useEffect } from "react"
 import { academicsAPI, attendanceAPI, usersAPI } from "@/lib/api"
 import { useAuthContext } from "@/lib/auth-context"
 import { Search, CheckCircle, XCircle, Clock, UserCheck, Users, Calendar, BookOpen, Save } from "lucide-react"
-import { CircularLoader } from "@/components/circular-loader"
 
 export function AttendanceTracker() {
   const { user } = useAuthContext()
@@ -171,14 +170,6 @@ export function AttendanceTracker() {
   }
 
   const statusCounts = getStatusCounts()
-
-  if (loading) return (
-    <Card className="w-full">
-      <CardContent className="flex items-center justify-center py-12">
-        <CircularLoader size="lg" />
-      </CardContent>
-    </Card>
-  )
 
   return (
     <Card className="w-full">

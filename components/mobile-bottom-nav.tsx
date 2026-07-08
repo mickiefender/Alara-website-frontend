@@ -96,7 +96,7 @@ export function MobileBottomNav() {
   return (
     <nav className="md:hidden fixed bottom-4 left-0 right-0 z-20 flex justify-center px-4">
       {/* Floating Container */}
-      <div className="flex items-center justify-between w-full max-w-md h-16 px-2 rounded-2xl backdrop-blur-xl bg-white/80 dark:bg-black/60 shadow-xl border border-white/20">
+      <div className="flex items-center justify-between w-full max-w-md h-16 px-2 rounded-2xl backdrop-blur-2xl bg-white/70 dark:bg-black/55 border border-white/40 dark:border-white/10 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.4),0_16px_40px_-12px_rgba(0,0,0,0.3)] dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.07),0_16px_40px_-12px_rgba(0,0,0,0.6)] animate-glass-in">
         {items.map((item) => {
           const Icon = item.icon
           const isActive = pathname.includes(item.href.split('#')[0])
@@ -116,7 +116,7 @@ export function MobileBottomNav() {
               <div
                 className={`flex items-center justify-center w-10 h-10 rounded-xl transition-all ${
                   isActive
-                    ? "bg-primary/10 shadow-sm"
+                    ? "bg-primary/15 shadow-[0_0_16px_-4px_var(--primary)] ring-1 ring-primary/30"
                     : "bg-transparent"
                 }`}
               >

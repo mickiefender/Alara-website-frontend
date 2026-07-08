@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button"
 import { useState, useEffect } from "react"
 import { academicsAPI } from "@/lib/api"
 import { useRouter } from "next/navigation"
-import { CardLoader } from "@/components/circular-loader"
 
 export function TeacherClasses() {
   const [classes, setClasses] = useState<any[]>([])
@@ -27,17 +26,6 @@ export function TeacherClasses() {
 
     fetchClasses()
   }, [])
-
-  if (loading) return (
-    <Card>
-      <CardHeader>
-        <CardTitle>My Assigned Classes</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <CardLoader />
-      </CardContent>
-    </Card>
-  )
 
   const handleClassClick = (classId: string) => {
     router.push(`/dashboard/teacher/classes/${classId}`)

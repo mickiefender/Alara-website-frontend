@@ -9,7 +9,6 @@ import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { useState, useEffect, useMemo } from "react"
 import { gradesAPI, academicsAPI, usersAPI } from "@/lib/api"
-import { CardLoader } from "@/components/circular-loader"
 import { useRouter } from "next/navigation"
 
 export function GradesManagement() {
@@ -117,17 +116,6 @@ export function GradesManagement() {
       }
     })
   }, [grades, students])
-
-  if (loading) return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Grades & Assessment</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <CardLoader />
-      </CardContent>
-    </Card>
-  )
 
   return (
     <Card>

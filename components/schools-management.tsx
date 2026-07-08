@@ -8,7 +8,6 @@ import { schoolsAPI } from "@/lib/api"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { CardLoader } from "@/components/circular-loader"
 
 interface School {
   id: number
@@ -114,19 +113,6 @@ export function SchoolsManagement({ refreshTrigger }: SchoolsManagementProps) {
       setError(errorMsg)
       console.log("[v0] Error updating school status:", errorMsg)
     }
-  }
-
-  if (loading && schools.length === 0) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Schools Management</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <CardLoader />
-        </CardContent>
-      </Card>
-    )
   }
 
   return (

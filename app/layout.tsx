@@ -5,6 +5,7 @@ import { Analytics } from "@vercel/analytics/next"
 import Script from "next/script"
 import "./globals.css"
 import { ClientOnlyProviders } from "@/components/ClientOnlyProviders"
+import { PageLoader } from "@/components/page-loader"
 
 const _geist = Geist({ subsets: ["latin"] })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })
@@ -63,11 +64,10 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/favicon.svg", sizes: "any" },
-      { url: "/icon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/images/Alara-app-icon.ico", sizes: "any" },
     ],
-    shortcut: "/favicon.svg",
-    apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
+    shortcut: "/images/Alara-app-icon.ico",
+    apple: [{ url: "/images/Alara-app-icon.ico" }],
   },
   verification: {
     google: "your-google-verification",
@@ -93,6 +93,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="font-sans antialiased" suppressHydrationWarning>
+        <PageLoader />
         <ClientOnlyProviders>{children}</ClientOnlyProviders>
         <Analytics />
         <Script

@@ -6,7 +6,6 @@ import { usersAPI, academicsAPI, attendanceAPI, billingAPI, messagingAPI } from 
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import CircularLoader from '@/components/circular-loader'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -412,7 +411,6 @@ export default function StudentDetailPage() {
   const enrolledClassIds = new Set(enrollments.map((e) => e.class_obj))
   const availableClasses = classes.filter((c) => !enrolledClassIds.has(c.id))
 
-  if (loading) return <div className="flex items-center justify-center min-h-screen"><p className="text-gray-600">Loading...</p></div>
   if (error || !student) return (
     <div className="flex items-center justify-center min-h-screen">
       <div className="text-red-600 flex flex-col items-center gap-4">
@@ -718,11 +716,7 @@ export default function StudentDetailPage() {
               </Dialog>
             </div>
             
-            {classesLoading ? (
-              <div className="flex justify-center py-4">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div>
-              </div>
-            ) : enrollments.length > 0 ? (
+            {enrollments.length > 0 ? (
               <div className="space-y-2">
                 {enrollments.map((enrollment: any) => (
                   <div key={enrollment.id} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-100">
@@ -892,14 +886,9 @@ export default function StudentDetailPage() {
                 <DollarSign size={16} className="text-orange-600" />
                 Fee Management (GH¢{dueFees.toFixed(2)} due)
               </h2>
-              {feesLoading && <CircularLoader size="sm" />}
             </div>
-            
-            {feesLoading ? (
-              <div className="flex justify-center py-12">
-                <CircularLoader />
-              </div>
-            ) : studentFees.length === 0 ? (
+
+            {studentFees.length === 0 ? (
               <div className="text-center py-12 text-gray-500">
                 <DollarSign className="h-12 w-12 mx-auto mb-4 opacity-40" />
                 <p>No fees assigned to this student</p>

@@ -73,10 +73,6 @@ const StudentNoticeBoard = () => {
     }
   }
 
-  if (loading) {
-    return <div>Loading notice board...</div>
-  }
-
   if (error) {
     return <div className="text-red-500">{error}</div>
   }

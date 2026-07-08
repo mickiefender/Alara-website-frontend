@@ -8,7 +8,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useState, useEffect } from "react"
 import { academicsAPI, usersAPI } from "@/lib/api"
-import { CardLoader } from "@/components/circular-loader"
 import { Plus, Calendar, Clock, BookOpen, User, MapPin, Building2, Edit2, Trash2, X } from "lucide-react"
 
 interface TimeSlot {
@@ -228,22 +227,6 @@ export function TimetableManagement() {
     setShowForm(false)
     setEditingSlot(null)
     setNewSlot({ class_obj: "", day: "monday", start_time: "", end_time: "", subject: "", teacher: "", venue: "" })
-  }
-
-  if (loading) {
-    return (
-      <Card className="border-0 shadow-lg">
-        <CardHeader className="bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-t-lg">
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="w-5 h-5" />
-            Timetable Management
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <CardLoader />
-        </CardContent>
-      </Card>
-    )
   }
 
   return (

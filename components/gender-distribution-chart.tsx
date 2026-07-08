@@ -92,14 +92,6 @@ export function GenderDistributionChart() {
     )
   }
 
-  if (loading) {
-    return (
-      <div className="h-[250px] flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-4 border-indigo-400 border-t-transparent rounded-full" />
-      </div>
-    )
-  }
-
   return (
     <div className="space-y-6">
       {/* Header */}

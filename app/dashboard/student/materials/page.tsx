@@ -23,7 +23,6 @@ import {
   User,
   FolderOpen,
 } from "lucide-react"
-import Loader from "@/components/loader"
 
 interface Document {
   id: number
@@ -130,14 +129,6 @@ export default function StudentMaterialsPage() {
       default:
         return "bg-gray-100 text-gray-700"
     }
-  }
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader size="md" color="#3b82f6" />
-      </div>
-    )
   }
 
   return (

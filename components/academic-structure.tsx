@@ -308,10 +308,6 @@ export function AcademicStructure() {
     return profile.email || profile.user_email || profile.user_data?.email || profile.user?.email || "N/A"
   }
 
-  if (loading) {
-    return <div className="text-center py-4">Loading academic data...</div>
-  }
-
   return (
     <Card>
       <CardHeader>

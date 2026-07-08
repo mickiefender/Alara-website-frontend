@@ -168,10 +168,6 @@ function TeachersPageContent() {
   const startIndex = (currentPage - 1) * itemsPerPage
   const paginatedTeachers = filteredTeachers.slice(startIndex, startIndex + itemsPerPage)
 
-  if (loading) {
-    return <div className="text-center py-8 text-lg">Loading teachers...</div>
-  }
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -430,7 +426,7 @@ function TeachersPageContent() {
 
 export default function TeachersPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={null}>
       <TeachersPageContent />
     </Suspense>
   )

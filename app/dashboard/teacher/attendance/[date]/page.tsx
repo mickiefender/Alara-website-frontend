@@ -67,7 +67,6 @@ function AttendanceDetailContent() {
     }
   }
 
-  if (loading) return <div className="text-center py-8">Loading attendance details...</div>
   if (error) return <div className="text-red-600 text-center py-8">{error}</div>
 
   return (

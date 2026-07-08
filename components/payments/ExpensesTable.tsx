@@ -82,17 +82,6 @@ export default function ExpensesTable({
     link.click()
   }
 
-  if (loading) {
-    return (
-      <Card>
-        <CardContent className="p-8 text-center">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p>Loading expenses...</p>
-        </CardContent>
-      </Card>
-    )
-  }
-
   return (
     <Card className="w-full">
       <CardHeader>

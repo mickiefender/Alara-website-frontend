@@ -120,14 +120,16 @@ const fetchAll = async () => {
   }
 
   if (!isSuperAdmin) return <div className="p-6">Unauthorized</div>
-  if (loading) return <div className="p-6">Loading super admin dashboard...</div>
 
   return (
     <div className="p-6 space-y-8">
-      <h1 className="text-2xl font-bold">Super Admin Dashboard</h1>
+      <div className="animate-glass-in">
+        <h1 className="text-3xl font-bold tracking-tight">Super Admin Dashboard</h1>
+        <p className="text-muted-foreground mt-1">Platform-wide schools, users, billing and analytics</p>
+      </div>
 
       {errorMessage ? (
-        <div className="border border-red-200 bg-red-50 text-red-700 rounded p-3 text-sm">
+        <div className="glass-red rounded-xl text-red-700 dark:text-red-300 p-3 text-sm animate-glass-in">
           {errorMessage}
         </div>
       ) : null}

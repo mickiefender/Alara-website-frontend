@@ -11,7 +11,6 @@ import { Badge } from "@/components/ui/badge"
 import { Trash2, Plus, BookOpen } from "lucide-react"
 import { academicsAPI } from "@/lib/api"
 import { useAuthContext } from "@/lib/auth-context"
-import { CircularLoader, CardLoader } from "@/components/circular-loader"
 
 interface ClassSubjectTeacher {
   id: number
@@ -152,20 +151,6 @@ export function AssignSubjectTeachers({ classId, className }: { classId: number;
       setError(err?.response?.data?.detail || "Failed to remove assignment")
     }
   }
-
-  if (loading) return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <BookOpen className="w-5 h-5" />
-          Subject Teachers
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <CardLoader />
-      </CardContent>
-    </Card>
-  )
 
   return (
     <Card>

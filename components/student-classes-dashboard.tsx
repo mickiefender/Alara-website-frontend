@@ -79,7 +79,6 @@ export function StudentClassesDashboard() {
     }
   }
 
-  if (loading) return <div className="text-center py-8">Loading your classes...</div>
   if (error) return <div className="text-red-500 py-8">{error}</div>
   if (classes.length === 0) return <div className="text-center py-8 text-muted-foreground">No classes assigned yet</div>
 

@@ -184,10 +184,6 @@ export function TerminalReport({ studentId }: TerminalReportProps) {
     }
   }
 
-  if (loading) {
-    return <div className="text-center py-4">Loading terminal reports...</div>
-  }
-
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -346,12 +342,6 @@ export function TerminalReport({ studentId }: TerminalReportProps) {
                     ))}
                   </SelectContent>
                 </Select>
-                {studentsLoading && (
-                  <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                    <span>Loading students for selected class...</span>
-                  </div>
-                )}
               </div>
             )}
             <div>

@@ -12,7 +12,6 @@ import {
   CheckCircle2,
   CircleOff 
 } from "lucide-react"
-import { CircularLoader } from "@/components/circular-loader"
 import { cn } from "@/lib/utils"
 
 interface ClassPerformanceData {
@@ -31,16 +30,6 @@ interface TeacherClassStatsProps {
 }
 
 export function TeacherClassStats({ data, loading, className }: TeacherClassStatsProps) {
-  if (loading) {
-    return (
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-24 bg-muted rounded-xl animate-pulse" />
-        ))}
-      </div>
-    )
-  }
-
   if (!data) {
     return (
       <div className="col-span-full text-center py-12 text-muted-foreground">

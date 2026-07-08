@@ -8,7 +8,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { attendanceAPI, academicsAPI } from "@/lib/api"
-import { CircularLoader } from "@/components/circular-loader"
 import {
   LineChart,
   Line,
@@ -146,19 +145,6 @@ export function AttendanceAnalytics() {
     } catch {
       return dateStr
     }
-  }
-
-  if (loading) {
-    return (
-      <Card className="w-full">
-        <CardContent className="flex items-center justify-center py-16">
-          <div className="text-center">
-            <CircularLoader size="lg" />
-            <p className="text-gray-500 mt-4">Loading attendance analytics...</p>
-          </div>
-        </CardContent>
-      </Card>
-    )
   }
 
   if (error) {

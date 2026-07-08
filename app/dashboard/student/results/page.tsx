@@ -42,8 +42,6 @@ export default function ResultsPage() {
     }
   }
 
-  if (loading) return <div className="p-8">Loading...</div>
-
   return (
     <ProtectedRoute allowedRoles={["student"]}>
       <div className="p-8 space-y-6">

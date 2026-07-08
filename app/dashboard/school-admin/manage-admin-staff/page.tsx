@@ -11,7 +11,6 @@ import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Plus, Edit2, Trash2, Search, Shield, AlertCircle } from "lucide-react"
-import { CircularLoader } from "@/components/circular-loader"
 
 
 const ADMIN_ROLES = [
@@ -121,14 +120,6 @@ export default function ManageAdminStaffPage() {
   const filteredStaff = staff.filter((s) =>
     `${s.first_name} ${s.last_name} ${s.email}`.toLowerCase().includes(searchTerm.toLowerCase())
   )
-
-  if (loading) {
-    return (
-      <div className="fixed inset-0 bg-gradient-to-br from-secondary/10 to-secondary/5 flex items-center justify-center z-50">
-        <CircularLoader size="md" />
-      </div>
-    )
-  }
 
   return (
     <div className="p-8 space-y-6">

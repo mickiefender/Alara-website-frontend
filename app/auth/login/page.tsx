@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Eye, EyeOff } from "lucide-react"
 import { useAuthContext } from "@/lib/auth-context"
+import { AlaraLogo } from "@/components/alara-logo"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -49,11 +50,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="flex flex-col items-center text-center space-y-2">
   {/* LOGO */}
-  <img
-    src="/Alara-logo-removebg-preview.png" // put your logo in public folder
-    alt="Logo"
-    className="w-16 h-16 object-contain"
-  />
+  <AlaraLogo width={64} height={64} className="w-16 h-16 object-contain" />
 
   {/* TITLE */}
   <CardTitle className="text-2xl font-bold text-center">

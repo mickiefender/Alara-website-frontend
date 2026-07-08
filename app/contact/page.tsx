@@ -2,7 +2,7 @@
 
 import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
-import { Mail, Phone, MapPin, Clock } from 'lucide-react'
+import { Mail, MessageCircle } from 'lucide-react'
 import { useState } from 'react'
 
 export default function ContactPage() {
@@ -48,31 +48,19 @@ export default function ContactPage() {
         {/* Contact Information Cards */}
         <section className="py-20 md:py-32 bg-background">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid md:grid-cols-4 gap-8 mb-16">
+            <div className="grid sm:grid-cols-2 gap-8 mb-16 max-w-2xl mx-auto">
               {[
                 {
                   icon: Mail,
                   title: 'Email',
-                  content: 'sales@alara.com',
-                  subtext: 'Response within 24 hours',
+                  content: 'hello@alara.school',
+                  subtext: "We read every message personally",
                 },
                 {
-                  icon: Phone,
-                  title: 'Phone',
-                  content: '+1 (555) 123-4567',
-                  subtext: 'Monday - Friday, 9am-5pm',
-                },
-                {
-                  icon: MapPin,
-                  title: 'Address',
-                  content: '123 Tech Boulevard',
-                  subtext: 'San Francisco, CA 94105',
-                },
-                {
-                  icon: Clock,
-                  title: 'Support',
-                  content: '24/7 Availability',
-                  subtext: 'Technical assistance always available',
+                  icon: MessageCircle,
+                  title: 'Message Us',
+                  content: 'Use the form below',
+                  subtext: "We'll route it to the right team",
                 },
               ].map((item, index) => {
                 const Icon = item.icon
@@ -92,7 +80,7 @@ export default function ContactPage() {
         </section>
 
         {/* Contact Form & Support Options */}
-        <section className="py-20 md:py-32 bg-muted">
+        <section id="contact-form" className="py-20 md:py-32 bg-muted">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid md:grid-cols-2 gap-12 mb-16">
               {/* Contact Form */}
@@ -198,38 +186,28 @@ export default function ContactPage() {
                 </form>
               </div>
 
-              {/* Support Options */}
+              {/* What to Expect */}
               <div>
-                <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-8">Support Options</h2>
-                
+                <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-8">What Happens Next</h2>
+
                 <div className="space-y-8">
                   {[
                     {
-                      title: 'Sales Inquiries',
-                      description: 'Interested in Alara for your school? Our sales team responds within 24 hours to discuss your specific needs and provide a customized demo.',
-                      contact: 'sales@alara.com',
-                      time: 'Available: Mon-Fri, 9am-5pm EST',
+                      title: 'Tell us what you need',
+                      description: 'Pick the inquiry type that fits best — sales, support, implementation, or something else — and give us a bit of context.',
                     },
                     {
-                      title: 'Technical Support',
-                      description: 'Need help with your Alara account? Our technical support team is available 24/7 to assist with any issues or questions.',
-                      contact: 'support@alara.com',
-                      time: 'Available: 24/7',
+                      title: 'A real person gets back to you',
+                      description: "There's no ticket queue or bot response. Someone from the team reads every message and replies directly.",
                     },
                     {
-                      title: 'Implementation Services',
-                      description: 'Our implementation specialists will guide your school through the entire onboarding process, ensuring smooth adoption and training.',
-                      contact: 'implementation@alara.com',
-                      time: 'Custom schedule based on your needs',
+                      title: 'We figure out the right next step together',
+                      description: "That might be a walkthrough of Alara, a question answered, or connecting you with the right person on our side.",
                     },
                   ].map((option, index) => (
-                    <div key={index} className="bg-white p-8 rounded-lg border border-border hover:shadow-lg transition">
+                    <div key={index} className="bg-card p-8 rounded-lg border border-border hover:shadow-lg transition">
                       <h3 className="font-bold text-lg text-foreground mb-3">{option.title}</h3>
-                      <p className="text-muted-foreground mb-4">{option.description}</p>
-                      <div className="space-y-2">
-                        <p className="text-primary font-semibold">{option.contact}</p>
-                        <p className="text-sm text-muted-foreground">{option.time}</p>
-                      </div>
+                      <p className="text-muted-foreground">{option.description}</p>
                     </div>
                   ))}
                 </div>
@@ -237,25 +215,25 @@ export default function ContactPage() {
             </div>
 
             {/* FAQ Section */}
-            <div className="bg-white p-12 rounded-lg">
+            <div className="bg-card p-12 rounded-lg">
               <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-8">Frequently Asked Questions</h2>
               <div className="grid md:grid-cols-2 gap-8">
                 {[
                   {
                     question: 'How long does implementation take?',
-                    answer: 'Implementation typically takes 2-4 weeks, depending on your school&apos;s size and complexity. Our team will provide a detailed timeline during onboarding.',
+                    answer: "It depends on your school&apos;s size and how much data needs migrating. We'll give you a realistic timeline once we understand your setup.",
                   },
                   {
-                    question: 'Is there a trial period?',
-                    answer: 'Yes, we offer a 14-day free trial so you can experience Alara with your entire team before making a commitment.',
+                    question: 'Is there a self-serve trial?',
+                    answer: "Not yet — reach out and we'll set up a live walkthrough with your team so you can see Alara in action before committing to anything.",
                   },
                   {
                     question: 'What support is included?',
-                    answer: 'All plans include 24/7 technical support, comprehensive training, and access to our knowledge base and community forums.',
+                    answer: "Ongoing support and onboarding help are included as we work with your school to get set up and answer questions along the way.",
                   },
                   {
                     question: 'Can I upgrade my plan later?',
-                    answer: 'Absolutely! You can upgrade your plan at any time to access more features and functionality as your school grows.',
+                    answer: "Yes — as your school grows, get in touch and we'll help you move to a plan that fits your needs.",
                   },
                 ].map((faq, index) => (
                   <div key={index}>
@@ -273,11 +251,14 @@ export default function ContactPage() {
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h2 className="text-3xl md:text-5xl font-bold mb-6">Still Have Questions?</h2>
             <p className="text-xl text-primary-foreground/90 mb-8">
-              Our expert team is ready to help you transform your school&apos;s management experience.
+              Reach out and we'll help you figure out if Alara is the right fit for your school.
             </p>
-            <button className="bg-white text-primary px-8 py-3 rounded-lg hover:bg-gray-100 transition font-semibold">
-              Schedule a Consultation
-            </button>
+            <a
+              href="#contact-form"
+              className="inline-block bg-white text-primary px-8 py-3 rounded-lg hover:bg-gray-100 transition font-semibold"
+            >
+              Send us a Message
+            </a>
           </div>
         </section>
       </main>

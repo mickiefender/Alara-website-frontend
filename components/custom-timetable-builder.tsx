@@ -11,7 +11,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Trash2, Plus, Calendar } from "lucide-react"
 import { academicsAPI } from "@/lib/api"
 import { useAuthContext } from "@/lib/auth-context"
-import { CardLoader } from "@/components/circular-loader"
 
 const DAYS_OF_WEEK = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 const TIME_SLOTS = [
@@ -126,20 +125,6 @@ export function CustomTimetableBuilder() {
   }
 
   const filteredTimetables = selectedClass ? timetables.filter((t) => t.class_obj === parseInt(selectedClass)) : timetables
-
-  if (loading) return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Calendar className="w-5 h-5" />
-          School Timetable
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <CardLoader />
-      </CardContent>
-    </Card>
-  )
 
   return (
     <div className="space-y-6">

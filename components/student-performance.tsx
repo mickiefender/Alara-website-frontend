@@ -39,8 +39,6 @@ export function StudentPerformance() {
     return (total / studentGrades.length).toFixed(2)
   }
 
-  if (loading) return <div className="text-center py-4">Loading performance data...</div>
-
   return (
     <Card>
       <CardHeader>

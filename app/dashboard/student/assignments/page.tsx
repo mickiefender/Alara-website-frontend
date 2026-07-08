@@ -9,7 +9,6 @@ import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import AssignmentSubmissionModal from "@/components/AssignmentSubmissionModal"
-import Loader from '@/components/loader'
 import { ClipboardList, ClipboardCheck } from "lucide-react"
 
 interface AssignmentData {
@@ -75,8 +74,6 @@ export default function AssignmentsPage() {
     setIsModalOpen(false)
     fetchAssignments() // Refresh after close
   }
-
-  if (loading) return <div className="p-8 flex items-center justify-center"><Loader /></div>
 
   return (
     <ProtectedRoute allowedRoles={["student"]}>

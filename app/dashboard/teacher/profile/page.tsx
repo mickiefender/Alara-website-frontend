@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Edit2, Save, X } from "lucide-react"
-import Loader from '@/components/loader'
 
 interface TeacherProfile {
   id: number
@@ -109,14 +108,6 @@ export default function TeacherProfilePage() {
       setLoading(false)
     }
   }
-
-  if (loading) {
-  return (
-    <div className="flex items-center justify-center min-h-screen">
-      <Loader size="md" color="#f5c607" />
-    </div>
-  )
-}
 
   return (
     <div className="p-6 max-w-2xl mx-auto">

@@ -5,9 +5,9 @@ import { NAV_LINK_PERMISSIONS } from '@/lib/permissions'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Shield, LayoutDashboard, Users, BookOpen, DollarSign } from 'lucide-react'
+import { CountUp } from '@/components/ui/count-up'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { CircularLoader } from '@/components/circular-loader'
 
 
 
@@ -31,11 +31,9 @@ export default function AdminStaffDashboard() {
     }, 1000)
   }, [])
 
-  if (loading) return <CircularLoader size="lg" />
-
   return (
     <div className="p-6 space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="animate-glass-in flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Welcome back, {user?.first_name}</h1>
           <p className="text-muted-foreground">Manage your administrative tasks efficiently</p>
@@ -55,14 +53,14 @@ export default function AdminStaffDashboard() {
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="stagger grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Pending Tasks</CardTitle>
             <Shield className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.tasks}</div>
+            <div className="text-2xl font-bold tabular-nums"><CountUp value={stats.tasks} /></div>
             <CardDescription>Review and approve pending items</CardDescription>
           </CardContent>
         </Card>
@@ -72,7 +70,7 @@ export default function AdminStaffDashboard() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.notifications}</div>
+            <div className="text-2xl font-bold tabular-nums"><CountUp value={stats.notifications} /></div>
             <CardDescription>New updates and alerts</CardDescription>
           </CardContent>
         </Card>
@@ -82,7 +80,7 @@ export default function AdminStaffDashboard() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.approvals}</div>
+            <div className="text-2xl font-bold tabular-nums"><CountUp value={stats.approvals} /></div>
             <CardDescription>Pending approvals assigned to you</CardDescription>
           </CardContent>
         </Card>
@@ -127,7 +125,7 @@ export default function AdminStaffDashboard() {
           </p>
           <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-2">
             {Object.entries(roleCategoryCounts).map(([category, count]) => (
-              <div key={category} className="text-xs bg-accent p-2 rounded-md text-center">
+              <div key={category} className="text-xs bg-accent/60 backdrop-blur-sm border border-white/30 dark:border-white/10 p-2 rounded-lg text-center transition-transform duration-200 hover:scale-[1.03]">
                 <div className="font-medium">{category}</div>
                 <div className="text-muted-foreground">{count} permissions</div>
               </div>

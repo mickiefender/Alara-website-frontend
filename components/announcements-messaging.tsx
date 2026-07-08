@@ -4,7 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useState, useEffect } from "react"
 import { announcementsAPI } from "@/lib/api"
-import { CardLoader } from "@/components/circular-loader"
 
 interface Announcement {
   id: number
@@ -80,19 +79,6 @@ export function AnnouncementsMessaging() {
       setDeletingId(null);
     }
   };
-
-  if (loading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Announcements & Messaging</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <CardLoader />
-        </CardContent>
-      </Card>
-    )
-  }
 
   return (
     <Card>

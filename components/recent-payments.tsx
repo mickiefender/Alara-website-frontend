@@ -179,11 +179,7 @@ export function RecentPayments() {
         </div>
       )}
 
-      {loading ? (
-        <div className="flex justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
-        </div>
-      ) : payments.length === 0 ? (
+      {payments.length === 0 ? (
         <div className="text-center py-8">
           <div className="w-14 h-14 mx-auto mb-3 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center">
             <Receipt className="w-6 h-6 text-slate-400" />

@@ -8,7 +8,6 @@ import { Label } from '@/components/ui/label'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Shield, Edit, Save, Camera } from 'lucide-react'
 import { useState } from 'react'
-import { CircularLoader } from '@/components/circular-loader'
 import { NAV_LINK_PERMISSIONS } from '@/lib/permissions'
 
 export default function AdminStaffProfile() {
@@ -21,7 +20,7 @@ export default function AdminStaffProfile() {
     phone: '',
   })
 
-  if (!user) return <CircularLoader />
+  if (!user) return null
 
   return (
     <div className="p-6 space-y-6 max-w-2xl mx-auto">

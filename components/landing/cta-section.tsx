@@ -36,7 +36,7 @@ export function CtaSection() {
             asChild
             className="h-12 px-8 text-base bg-white text-[#6366f1] hover:bg-white/90 border-0 rounded-full shadow-xl font-semibold"
           >
-            <Link href="/">
+            <Link href="/contact">
               Start Free Trial <ArrowRight className="ml-1 h-4 w-4" />
             </Link>
           </Button>

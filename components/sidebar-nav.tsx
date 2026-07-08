@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { LogOut } from "lucide-react"
 import { useState, useEffect } from "react"
-import { CircularLoader } from "@/components/circular-loader"
 import Image from "next/image"
 import { academicsAPI } from "@/lib/api"
 import {
@@ -27,8 +26,6 @@ import {
   FileText,
   Bus,
   Home,
-  Megaphone,
-  MessageSquare,
   Library,
   UserCircle,
   BookUser,
@@ -37,6 +34,7 @@ import {
   FilePen,
   UploadCloud,
   MessageCircle,
+  Newspaper,
   DollarSignIcon,
   CreditCard,
   Bell,
@@ -152,9 +150,7 @@ const navSections: Record<string, NavSection[]> = {
       label: "Communication",
       icon: MessageCircle,
       items: [
-        { label: "Announcement", href: "/dashboard/school-admin/announcement", icon: Megaphone },
-        { label: "Message", href: "/dashboard/school-admin/messaging", icon: MessageSquare },
-        { label: "News", href: "/dashboard/school-admin/news", icon: BookOpen },
+        { label: "News", href: "/dashboard/school-admin/news", icon: Newspaper },
       ],
     },
     {
@@ -295,19 +291,7 @@ function SidebarNavContent({ isCollapsed, onClose, isMobile, onToggleCollapse }:
     fetchProfilePic()
   }, [user?.id])
 
-  if (!user || loading) return (
-    <aside className="flex flex-col bg-gradient-to-b from-sidebar via-sidebar backdrop-blur-xl h-screen w-72 border-r border-sidebar-border">
-      <div className="h-16 px-4 border-b border-sidebar-border flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-muted-foreground/20 border-t-muted-foreground rounded-xl animate-spin"></div>
-      </div>
-      <div className="flex-1 p-8 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-sm font-medium text-muted-foreground">Loading navigation...</p>
-        </div>
-      </div>
-    </aside>
-  )
+  if (!user || loading) return null
 
   const sections = navSections[user.role as keyof typeof navSections] || []
 
@@ -364,27 +348,29 @@ function SidebarNavContent({ isCollapsed, onClose, isMobile, onToggleCollapse }:
     setExpandedSections(newExpanded)
   }
 
-  const schoolName = loading ? (
-    <span className="flex items-center gap-2">
-      <CircularLoader size="sm" /> Loading...
-    </span>
-  ) : school?.name || "School Name"
+  const schoolName = school?.name || "School Name"
 
   const schoolLogoUrl = school?.logo_url || school?.logo_url_computed
-  const schoolInitial = loading ? "" : school?.name?.charAt(0) || "S"
+  const schoolInitial = school?.name?.charAt(0) || "S"
 
   return (
-    <aside 
+    <aside
       className={`
-        flex flex-col bg-sidebar 
-        backdrop-blur-xl
+        relative flex flex-col overflow-hidden bg-sidebar/70
+        backdrop-blur-2xl supports-[backdrop-filter]:bg-sidebar/55
+        ring-1 ring-inset ring-black/5
         transition-all duration-300 ease-in-out
         ${isMobile ? "h-[100dvh] w-full shadow-2xl border-r-0" : `h-screen border-r border-sidebar-border ${isCollapsed ? "w-20" : "w-72"}`}
       `}
     >
+      {/* Liquid-glass glow accents */}
+      <div className="pointer-events-none absolute -z-10 -top-24 -left-16 h-64 w-64 rounded-full blur-3xl opacity-80" style={{ backgroundColor: "var(--sidebar-glow-primary)" }} />
+      <div className="pointer-events-none absolute -z-10 bottom-0 -right-20 h-72 w-72 rounded-full blur-3xl opacity-70" style={{ backgroundColor: "var(--sidebar-glow-secondary)" }} />
+      <div className="pointer-events-none absolute -z-10 inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/25 to-transparent" />
+
       {/* Header */}
       <div className={`
-h-16 px-4 flex items-center justify-between
+relative h-16 px-4 flex items-center justify-between
         ${isCollapsed && !isMobile ? "justify-center px-2 gap-0" : "gap-3"}
       `}>
         {isMobile && onClose && (
@@ -405,7 +391,7 @@ h-16 px-4 flex items-center justify-between
             />
           </div>
         ) : (
-          <div className="w-10 h-10 bg-sidebar-primary rounded-xl flex items-center justify-center font-bold text-sidebar-primary-foreground flex-shrink-0 shadow-lg">
+          <div className="w-10 h-10 bg-gradient-to-br from-sidebar-primary to-sidebar-primary/70 ring-1 ring-white/20 rounded-xl flex items-center justify-center font-bold text-sidebar-primary-foreground flex-shrink-0 shadow-lg shadow-sidebar-primary/30">
             {schoolInitial}
           </div>
         )}
@@ -431,7 +417,7 @@ h-16 px-4 flex items-center justify-between
               placeholder="Search menu..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-sidebar-accent/50 border border-sidebar-border rounded-lg pl-9 pr-4 py-2 text-sm text-sidebar-foreground-computed placeholder:text-sidebar-foreground-computed/50 focus:outline-none focus:ring-2 focus:ring-sidebar-ring/50 focus:border-sidebar-ring/50 transition-all"
+              className="w-full bg-black/5 backdrop-blur-sm border border-black/10 rounded-lg pl-9 pr-4 py-2 text-sm text-sidebar-foreground-computed placeholder:text-sidebar-foreground-computed/50 focus:outline-none focus:ring-2 focus:ring-sidebar-ring/50 focus:border-sidebar-ring/50 transition-all"
             />
           </div>
         </div>
@@ -445,7 +431,7 @@ h-16 px-4 flex items-center justify-between
               onClick={() => setShowPermissionsDialog(true)}
               className={`
                 w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200
-                text-sidebar-foreground-computed/70 hover:bg-sidebar-accent hover:text-sidebar-foreground-computed group
+                text-sidebar-foreground-computed/70 hover:bg-black/5 hover:text-sidebar-foreground-computed group
                 ${isCollapsed && !isMobile ? "justify-center" : ""}
               `}
             >
@@ -477,9 +463,9 @@ h-16 px-4 flex items-center justify-between
                 <div
                   className={`
                     group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200
-                    ${isActive 
-                      ? "bg-gradient-to-r from-sidebar-primary/20 to-sidebar-primary/10 text-sidebar-primary border-l-4 border-sidebar-primary -ml-1 pl-4" 
-                      : "text-sidebar-foreground-computed/70 hover:bg-sidebar-accent hover:text-sidebar-foreground-computed"
+                    ${isActive
+                      ? "bg-sidebar-primary/15 backdrop-blur-sm text-sidebar-primary ring-1 ring-sidebar-primary/40 shadow-[0_0_20px_-6px_var(--sidebar-primary)]"
+                      : "text-sidebar-foreground-computed/70 hover:bg-black/5 hover:text-sidebar-foreground-computed"
                     }
                     ${isCollapsed && !isMobile ? "justify-center" : ""}
                   `}
@@ -499,7 +485,7 @@ h-16 px-4 flex items-center justify-between
                 onClick={() => toggleSection(section.label)}
                 className={`
                   w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200
-                  text-sidebar-foreground-computed/70 hover:bg-sidebar-accent hover:text-sidebar-foreground-computed
+                  text-sidebar-foreground-computed/70 hover:bg-black/5 hover:text-sidebar-foreground-computed
                   ${isCollapsed && !isMobile ? "justify-center" : ""}
                 `}
               >
@@ -525,9 +511,9 @@ h-16 px-4 flex items-center justify-between
                         <div
                           className={`
                             group flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-200
-                            ${isItemActive 
-                              ? "bg-sidebar-primary/10 text-sidebar-primary" 
-                              : "text-sidebar-foreground-computed/60 hover:text-sidebar-foreground-computed hover:bg-sidebar-accent/50"
+                            ${isItemActive
+                              ? "bg-sidebar-primary/15 backdrop-blur-sm text-sidebar-primary ring-1 ring-sidebar-primary/30"
+                              : "text-sidebar-foreground-computed/60 hover:text-sidebar-foreground-computed hover:bg-black/5"
                             }
                             ${isCollapsed && !isMobile ? "justify-center" : ""}
                           `}
@@ -591,11 +577,11 @@ h-16 px-4 flex items-center justify-between
       {/* Footer */}
       <div className="p-4 border-t border-sidebar-border">
         
-        <Button 
-          onClick={logout} 
+        <Button
+          onClick={logout}
           className={`
-            w-full bg-sidebar-accent/50 hover:bg-sidebar-primary/10 text-sidebar-foreground-computed hover:text-sidebar-primary-foreground 
-            border border-sidebar-border hover:border-sidebar-primary/50 font-semibold transition-all duration-200
+            w-full bg-black/5 backdrop-blur-sm hover:bg-primary/15 text-sidebar-foreground-computed hover:text-primary
+            border border-black/10 hover:border-sidebar-primary/50 font-semibold transition-all duration-200
             ${isCollapsed && !isMobile ? "px-2" : ""}
           `}
           variant="ghost"

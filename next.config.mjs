@@ -13,6 +13,10 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
 
+  compiler: {
+    styledComponents: true,
+  },
+
   images: {
     remotePatterns: [
       {
@@ -24,6 +28,16 @@ const nextConfig = {
         hostname: "supabase.co",
       },
     ],
+  },
+
+  async redirects() {
+    return [
+      {
+        source: "/career",
+        destination: "/careers",
+        permanent: true,
+      },
+    ]
   },
 }
 

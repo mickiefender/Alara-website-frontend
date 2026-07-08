@@ -28,7 +28,6 @@ import {
 } from "lucide-react"
 import { academicsAPI, usersAPI } from "@/lib/api"
 import { useAuthContext } from "@/lib/auth-context"
-import { CardLoader } from "@/components/circular-loader"
 import html2pdf from "html2pdf.js"
 
 // Days configuration
@@ -471,22 +470,6 @@ export function ModernTimetable() {
     } finally {
       setDownloadLoading(false)
     }
-  }
-
-  if (loading) {
-    return (
-      <Card className="border-0 shadow-lg">
-      <CardHeader className="bg-secondary text-white rounded-t-lg">
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="w-5 h-5" />
-            Timetable Management
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-6">
-          <CardLoader />
-        </CardContent>
-      </Card>
-    )
   }
 
   return (

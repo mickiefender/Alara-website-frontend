@@ -146,10 +146,6 @@ export function GradingSystem({ showTerminalReportLink = true }: GradingSystemPr
     }
   }
 
-  if (loading) {
-    return <div className="text-center py-4">Loading grading system...</div>
-  }
-
   return (
     <Card>
       <CardHeader>

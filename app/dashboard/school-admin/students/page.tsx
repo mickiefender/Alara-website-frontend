@@ -202,46 +202,6 @@ const [formData, setFormData] = useState({
 
   const activeCount = students.filter((s) => s.is_active !== false).length
 
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        {/* Skeleton Header */}
-        <div className="flex justify-between items-center">
-          <div className="space-y-2">
-            <div className="h-8 w-48 bg-muted animate-pulse rounded-lg" />
-            <div className="h-4 w-64 bg-muted animate-pulse rounded" />
-          </div>
-          <div className="h-10 w-36 bg-muted animate-pulse rounded-lg" />
-        </div>
-        {/* Skeleton Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="bg-card border border-border rounded-xl p-5 animate-pulse">
-              <div className="h-4 w-24 bg-muted rounded mb-2" />
-              <div className="h-8 w-16 bg-muted rounded" />
-            </div>
-          ))}
-        </div>
-        {/* Skeleton Table */}
-        <div className="bg-card border border-border rounded-xl overflow-hidden">
-          <div className="h-12 bg-muted/30 border-b border-border" />
-          {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="flex items-center gap-4 px-6 py-4 border-b border-border">
-              <div className="w-10 h-10 bg-muted animate-pulse rounded-full" />
-              <div className="flex-1 space-y-2">
-                <div className="h-4 w-40 bg-muted animate-pulse rounded" />
-                <div className="h-3 w-32 bg-muted animate-pulse rounded" />
-              </div>
-              <div className="h-4 w-20 bg-muted animate-pulse rounded" />
-              <div className="h-4 w-24 bg-muted animate-pulse rounded" />
-              <div className="h-4 w-24 bg-muted animate-pulse rounded" />
-            </div>
-          ))}
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="space-y-6">
       {/* ── Page Header ── */}
@@ -739,14 +699,7 @@ const [formData, setFormData] = useState({
 
 export default function StudentsPage() {
   return (
-    <Suspense fallback={
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="flex flex-col items-center gap-3 text-muted-foreground">
-          <div className="w-10 h-10 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-          <p className="text-sm font-medium">Loading students…</p>
-        </div>
-      </div>
-    }>
+    <Suspense fallback={null}>
       <StudentsPageContent />
     </Suspense>
   )
