@@ -1,0 +1,26 @@
+{
+  "name": "Alara - Professional School Management Software",
+  "short_name": "Alara",
+  "description": "Multi-tenant SaaS for school attendance, fees, performance analytics, AI question generation, and more.",
+  "theme_color": "#EC4899",
+  "background_color": "#0F0F23",
+  "display": "standalone",
+  "start_url": "/",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "icon-32x32.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "apple-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}

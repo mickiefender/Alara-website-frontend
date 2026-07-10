@@ -1,0 +1,695 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { CountUp } from "@/components/ui/count-up"
+import { Button } from "@/components/ui/button"
+import { academicsAPI, authAPI, assignmentAPI, billingAPI, gradesAPI, attendanceAPI, usersAPI } from "@/lib/api"
+import { BookOpen, DollarSign, Calendar, FileText, Edit2, Download, Share2, ClipboardList, UserCheck } from "lucide-react"
+import Image from "next/image"
+import { ProfileAvatar } from "@/components/profile-avatar"
+import { NoticeBoard } from "@/components/notice-board"
+import AssignmentSubmissionModal from "@/components/AssignmentSubmissionModal"
+import { UpcomingExams } from "@/components/upcoming-exams"
+import React from "react"
+
+interface DashboardData {
+  upcomingExams: any[]
+  dueFees: number
+  events: any[]
+  documents: any[]
+  userProfile: any
+  examResults: any[]
+  schoolFees: any[]
+  assignments: any[]
+  grades: any[]
+}
+
+export default function StudentDashboard() {
+  const [data, setData] = useState<DashboardData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [profilePic, setProfilePic] = useState<string>("")
+  const [studentProfile, setStudentProfile] = useState<any>(null)
+  const [studentClass, setStudentClass] = useState<any>(null)
+  const [assignments, setAssignments] = useState<any[]>([])
+  const [grades, setGrades] = useState<any[]>([])
+  const [attendance, setAttendance] = useState<any>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [selectedAssignment, setSelectedAssignment] = useState<any>(null)
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        const [user, exams, fees, events, documents, results, assignmentsRes, gradesRes] = await Promise.all([
+          authAPI.me(),
+          academicsAPI.exams(),
+          billingAPI.myFees(),
+          academicsAPI.events(),
+          academicsAPI.documents(),
+          academicsAPI.examResults(),
+          assignmentAPI.list(),
+          gradesAPI.list(),
+        ])
+
+        // Get upcoming exams
+        const upcomingExams = (exams.data.results || exams.data || []).filter((exam: any) => new Date(exam.exam_date) > new Date())
+
+        // Calculate due fees
+        const rawFees = fees.data.results || fees.data || []
+        const enrichedFees = (Array.isArray(rawFees) ? rawFees : []).map((fee: any) => {
+          const paidKey = `fee_paid_${fee.id}`
+          const storedPaid = typeof window !== "undefined" ? Number(localStorage.getItem(paidKey) || 0) : 0
+          const totalAmount = Number(fee.amount)
+          const amountPaid = fee.amount_paid ? Number(fee.amount_paid) : storedPaid
+          const balance = totalAmount - amountPaid
+          return {
+            ...fee,
+            amount_paid: amountPaid,
+            balance: balance > 0 ? balance : 0,
+            paid: fee.paid || balance <= 0,
+          }
+        })
+
+        const dueFees = enrichedFees
+          .filter((fee: any) => !fee.paid)
+          .reduce((sum: number, fee: any) => sum + (fee.balance > 0 ? fee.balance : Number(fee.amount)), 0)
+
+        const allEvents = events.data.results || events.data || []
+        const allDocuments = documents.data.results || documents.data || []
+        const allResults = (results.data.results || results.data || []).slice(0, 6)
+        const allAssignments = assignmentsRes.data.results || assignmentsRes.data || []
+        const allGrades = gradesRes.data.results || gradesRes.data || []
+        
+        setAssignments(allAssignments)
+        setGrades(allGrades)
+
+        setData({
+          upcomingExams,
+          dueFees,
+          events: allEvents,
+          documents: allDocuments,
+          userProfile: user.data,
+          examResults: allResults,
+          schoolFees: enrichedFees,
+          assignments: allAssignments,
+          grades: allGrades,
+        })
+      
+        // Fetch profile picture
+        try {
+          const picRes = await academicsAPI.profilePictures()
+          if (picRes.data.results?.length > 0) {
+            setProfilePic(picRes.data.results[0].display_url || picRes.data.results[0].storage_url || picRes.data.results[0].picture || "")
+          }
+        } catch (err) {
+          if (process.env.NODE_ENV === 'development') { console.log("No profile picture yet") }
+        }
+
+        // Fetch full student profile data
+        try {
+          const studentsRes = await usersAPI.students()
+          const allStudents = studentsRes.data.results || studentsRes.data || []
+          const userId = user.data.id
+          const myProfile = allStudents.find((s: any) => 
+            s.user === userId || s.user?.id === userId || s.user_data?.id === userId || s.id === userId
+          )
+          if (myProfile) {
+            setStudentProfile(myProfile)
+          }
+        } catch (err) {
+          if (process.env.NODE_ENV === 'development') { console.log("Could not fetch student profile details") }
+        }
+
+        // Fetch student class enrollment
+        try {
+          const classesRes = await academicsAPI.studentClasses()
+          const allEnrollments = classesRes.data.results || classesRes.data || []
+          const userId = user.data.id
+          const myClass = allEnrollments.find((e: any) => 
+            e.student === userId || e.student?.id === userId || e.student_data?.id === userId
+          )
+          if (myClass) {
+            setStudentClass(myClass)
+          }
+        } catch (err) {
+          if (process.env.NODE_ENV === 'development') { console.log("Could not fetch class enrollment data") }
+        }
+
+        // Fetch attendance data
+        try {
+          const userId = user.data.id
+          if (userId) {
+            if (process.env.NODE_ENV === 'development') { console.log("Fetching attendance for user:", userId) }
+            const attendanceRes = await attendanceAPI.studentReport(userId)
+            if (process.env.NODE_ENV === 'development') { console.log("Attendance response:", attendanceRes.data) }
+            setAttendance(attendanceRes.data)
+          }
+        } catch (err: any) {
+          if (process.env.NODE_ENV === 'development') { console.log("No attendance data yet or error:", err?.response?.data || err.message) }
+        }
+      } catch (err) {
+        console.error("Error fetching dashboard data:", err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchDashboardData()
+    const interval = setInterval(fetchDashboardData, 30000) // Refresh every 30 seconds
+    return () => clearInterval(interval)
+  }, [])
+
+  // Get unique subjects from grades for filtering
+  const subjectGrades = grades.reduce((acc: any, grade: any) => {
+    const subject = grade.subject_name || grade.subject
+    if (!acc[subject]) {
+      acc[subject] = []
+    }
+    acc[subject].push(grade)
+    return acc
+  }, {})
+
+  const getGradeColor = (grade: string) => {
+    switch (grade) {
+      case "A": return "bg-green-100 text-green-800"
+      case "B": return "bg-blue-100 text-blue-800"
+      case "C": return "bg-yellow-100 text-yellow-800"
+      case "D": return "bg-orange-100 text-orange-800"
+      case "E": return "bg-pink-100 text-pink-800"
+      case "F": return "bg-red-100 text-red-800"
+      default: return "bg-gray-100 text-gray-800"
+    }
+  }
+
+  // Calculate GPA from grades
+  const calculateGPA = () => {
+    if (grades.length === 0) return "0.0"
+    const totalPercentage = grades.reduce((sum: number, g: any) => sum + (g.percentage || 0), 0)
+    const avgPercentage = totalPercentage / grades.length
+    return ((avgPercentage / 100) * 4.0).toFixed(2)
+  }
+
+  const handleOpenModal = (assignment: any) => {
+    setSelectedAssignment(assignment)
+    setIsModalOpen(true)
+  }
+
+  const handleCloseModal = () => {
+    setSelectedAssignment(null)
+    setIsModalOpen(false)
+  }
+
+  const cards: { title: string; count: string | number; icon: React.ElementType; chipBg: string; iconColor: string }[] = [
+    {
+      title: "Upcoming Exams",
+      count: data?.upcomingExams?.length || 0,
+      icon: BookOpen,
+      chipBg: "bg-secondary/15 dark:bg-secondary/25",
+      iconColor: "text-secondary dark:text-secondary-foreground",
+    },
+    {
+      title: "Due Fees",
+      count: `¢${(data?.dueFees || 0).toFixed(2)}`,
+      icon: DollarSign,
+      chipBg: "bg-red-500/15 dark:bg-red-400/15",
+      iconColor: "text-red-600 dark:text-red-400",
+    },
+    {
+      title: "Attendance",
+      count: `${attendance?.presence_percentage?.toFixed(1) || 0}%`,
+      icon: UserCheck,
+      chipBg: "bg-blue-500/15 dark:bg-blue-400/15",
+      iconColor: "text-blue-600 dark:text-blue-400",
+    },
+    {
+      title: "Assignments",
+      count: assignments.length,
+      icon: ClipboardList,
+      chipBg: "bg-purple-500/15 dark:bg-purple-400/15",
+      iconColor: "text-purple-600 dark:text-purple-400",
+    },
+    {
+      title: "Documents",
+      count: data?.documents?.length || 0,
+      icon: FileText,
+      chipBg: "bg-amber-500/15 dark:bg-amber-400/15",
+      iconColor: "text-amber-600 dark:text-amber-400",
+    },
+  ]
+
+  return (
+    <div className="min-h-screen">
+      <div className="w-full max-w-[1600px] mx-auto p-3 sm:p-4 md:p-6 lg:p-8 space-y-6 md:space-y-8">
+      {/* Header */}
+      <div className="glass-card animate-glass-in p-4 sm:p-6 md:p-8">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-foreground">
+          {data?.userProfile ?
+            `Welcome back, ${data.userProfile.first_name || ''} ${data.userProfile.last_name || ''}`.trim() || 'Welcome, Student!'
+            : 'Welcome to Student Dashboard'}
+        </h1>
+        <p className="text-sm sm:text-base text-muted-foreground mt-2">Student Dashboard</p>
+      </div>
+
+      {/* Summary Cards */}
+      <div className="stagger grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3 sm:gap-4">
+        {cards.map((card, index) => {
+          const Icon = card.icon
+          return (
+            <div key={index} className="glass-card glass-hover p-4 sm:p-5">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{card.title}</p>
+                  <p className="text-2xl sm:text-3xl font-bold tracking-tight mt-2 tabular-nums">
+                    {typeof card.count === "number" ? <CountUp value={card.count} /> : card.count}
+                  </p>
+                </div>
+                <div className={`shrink-0 w-12 h-12 rounded-2xl ${card.chipBg} border border-white/30 dark:border-white/10 flex items-center justify-center`}>
+                  <Icon className={`w-6 h-6 ${card.iconColor}`} />
+                </div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 md:gap-6">
+        {/* My Information Section */}
+        <div className="xl:col-span-2">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>My Information</CardTitle>
+                <CardDescription>Your personal and academic details</CardDescription>
+              </div>
+              
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6">
+                {/* Profile Picture */}
+                <div className="flex flex-col items-center gap-3">
+                  <ProfileAvatar 
+                    src={profilePic || undefined}
+                    alt={`${data?.userProfile?.first_name || ''} ${data?.userProfile?.last_name || ''}`.trim() || 'Student'}
+                    size="xl"
+                  />
+                  <div className="text-center">
+                    <p className="font-semibold">{data?.userProfile?.first_name} {data?.userProfile?.last_name}</p>
+                    <p className="text-xs text-gray-500">ID: {studentProfile?.student_id || data?.userProfile?.student_id || data?.userProfile?.username || "-"}</p>
+                  </div>
+                </div>
+
+                {/* Student Information */}
+                <div className="md:col-span-2 space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-muted-foreground text-sm">Name :</p>
+                      <p className="font-semibold">{data?.userProfile?.first_name} {data?.userProfile?.last_name}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground text-sm">Gender :</p>
+                      <p className="font-semibold">{studentProfile?.gender || data?.userProfile?.gender || "-"}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground text-sm">Father Name :</p>
+                      <p className="font-semibold">{studentProfile?.father_name || data?.userProfile?.father_name || "-"}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground text-sm">Mother Name :</p>
+                      <p className="font-semibold">{studentProfile?.mother_name || data?.userProfile?.mother_name || "-"}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground text-sm">Date Of Birth :</p>
+                      <p className="font-semibold">
+                        {studentProfile?.date_of_birth || data?.userProfile?.date_of_birth
+                          ? new Date(studentProfile?.date_of_birth || data?.userProfile?.date_of_birth).toLocaleDateString()
+                          : "-"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground text-sm">Religion :</p>
+                      <p className="font-semibold">{studentProfile?.religion || data?.userProfile?.religion || "-"}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground text-sm">E-mail :</p>
+                      <p className="font-semibold text-sm">{data?.userProfile?.email}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground text-sm">Class :</p>
+                      <p className="font-semibold">{studentClass?.class_name || studentClass?.class_obj_name || studentProfile?.class_name || "-"}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground text-sm">Roll :</p>
+                      <p className="font-semibold">{studentClass?.roll_number || studentProfile?.roll_number || studentProfile?.student_id || "-"}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground text-sm">Section :</p>
+                      <p className="font-semibold">{studentClass?.section || studentProfile?.section || "-"}</p>
+                    </div>
+                    <div className="sm:col-span-2">
+                      <p className="text-muted-foreground text-sm">Address :</p>
+                      <p className="font-semibold">{studentProfile?.address || data?.userProfile?.address || "-"}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground text-sm">Phone :</p>
+                      <p className="font-semibold">{data?.userProfile?.phone || studentProfile?.phone || "-"}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground text-sm">Student ID :</p>
+                      <p className="font-semibold">{studentProfile?.student_id || data?.userProfile?.student_id || "-"}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Notice Board */}
+        <NoticeBoard />
+      </div>
+
+      {/* UPCOMING EXAMS SECTION - NEW */}
+      {data?.upcomingExams && data.upcomingExams.length > 0 && (
+        <UpcomingExams exams={data.upcomingExams} />
+      )}
+
+      {/* My Attendance Section */}
+      {attendance && attendance.total_days > 0 && (
+        <Card className="mt-6">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <UserCheck className="w-5 h-5 text-secondary" />
+                  My Attendance
+                </CardTitle>
+                <CardDescription>Your attendance record and statistics</CardDescription>
+              </div>
+              <div className="text-right">
+                <p className="text-sm text-gray-500">Presence</p>
+                <p className={`text-2xl font-bold ${(attendance.presence_percentage || 0) >= 75 ? 'text-green-600' : (attendance.presence_percentage || 0) >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
+                  {(attendance.presence_percentage || 0).toFixed(1)}%
+                </p>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              {/* Circular Progress and Stats */}
+              <div className="flex flex-col lg:flex-row items-center gap-6 lg:gap-8">
+                {/* Circular Progress */}
+                <div className="relative w-32 h-32 flex-shrink-0">
+                  <svg className="w-32 h-32 transform -rotate-90">
+                    <circle
+                      cx="64"
+                      cy="64"
+                      r="56"
+                      stroke="currentColor"
+                      strokeWidth="10"
+                      fill="none"
+                      className="text-muted"
+                    />
+                    <circle
+                      cx="64"
+                      cy="64"
+                      r="56"
+                      stroke="currentColor"
+                      strokeWidth="10"
+                      fill="none"
+                      strokeDasharray={351.86}
+                      strokeDashoffset={351.86 - (351.86 * (attendance.presence_percentage || 0)) / 100}
+                      className={`${(attendance.presence_percentage || 0) >= 75 ? 'text-green-500' : (attendance.presence_percentage || 0) >= 50 ? 'text-yellow-500' : 'text-red-500'} transition-all duration-1000`}
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className={`text-2xl font-bold ${(attendance.presence_percentage || 0) >= 75 ? 'text-green-600' : (attendance.presence_percentage || 0) >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
+                      {(attendance.presence_percentage || 0).toFixed(0)}%
+                    </span>
+                  </div>
+                </div>
+
+                {/* Stats Cards */}
+                <div className="stagger grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 flex-1 w-full">
+                  <div className="bg-blue-500/10 dark:bg-blue-400/10 border border-white/30 dark:border-white/10 backdrop-blur-sm rounded-xl p-4 text-center transition-transform duration-200 hover:scale-[1.03]">
+                    <p className="text-2xl font-bold text-blue-700 dark:text-blue-400 tabular-nums"><CountUp value={attendance.total_days || 0} /></p>
+                    <p className="text-xs text-blue-600 dark:text-blue-500">Total Days</p>
+                  </div>
+                  <div className="bg-green-500/10 dark:bg-green-400/10 border border-white/30 dark:border-white/10 backdrop-blur-sm rounded-xl p-4 text-center transition-transform duration-200 hover:scale-[1.03]">
+                    <p className="text-2xl font-bold text-green-700 dark:text-green-400 tabular-nums"><CountUp value={attendance.present_days || 0} /></p>
+                    <p className="text-xs text-green-600 dark:text-green-500">Present</p>
+                  </div>
+                  <div className="bg-red-500/10 dark:bg-red-400/10 border border-white/30 dark:border-white/10 backdrop-blur-sm rounded-xl p-4 text-center transition-transform duration-200 hover:scale-[1.03]">
+                    <p className="text-2xl font-bold text-red-700 dark:text-red-400 tabular-nums"><CountUp value={attendance.absent_days || 0} /></p>
+                    <p className="text-xs text-red-600 dark:text-red-500">Absent</p>
+                  </div>
+                  <div className="bg-amber-500/10 dark:bg-amber-400/10 border border-white/30 dark:border-white/10 backdrop-blur-sm rounded-xl p-4 text-center transition-transform duration-200 hover:scale-[1.03]">
+                    <p className="text-2xl font-bold text-amber-700 dark:text-amber-400 tabular-nums"><CountUp value={attendance.late_days || 0} /></p>
+                    <p className="text-xs text-amber-600 dark:text-amber-500">Late</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Recent Attendance Records */}
+              {attendance.records && attendance.records.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-900 mb-3">Recent Attendance Records</h3>
+                  <div className="overflow-x-auto max-h-64 rounded-lg border border-gray-100">
+                    <table className="w-full text-sm">
+                      <thead className="bg-muted/40 backdrop-blur-sm sticky top-0">
+                        <tr>
+                          <th className="px-3 py-2 text-left font-medium text-gray-600">Date</th>
+                          <th className="px-3 py-2 text-left font-medium text-gray-600">Subject</th>
+                          <th className="px-3 py-2 text-left font-medium text-gray-600">Class</th>
+                          <th className="px-3 py-2 text-left font-medium text-gray-600">Teacher</th>
+                          <th className="px-3 py-2 text-center font-medium text-gray-600">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {attendance.records.slice(0, 10).map((record: any, idx: number) => (
+                          <tr key={idx} className="hover:bg-primary/[0.04] dark:hover:bg-primary/[0.07] transition-colors">
+                            <td className="px-3 py-2">{record.date}</td>
+                            <td className="px-3 py-2">{record.subject_name || 'N/A'}</td>
+                            <td className="px-3 py-2">{record.class_name || 'N/A'}</td>
+                            <td className="px-3 py-2">{record.teacher_name || 'N/A'}</td>
+                            <td className="px-3 py-2 text-center">
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+                                ${record.status === 'present' ? 'bg-green-100 text-green-800' : 
+                                  record.status === 'absent' ? 'bg-red-100 text-red-800' : 
+                                  record.status === 'late' ? 'bg-yellow-100 text-yellow-800' : 
+                                  'bg-gray-100 text-gray-800'}`}>
+                                {record.status?.charAt(0).toUpperCase() + record.status?.slice(1)}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* My Assignments Section */}
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle>My Assignments</CardTitle>
+          <CardDescription>All your assignments are listed here.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3 sm:space-y-4">
+            {assignments.map((assignment) => (
+              <div key={assignment.id} className="border p-4 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <h3 className="font-semibold text-sm sm:text-base break-words">{assignment.title}</h3>
+                  <p className="text-sm text-gray-500">
+                    {assignment.subject_name} - Due: {new Date(assignment.due_date).toLocaleDateString()}
+                  </p>
+                </div>
+                <Button className="w-full sm:w-auto" onClick={() => handleOpenModal(assignment)}>Submit</Button>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* My Grades Section */}
+      <Card className="mt-6">
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <div>
+              <CardTitle>My Grades</CardTitle>
+              <CardDescription>All your grades and performance</CardDescription>
+            </div>
+            <div className="text-right">
+              <p className="text-sm text-gray-500">GPA</p>
+              <p className="text-2xl font-bold text-blue-600">{calculateGPA()}</p>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {grades.length === 0 ? (
+            <p className="text-center text-gray-500 py-4">No grades found</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-3 px-4 font-semibold">Subject</th>
+                    <th className="text-left py-3 px-4 font-semibold">Assessment Type</th>
+                    <th className="text-left py-3 px-4 font-semibold">Score</th>
+                    <th className="text-left py-3 px-4 font-semibold">Percentage</th>
+                    <th className="text-left py-3 px-4 font-semibold">Grade</th>
+                    <th className="text-left py-3 px-4 font-semibold">Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {grades.map((grade: any, index: number) => (
+                    <tr key={index} className="border-b hover:bg-primary/[0.04] dark:hover:bg-primary/[0.07] transition-colors">
+                      <td className="py-3 px-4 font-medium">{grade.subject_name || grade.subject}</td>
+                      <td className="py-3 px-4 capitalize">{grade.assessment_type}</td>
+                      <td className="py-3 px-4">{grade.score}/{grade.max_score}</td>
+                      <td className="py-3 px-4">{grade.percentage?.toFixed(1) || 0}%</td>
+                      <td className="py-3 px-4">
+                        <span className={`px-2 py-1 rounded ${getGradeColor(grade.grade)}`}>
+                          {grade.grade}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4">{new Date(grade.recorded_date).toLocaleDateString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      
+
+      {/* My Fees Section */}
+      <Card className="mt-6">
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <DollarSign className="w-5 h-5 text-secondary" />
+                My Fees & Expenses
+              </CardTitle>
+              <CardDescription>Your fee status and payment history</CardDescription>
+            </div>
+            <Button className="bg-secondary w-full sm:w-auto">Download Statement</Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-6">
+            {/* Fee Summary Stats */}
+            <div className="stagger grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-red-500/10 dark:bg-red-400/10 backdrop-blur-sm p-4 rounded-xl border border-red-500/25">
+                <p className="text-sm text-muted-foreground">Total Due</p>
+                <p className="text-2xl font-bold text-red-600 dark:text-red-400 tabular-nums">
+                  ¢
+                  {(
+                    (data?.schoolFees || [])
+                      .reduce((sum: number, f: any) => sum + (f.paid ? 0 : (f.balance > 0 ? f.balance : Number(f.amount))), 0)
+                  ).toFixed(2)}
+                </p>
+              </div>
+              <div className="bg-green-500/10 dark:bg-green-400/10 backdrop-blur-sm p-4 rounded-xl border border-green-500/25">
+                <p className="text-sm text-muted-foreground">Total Paid</p>
+                <p className="text-2xl font-bold text-green-600 dark:text-green-400 tabular-nums">
+                  ¢
+                  {(
+                    (data?.schoolFees || [])
+                      .reduce((sum: number, f: any) => sum + (f.amount_paid || 0), 0)
+                  ).toFixed(2)}
+                </p>
+              </div>
+              <div className="bg-blue-500/10 dark:bg-blue-400/10 backdrop-blur-sm p-4 rounded-xl border border-blue-500/25">
+                <p className="text-sm text-muted-foreground">Total Charged</p>
+                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400 tabular-nums">
+                  ¢
+                  {(
+                    (data?.schoolFees || [])
+                      .reduce((sum: number, f: any) => sum + (parseFloat(f.amount) || 0), 0)
+                  ).toFixed(2)}
+                </p>
+              </div>
+            </div>
+
+            {/* Fees Table */}
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-muted/40">
+                    <th className="text-left py-3 px-4 font-semibold">Fee Type</th>
+                    <th className="text-left py-3 px-4 font-semibold">Amount Due</th>
+                    <th className="text-left py-3 px-4 font-semibold">Amount Paid</th>
+                    <th className="text-left py-3 px-4 font-semibold">Balance</th>
+                    <th className="text-left py-3 px-4 font-semibold">Due Date</th>
+                    <th className="text-left py-3 px-4 font-semibold">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data?.schoolFees && data.schoolFees.length > 0 ? (
+                    data.schoolFees.map((fee: any, index: number) => {
+                      const feeAmount = parseFloat(fee.amount) || 0
+                      const amountPaid = fee.amount_paid || 0
+                      const balance = fee.balance > 0 ? fee.balance : feeAmount
+                      const feeStatus = fee.paid ? "paid" : (amountPaid > 0 ? "partial" : "pending")
+                      const statusColor = fee.paid
+                        ? "bg-green-100 text-green-800"
+                        : (amountPaid > 0 ? "bg-yellow-100 text-yellow-800" : "bg-gray-100 text-gray-800")
+
+                      return (
+                        <tr key={index} className="border-b hover:bg-primary/[0.04] dark:hover:bg-primary/[0.07] transition-colors">
+                          <td className="py-3 px-4 font-medium">{fee.fee_name}</td>
+                          <td className="py-3 px-4">¢{feeAmount.toFixed(2)}</td>
+                          <td className="py-3 px-4 text-green-600 font-medium">¢{amountPaid.toFixed(2)}</td>
+                          <td className="py-3 px-4 font-medium">¢{balance.toFixed(2)}</td>
+                          <td className="py-3 px-4">{new Date(fee.due_date).toLocaleDateString()}</td>
+                          <td className="py-3 px-4">
+                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${statusColor}`}>
+                              {feeStatus.charAt(0).toUpperCase() + feeStatus.slice(1)}
+                            </span>
+                          </td>
+                        </tr>
+                      )
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan={6} className="py-8 text-center text-gray-500">
+                        No fees found
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Payment Methods Info */}
+            <div className="bg-blue-500/10 dark:bg-blue-400/10 backdrop-blur-sm border border-blue-500/25 rounded-xl p-4">
+              <p className="text-sm font-semibold text-blue-900 dark:text-blue-300">Need to Pay?</p>
+              <p className="text-sm text-blue-800 dark:text-blue-400 mt-1">
+                Contact your school admin or visit the payment portal to pay your outstanding fees online.
+              </p>
+              <Button className="mt-3 bg-secondary hover:bg-primary w-full sm:w-auto">Go to Payment Portal</Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {selectedAssignment && (
+        <AssignmentSubmissionModal
+          assignment={selectedAssignment}
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+        />
+      )}
+      </div>
+    </div>
+  )
+}

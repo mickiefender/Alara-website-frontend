@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Alara</string>
+    <string name="title_activity_main">Alara</string>
+    <string name="package_name">com.vertexblueprinttech.alara</string>
+    <string name="custom_url_scheme">com.vertexblueprinttech.alara</string>
+</resources>
