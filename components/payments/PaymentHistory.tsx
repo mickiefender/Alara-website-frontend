@@ -3,7 +3,16 @@
 import { useState, useEffect } from "react"
 import { PaymentRecord } from "@/types/payment"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Download } from "lucide-react"
 import { billingAPI } from "@/lib/api"
+import { exportToCSV, exportToExcel } from "@/lib/export-utils"
 
 interface PaymentHistoryProps {
   studentId?: string
@@ -140,6 +149,38 @@ export default function PaymentHistory({ studentId, schoolId, showStudentColumn 
     }
   }
 
+  const handleExport = async (format: "csv" | "excel") => {
+    if (payments.length === 0) return
+    const headers = [
+      "Date",
+      "Reference",
+      ...(showStudentColumn ? ["Student"] : []),
+      "Fee Type",
+      "Amount (GHS)",
+      "Channel",
+      "Status",
+      "Academic Year",
+      "Term",
+    ]
+    const rows = payments.map((p) => [
+      new Date(p.paid_at || p.created_at).toLocaleDateString(),
+      p.reference || "",
+      ...(showStudentColumn ? [p.student_name || "N/A"] : []),
+      p.fee_type || "",
+      Number(p.amount).toFixed(2),
+      p.payment_channel || "",
+      p.status || "",
+      p.academic_year || "",
+      p.term || "",
+    ])
+    const date = new Date().toISOString().slice(0, 10)
+    if (format === "csv") {
+      exportToCSV(`payment-history-${date}.csv`, headers, rows)
+    } else {
+      await exportToExcel(`payment-history-${date}.xlsx`, "Payment History", headers, rows)
+    }
+  }
+
   const getStatusBadge = (status: string) => {
     const styles: Record<string, string> = {
       success: "bg-green-100 text-green-800",
@@ -162,18 +203,32 @@ export default function PaymentHistory({ studentId, schoolId, showStudentColumn 
   return (
     <Card>
       <CardHeader>
-        <div className="flex justify-between items-center">
+        <div className="flex flex-wrap justify-between items-center gap-2">
           <CardTitle>Payment History</CardTitle>
-          <select
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            className="p-2 border border-gray-300 rounded-md text-sm"
-          >
-            <option value="all">All Payments</option>
-            <option value="success">Successful</option>
-            <option value="pending">Pending</option>
-            <option value="failed">Failed</option>
-          </select>
+          <div className="flex items-center gap-2">
+            <select
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              className="p-2 border border-gray-300 rounded-md text-sm"
+            >
+              <option value="all">All Payments</option>
+              <option value="success">Successful</option>
+              <option value="pending">Pending</option>
+              <option value="failed">Failed</option>
+            </select>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2" disabled={loading || payments.length === 0}>
+                  <Download size={15} />
+                  Export
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleExport("csv")}>Export as CSV</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport("excel")}>Export as Excel</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </CardHeader>
       <CardContent>

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ProtectedRoute } from "@/lib/protected-route"
 import { useAuthContext } from "@/lib/auth-context"
+import { billingAPI } from "@/lib/api"
 import PaymentHistory from "@/components/payments/PaymentHistory"
 
 const formatCurrency = (amount: number): string => {
@@ -21,21 +22,48 @@ export default function SchoolAdminPaymentsPage() {
 
   useEffect(() => {
     fetchRevenue()
-  }, [])
+  }, [user?.school_id])
 
   const fetchRevenue = async () => {
     try {
-      const schoolId = user?.school_id || "default"
-      const res = await fetch(`/api/revenue?school_id=${schoolId}`)
-      const data = await res.json()
-      if (data.status) {
-        setRevenueData({
-          ...data.data,
-          loading: false,
-        })
-      } else {
-        setRevenueData((prev) => ({ ...prev, loading: false }))
+      // Total revenue comes from the backend's real payment records —
+      // the local /api/revenue store is in-memory and resets on restart
+      const [manualRes, onlineRes] = await Promise.all([
+        billingAPI.manualPaymentsBySchool(),
+        billingAPI.onlinePaymentsBySchool(),
+      ])
+      const manual = manualRes.data?.results || manualRes.data || []
+      const online = onlineRes.data?.results || onlineRes.data || []
+
+      const seen = new Set<string>()
+      let totalRevenue = 0
+      for (const p of [...(Array.isArray(manual) ? manual : []), ...(Array.isArray(online) ? online : [])]) {
+        const status = String(p.status || "success").toLowerCase()
+        if (!["success", "successful", "paid", "completed"].includes(status)) continue
+        const key = `${p.reference || p.receipt_number || p.transaction_reference || ""}_${p.id ?? ""}_${p.amount}_${p.paid_at || p.payment_date || p.created_at || ""}`
+        if (seen.has(key)) continue
+        seen.add(key)
+        totalRevenue += Number(p.amount || 0)
       }
+
+      let totalWithdrawn = 0
+      try {
+        const res = await fetch(`/api/withdrawals/history?school_id=${user?.school_id || "default"}`)
+        const data = await res.json()
+        const withdrawals = Array.isArray(data.withdrawals) ? data.withdrawals : []
+        totalWithdrawn = withdrawals
+          .filter((w: any) => !["failed", "rejected", "cancelled"].includes(String(w.status || "").toLowerCase()))
+          .reduce((sum: number, w: any) => sum + Math.abs(Number(w.amount || 0)), 0)
+      } catch {
+        // withdrawals unavailable — show revenue without deductions
+      }
+
+      setRevenueData({
+        total_revenue: totalRevenue,
+        total_withdrawn: totalWithdrawn,
+        available_balance: totalRevenue - totalWithdrawn,
+        loading: false,
+      })
     } catch {
       setRevenueData((prev) => ({ ...prev, loading: false }))
     }

@@ -29,6 +29,13 @@ import {
   AlertCircle,
 } from "lucide-react"
 import { ProfileAvatar } from "@/components/profile-avatar"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { exportToCSV, exportToExcel } from "@/lib/export-utils"
 
 interface Student {
   id: number
@@ -202,8 +209,37 @@ const [formData, setFormData] = useState({
 
   const activeCount = students.filter((s) => s.is_active !== false).length
 
+  const handleExport = async (format: "csv" | "excel") => {
+    const source =
+      selectedIds.size > 0 ? filteredStudents.filter((s) => selectedIds.has(s.id)) : filteredStudents
+    if (source.length === 0) return
+    setExportLoading(true)
+    try {
+      const headers = ["Name", "Email", "Student ID", "Phone", "Address", "Status", "Enrollment Date"]
+      const rows = source.map((s) => [
+        getStudentName(s),
+        getStudentEmail(s),
+        s.student_id || "",
+        s.phone || "",
+        s.address || "",
+        s.is_active !== false ? "Active" : "Inactive",
+        s.enrollment_date ? new Date(s.enrollment_date).toLocaleDateString() : "",
+      ])
+      const date = new Date().toISOString().slice(0, 10)
+      if (format === "csv") {
+        exportToCSV(`students-${date}.csv`, headers, rows)
+      } else {
+        await exportToExcel(`students-${date}.xlsx`, "Students", headers, rows)
+      }
+    } catch {
+      setError("Failed to export student list")
+    } finally {
+      setExportLoading(false)
+    }
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="p-4 md:p-6 space-y-6">
       {/* ── Page Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -222,10 +258,27 @@ const [formData, setFormData] = useState({
         </div>
 
         <div className="flex items-center gap-2 flex-shrink-0">
-          <Button variant="outline" size="sm" className="gap-2 hidden sm:flex">
-            <Download size={15} />
-            Export
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                disabled={exportLoading || filteredStudents.length === 0}
+              >
+                <Download size={15} />
+                {exportLoading
+                  ? "Exporting…"
+                  : selectedIds.size > 0
+                    ? `Export (${selectedIds.size})`
+                    : "Export"}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleExport("csv")}>Export as CSV</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport("excel")}>Export as Excel</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
               <Button
