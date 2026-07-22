@@ -43,6 +43,7 @@ import {
   Shield,
   ClipboardList,
   Sparkles,
+  Megaphone,
 } from "lucide-react"
 
 import { NAV_LINK_PERMISSIONS } from "@/lib/permissions"
@@ -150,6 +151,8 @@ const navSections: Record<string, NavSection[]> = {
       label: "Communication",
       icon: MessageCircle,
       items: [
+        { label: "Announcements", href: "/dashboard/school-admin/announcements", icon: Megaphone },
+        { label: "Notices", href: "/dashboard/school-admin/manage-notices", icon: Bell },
         { label: "News", href: "/dashboard/school-admin/news", icon: Newspaper },
       ],
     },
@@ -356,12 +359,17 @@ function SidebarNavContent({ isCollapsed, onClose, isMobile, onToggleCollapse }:
   return (
     <aside
       className={`
-        relative flex flex-col overflow-hidden bg-sidebar/70
-        backdrop-blur-2xl supports-[backdrop-filter]:bg-sidebar/55
-        ring-1 ring-inset ring-black/5
+        relative flex flex-col overflow-hidden
+        ring-1 ring-inset ring-white/10
         transition-all duration-300 ease-in-out
-        ${isMobile ? "h-[100dvh] w-full shadow-2xl border-r-0" : `h-screen border-r border-sidebar-border ${isCollapsed ? "w-20" : "w-72"}`}
+        ${isMobile ? "h-[100dvh] w-full shadow-2xl border-r-0" : `h-screen border-r border-black/40 ${isCollapsed ? "w-20" : "w-72"}`}
       `}
+      style={{
+        background: "linear-gradient(180deg, #991b1b 0%, #5a0d0d 45%, #1a0404 80%, #000000 100%)",
+        "--sidebar-foreground-computed": "#f8fafc",
+        "--sidebar-primary": "#f87171",
+        "--sidebar-border": "rgba(255, 255, 255, 0.12)",
+      } as React.CSSProperties}
     >
       {/* Liquid-glass glow accents */}
       <div className="pointer-events-none absolute -z-10 -top-24 -left-16 h-64 w-64 rounded-full blur-3xl opacity-80" style={{ backgroundColor: "var(--sidebar-glow-primary)" }} />
@@ -417,7 +425,9 @@ relative h-16 px-4 flex items-center justify-between
               placeholder="Search menu..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-black/5 backdrop-blur-sm border border-black/10 rounded-lg pl-9 pr-4 py-2 text-sm text-sidebar-foreground-computed placeholder:text-sidebar-foreground-computed/50 focus:outline-none focus:ring-2 focus:ring-sidebar-ring/50 focus:border-sidebar-ring/50 transition-all"
+
+              className="w-full bg-white/10 backdrop-blur-sm border border-white/15 rounded-lg pl-9 pr-4 py-2 text-sm text-sidebar-foreground-computed placeholder:text-sidebar-foreground-computed/50 focus:outline-none focus:ring-2 focus:ring-sidebar-ring/50 focus:border-sidebar-ring/50 transition-all"
+
             />
           </div>
         </div>
@@ -431,7 +441,9 @@ relative h-16 px-4 flex items-center justify-between
               onClick={() => setShowPermissionsDialog(true)}
               className={`
                 w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200
-                text-sidebar-foreground-computed/70 hover:bg-black/5 hover:text-sidebar-foreground-computed group
+
+                text-sidebar-foreground-computed/70 hover:bg-white/10 hover:text-sidebar-foreground-computed group
+
                 ${isCollapsed && !isMobile ? "justify-center" : ""}
               `}
             >
@@ -465,7 +477,9 @@ relative h-16 px-4 flex items-center justify-between
                     group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200
                     ${isActive
                       ? "bg-sidebar-primary/15 backdrop-blur-sm text-sidebar-primary ring-1 ring-sidebar-primary/40 shadow-[0_0_20px_-6px_var(--sidebar-primary)]"
-                      : "text-sidebar-foreground-computed/70 hover:bg-black/5 hover:text-sidebar-foreground-computed"
+
+                      : "text-sidebar-foreground-computed/70 hover:bg-white/10 hover:text-sidebar-foreground-computed"
+
                     }
                     ${isCollapsed && !isMobile ? "justify-center" : ""}
                   `}
@@ -485,7 +499,9 @@ relative h-16 px-4 flex items-center justify-between
                 onClick={() => toggleSection(section.label)}
                 className={`
                   w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200
-                  text-sidebar-foreground-computed/70 hover:bg-black/5 hover:text-sidebar-foreground-computed
+
+                  text-sidebar-foreground-computed/70 hover:bg-white/10 hover:text-sidebar-foreground-computed
+
                   ${isCollapsed && !isMobile ? "justify-center" : ""}
                 `}
               >
@@ -513,7 +529,9 @@ relative h-16 px-4 flex items-center justify-between
                             group flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-200
                             ${isItemActive
                               ? "bg-sidebar-primary/15 backdrop-blur-sm text-sidebar-primary ring-1 ring-sidebar-primary/30"
-                              : "text-sidebar-foreground-computed/60 hover:text-sidebar-foreground-computed hover:bg-black/5"
+
+                              : "text-sidebar-foreground-computed/60 hover:text-sidebar-foreground-computed hover:bg-white/10"
+
                             }
                             ${isCollapsed && !isMobile ? "justify-center" : ""}
                           `}
@@ -580,8 +598,10 @@ relative h-16 px-4 flex items-center justify-between
         <Button
           onClick={logout}
           className={`
-            w-full bg-black/5 backdrop-blur-sm hover:bg-primary/15 text-sidebar-foreground-computed hover:text-primary
-            border border-black/10 hover:border-sidebar-primary/50 font-semibold transition-all duration-200
+
+            w-full bg-white/10 backdrop-blur-sm hover:bg-white/15 text-sidebar-foreground-computed hover:text-white
+            border border-white/15 hover:border-sidebar-primary/50 font-semibold transition-all duration-200
+
             ${isCollapsed && !isMobile ? "px-2" : ""}
           `}
           variant="ghost"

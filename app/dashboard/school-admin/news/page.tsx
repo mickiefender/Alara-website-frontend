@@ -1,6 +1,9 @@
 "use client"
 
+
 import { useEffect, useMemo, useState, useCallback } from "react"
+
+
 import { ProtectedRoute } from "@/lib/protected-route"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -8,6 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
+
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
@@ -15,10 +19,12 @@ import { useToast } from "@/hooks/use-toast"
 import { newsAPI } from "@/lib/api"
 import { Search, Plus, Newspaper, ChevronLeft, ChevronRight, CalendarDays, ImagePlus, X, Trash2, Edit3 } from "lucide-react"
 
+
 interface NewsItem {
   id: number
   title: string
   excerpt: string
+
   content?: string
   category: string
   audience: string
@@ -63,6 +69,7 @@ function getImageUrl(item: NewsItem): string {
   if (item.banner_image_url) return item.banner_image_url
   // Deterministic fallback based on id
   return FALLBACK_IMAGES[item.id % FALLBACK_IMAGES.length]
+
 }
 
 export default function SchoolNewsPage() {
@@ -76,12 +83,15 @@ export default function SchoolNewsPage() {
 function SchoolNewsContent() {
   const { toast } = useToast()
 
+
   const [newsItems, setNewsItems] = useState<NewsItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
+
   const [bannerIndex, setBannerIndex] = useState(0)
   const [searchTerm, setSearchTerm] = useState("")
   const [categoryFilter, setCategoryFilter] = useState("all")
   const [isPostOpen, setIsPostOpen] = useState(false)
+
   const [editingItem, setEditingItem] = useState<NewsItem | null>(null)
   const [formData, setFormData] = useState(EMPTY_FORM)
   const [bannerFile, setBannerFile] = useState<File | null>(null)
@@ -126,6 +136,7 @@ function SchoolNewsContent() {
 
   const categories = useMemo(
     () => Array.from(new Set(newsItems.map((n) => n.category).filter(Boolean))).sort(),
+
     [newsItems],
   )
 
@@ -133,11 +144,14 @@ function SchoolNewsContent() {
     return newsItems.filter((item) => {
       const matchesSearch =
         item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+
         (item.excerpt || "").toLowerCase().includes(searchTerm.toLowerCase())
+
       const matchesCategory = categoryFilter === "all" || item.category === categoryFilter
       return matchesSearch && matchesCategory
     })
   }, [newsItems, searchTerm, categoryFilter])
+
 
   const openPostDialog = (item?: NewsItem) => {
     if (item) {
@@ -260,10 +274,12 @@ function SchoolNewsContent() {
         variant: "destructive",
       })
     }
+
   }
 
   return (
     <div className="space-y-6 p-4 md:p-6 lg:p-8">
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -273,10 +289,12 @@ function SchoolNewsContent() {
           </p>
         </div>
         <Button onClick={() => openPostDialog()} size="lg" disabled={isLoading}>
+
           <Plus className="w-5 h-5 mr-2" />
           Post News
         </Button>
       </div>
+
 
       {/* Banner Carousel */}
       {bannerItems.length > 0 && (
@@ -354,6 +372,7 @@ function SchoolNewsContent() {
       )}
 
       {/* Search + Filter */}
+
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
@@ -371,13 +390,16 @@ function SchoolNewsContent() {
           <SelectContent>
             <SelectItem value="all">All Categories</SelectItem>
             {categories.map((cat) => (
+
               <SelectItem key={cat} value={cat}>
                 {cat}
               </SelectItem>
+
             ))}
           </SelectContent>
         </Select>
       </div>
+
 
       {/* News Grid */}
       {isLoading ? (
@@ -394,10 +416,12 @@ function SchoolNewsContent() {
               ? "Post your first news item to get started."
               : "Try adjusting your search or category filter."}
           </p>
+
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {filteredNews.map((item) => (
+
             <Card key={item.id} className="overflow-hidden hover:shadow-lg transition p-0 gap-0">
               <div className="h-40 overflow-hidden relative">
                 <img
@@ -453,11 +477,13 @@ function SchoolNewsContent() {
                     <Trash2 className="w-3.5 h-3.5" />
                   </Button>
                 </div>
+
               </CardContent>
             </Card>
           ))}
         </div>
       )}
+
 
       {/* Create / Edit Dialog */}
       <Dialog open={isPostOpen} onOpenChange={setIsPostOpen}>
@@ -468,6 +494,7 @@ function SchoolNewsContent() {
           <form onSubmit={handleSubmitPost} className="space-y-4">
             <div>
               <Label>Title *</Label>
+
               <Input
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
@@ -482,6 +509,7 @@ function SchoolNewsContent() {
               <Textarea
                 value={formData.excerpt}
                 onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })}
+
                 placeholder="A short summary of the story (shown in cards and banners)"
                 rows={2}
               />
@@ -600,10 +628,12 @@ function SchoolNewsContent() {
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? "Saving..." : editingItem ? "Update" : "Publish"}
               </Button>
+
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
+
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteConfirmId !== null} onOpenChange={() => setDeleteConfirmId(null)}>
@@ -627,6 +657,7 @@ function SchoolNewsContent() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
     </div>
   )
 }

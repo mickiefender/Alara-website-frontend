@@ -19,7 +19,9 @@ yarn-error.log*
 # env files
 .env*
 
+
 .env.local
+
 # vercel
 .vercel
 
@@ -30,8 +32,8 @@ next-env.d.ts
 echo ".DS_Store" >> .gitignore
 git add .gitignore
 
+
 dist/
 
 
 
-*.log
