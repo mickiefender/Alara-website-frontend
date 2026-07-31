@@ -12,11 +12,11 @@ const _geistMono = Geist_Mono({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
   title: {
-    default: "Alara | Professional School Management Software",
+    default: "Alara |Ai Powered School Management Software",
     template: "%s | Alara",
   },
   description:
-    "Alara is the #1 multi-tenant SaaS for schools - seamless attendance, automated fees, AI question generation, live performance analytics, and instant communication. Transform school management today.",
+    "Alara is the #1 multi-tenant Ai Powered SaaS for schools - seamless attendance, automated fees, AI question generation, live performance analytics, and instant communication. Transform school management today.",
   keywords:
     "school management software, school management system, attendance tracking, fee management, education SaaS, student performance, AI education tools",
   authors: [{ name: "Alara Team" }],

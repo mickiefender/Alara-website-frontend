@@ -6,6 +6,7 @@ import { StatsSection } from "@/components/landing/stats-section"
 import { TestimonialsSection } from "@/components/landing/testimonials-section"
 import { CtaSection } from "@/components/landing/cta-section"
 import { Footer } from "@/components/footer"
+import { AppShowcaseTimeline } from "@/components/AppShowcaseTimeline"
 
 export default function Home() {
   return (
@@ -14,7 +15,7 @@ export default function Home() {
       <main>
         <HeroSection />
         <PartnersSection />
-        <FeaturesSection />
+        <AppShowcaseTimeline />
         <StatsSection />
         <TestimonialsSection />
         <CtaSection />
