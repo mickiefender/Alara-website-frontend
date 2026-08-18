@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState, useEffect, Suspense } from "react"
-import { usersAPI } from "@/lib/api"
+import { usersAPI, getErrorMessage } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
@@ -12,6 +12,7 @@ import { useAuthContext } from "@/lib/auth-context"
 import { ChevronLeft, ChevronRight, Trash2, Edit2, Search, Eye } from "lucide-react"
 import Link from "next/link"
 import { ProfileAvatar } from "@/components/profile-avatar"
+import { DataStateTableRow } from "@/components/data-state"
 
 interface Teacher {
   id: number
@@ -64,7 +65,7 @@ function TeachersPageContent() {
       const data = response.data.results || response.data || []
       setTeachers(Array.isArray(data) ? data : [])
     } catch (err: any) {
-      setError("Failed to load teachers")
+      setError(getErrorMessage(err, "Failed to load teachers. Please try again."))
       setTeachers([])
     } finally {
       setLoading(false)
@@ -340,11 +341,7 @@ function TeachersPageContent() {
           </thead>
           <tbody>
             {paginatedTeachers.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
-                  No teachers found
-                </td>
-              </tr>
+              <DataStateTableRow colSpan={6} loading={loading} error={error} emptyMessage="No teachers found" onRetry={fetchTeachers} />
             ) : (
               paginatedTeachers.map((teacher) => (
                 <tr key={teacher.id} className="border-b hover:bg-gray-50">

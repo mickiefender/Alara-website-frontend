@@ -4,7 +4,8 @@ import { useState, useEffect } from "react"
 import { ProtectedRoute } from "@/lib/protected-route"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { apiClient } from "@/lib/api"
+import { apiClient, getErrorMessage } from "@/lib/api"
+import { DataStateLoading, DataStateError } from "@/components/data-state"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 
@@ -14,21 +15,21 @@ export default function AnnouncementsPage() {
   const [error, setError] = useState("")
 
   useEffect(() => {
-    const fetchAnnouncements = async () => {
-      try {
-        setLoading(true)
-        const res = await apiClient.get("/schools/announcements/")
-        setAnnouncements(res.data || [])
-      } catch (err: any) {
-        setError("Failed to load announcements")
-        console.error("[v0] Failed to fetch announcements:", err)
-      } finally {
-        setLoading(false)
-      }
-    }
-
     fetchAnnouncements()
   }, [])
+
+  const fetchAnnouncements = async () => {
+    try {
+      setLoading(true)
+      const res = await apiClient.get("/schools/announcements/")
+      setAnnouncements(res.data || [])
+    } catch (err: any) {
+      setError(getErrorMessage(err, "Failed to load announcements. Please try again."))
+      console.error("[v0] Failed to fetch announcements:", err)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <ProtectedRoute allowedRoles={["student"]}>
@@ -42,10 +43,12 @@ export default function AnnouncementsPage() {
           <h1 className="text-3xl font-bold">Announcements</h1>
         </div>
 
-        {error && <div className="text-red-500">{error}</div>}
-
         <div className="grid grid-cols-1 gap-4">
-          {announcements.length > 0 ? (
+          {loading ? (
+            <DataStateLoading message="Loading announcements..." />
+          ) : error ? (
+            <DataStateError message={error} onRetry={fetchAnnouncements} />
+          ) : announcements.length > 0 ? (
             announcements.map((announcement) => (
               <Card key={announcement.id}>
                 <CardHeader>

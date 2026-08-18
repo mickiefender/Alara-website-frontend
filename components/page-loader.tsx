@@ -1,36 +1,28 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import Loader from "@/components/ui/loader-11"
+import { useGlobalLoadingState } from "@/lib/loading-manager"
+import { BootSplash } from "@/components/boot-splash"
+import { TopProgressBar } from "@/components/top-progress-bar"
 
-const MIN_DISPLAY_MS = 500
-
+/**
+ * Global loading mount point (single component rendered in the root layout).
+ *
+ * It composes two context-aware loaders — never an opaque takeover of the
+ * whole screen:
+ *
+ *  - `holds > 0`  → BootSplash: branded full-screen splash shown ONLY while
+ *    the session is booting (auth token validation on first load / refresh).
+ *  - `pending > 0` → TopProgressBar: slim branded bar at the top of the
+ *    viewport while data (GET) requests are in flight. The user stays on
+ *    their page while content loads in place.
+ */
 export function PageLoader() {
-  const [visible, setVisible] = useState(true)
-
-  useEffect(() => {
-    const start = Date.now()
-
-    const hide = () => {
-      const elapsed = Date.now() - start
-      const remaining = Math.max(MIN_DISPLAY_MS - elapsed, 0)
-      window.setTimeout(() => setVisible(false), remaining)
-    }
-
-    if (document.readyState === "complete") {
-      hide()
-      return
-    }
-
-    window.addEventListener("load", hide)
-    return () => window.removeEventListener("load", hide)
-  }, [])
-
-  if (!visible) return null
+  const { pending, holds } = useGlobalLoadingState()
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-background">
-      <Loader />
-    </div>
+    <>
+      <TopProgressBar />
+      <BootSplash />
+    </>
   )
 }

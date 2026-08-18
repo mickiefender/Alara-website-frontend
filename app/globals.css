@@ -469,3 +469,125 @@
 .animate-marquee-right {
   animation: marquee-right 30s linear infinite;
 }
+
+/* ============================================================
+   Professional loading system
+   ============================================================ */
+
+/* --- Slim indeterminate top progress bar (data fetches) --- */
+.alara-top-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  z-index: 9998;
+  pointer-events: none;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+}
+.alara-top-progress__bar {
+  position: absolute;
+  inset: 0;
+  width: 40%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--primary),
+    color-mix(in srgb, var(--primary) 60%, #ffffff),
+    var(--primary),
+    transparent
+  );
+  background-size: 200% 100%;
+  animation: alara-progress-indeterminate 1.1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  box-shadow: 0 0 12px color-mix(in srgb, var(--primary) 60%, transparent);
+  border-radius: 9999px;
+}
+
+@keyframes alara-progress-indeterminate {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(350%);
+  }
+}
+
+/* --- Boot splash pulse rings --- */
+.alara-splash-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 2px solid var(--primary);
+  opacity: 0;
+  animation: alara-splash-pulse 2s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+.alara-splash-ring--1 {
+  animation-delay: 0s;
+}
+.alara-splash-ring--2 {
+  animation-delay: 0.5s;
+}
+.alara-splash-ring--3 {
+  animation-delay: 1s;
+}
+
+@keyframes alara-splash-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  80%,
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+/* --- Three-dot loading indicator --- */
+.alara-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+.alara-dots > span {
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 9999px;
+  background: currentColor;
+  animation: alara-dot-bounce 1.2s ease-in-out infinite;
+}
+.alara-dots > span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.alara-dots > span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes alara-dot-bounce {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.45;
+  }
+  30% {
+    transform: translateY(-0.25rem);
+    opacity: 1;
+  }
+}
+
+/* Respect reduced motion for the new loader animations too */
+@media (prefers-reduced-motion: reduce) {
+  .alara-top-progress__bar,
+  .alara-splash-ring,
+  .alara-dots > span {
+    animation: none !important;
+  }
+  .alara-top-progress__bar {
+    width: 100%;
+  }
+  .alara-splash-ring {
+    opacity: 0.25;
+  }
+}

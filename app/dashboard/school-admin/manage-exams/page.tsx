@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Trash2, Edit2, Plus } from "lucide-react"
+import { PageLoadingState } from "@/components/page-loading-state"
 
 interface Exam {
   id: number
@@ -135,6 +136,8 @@ export default function ManageExamsPage() {
       }
     }
   }
+
+  if (loading) return <div className="p-6"><PageLoadingState message="Loading exams..." /></div>
 
   return (
     <div className="p-6">

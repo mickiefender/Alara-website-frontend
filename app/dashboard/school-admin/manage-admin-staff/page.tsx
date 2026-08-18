@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Plus, Edit2, Trash2, Search, Shield, AlertCircle } from "lucide-react"
+import { PageLoadingState } from "@/components/page-loading-state"
 
 
 const ADMIN_ROLES = [
@@ -287,7 +288,9 @@ export default function ManageAdminStaffPage() {
           <CardTitle>Active Admin Staff</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          {filteredStaff.length === 0 ? (
+          {loading ? (
+            <PageLoadingState message="Loading admin staff..." />
+          ) : filteredStaff.length === 0 ? (
             <div className="p-8 text-center text-gray-500">
               <Shield className="mx-auto h-12 w-12 text-gray-300 mb-3" />
               <p>No admin staff members found</p>

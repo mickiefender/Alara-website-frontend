@@ -1,0 +1,30 @@
+app/dashboard/school-admin/announcements/page.tsx :: No announcements
+app/dashboard/school-admin/grading/page.tsx :: No students
+app/dashboard/school-admin/results/export/page.tsx :: No results
+app/dashboard/school-admin/students/[id]/page-updated.tsx :: No fees
+app/dashboard/school-admin/students/[id]/page.tsx :: No fees
+app/dashboard/school-admin/students/page.tsx :: No students, No results
+app/dashboard/school-admin/teachers/page.tsx :: No teachers
+app/dashboard/student/announcement/page.tsx :: No announcements
+app/dashboard/student/fees/page.tsx :: No fees
+app/dashboard/student/notifications/page.tsx :: No announcements
+app/dashboard/student/page.tsx :: No fees
+app/dashboard/teacher/attendance/page.tsx :: No students
+app/dashboard/teacher/notifications/page.tsx :: No announcements
+app/dashboard/teacher/page.tsx :: No data, No students
+components/announcements-messaging.tsx :: No announcements
+components/assign-subject-teacher.tsx :: No teachers
+components/assign-subject-teachers.tsx :: No teachers
+components/assign-teachers-to-class.tsx :: No teachers
+components/attendance-tracker.tsx :: No students
+components/enroll-students-in-class.tsx :: No students
+components/fees-chart.tsx :: No fees
+components/fees-management.tsx :: No fees
+components/manual-fee-payment.tsx :: No students, No fees
+components/notice-board.tsx :: No announcements
+components/recent-payments.tsx :: No payments
+components/student-enrolment-in-class.tsx :: No students
+components/students-management.tsx :: No students
+components/teacher-classes-dashboard.tsx :: No students
+components/teacher-grading.tsx :: No Data, No students
+components/teachers-management.tsx :: No teachers

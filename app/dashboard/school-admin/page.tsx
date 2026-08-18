@@ -1,21 +1,25 @@
 "use client"
 
+import dynamic from 'next/dynamic'
 import { ProtectedRoute } from '@/lib/protected-route'
 import { useState, useEffect } from 'react'
-import { attendanceAPI, billingAPI, usersAPI, academicsAPI } from '@/lib/api'
+import { attendanceAPI, usersAPI, academicsAPI } from '@/lib/api'
 import { DashboardStats } from '@/components/dashboard-stats'
-import { CountUp } from '@/components/ui/count-up'
 import { FeesChart } from '@/components/fees-chart'
-import { EventCalendar } from '@/components/event-calendar'
-import { NoticeBoard } from '@/components/notice-board'
-import { RecentPayments } from '@/components/recent-payments'
-import { StudentsManagement } from '@/components/students-management'
-import { TeachersManagement } from '@/components/teachers-management'
 import { BestPerformingClass } from '@/components/best-performing-class'
-import { GenderDistributionChart } from '@/components/gender-distribution-chart'
 import Link from 'next/link'
 import { School, BookOpen, Users2 } from 'lucide-react'
-import { LayoutDashboard, Users, DollarSign, CheckCircle2, Trophy } from 'lucide-react'
+import { LayoutDashboard, Users, CheckCircle2, DollarSign } from 'lucide-react'
+
+// Lazy-load analytics tab so its API calls only fire when user clicks "Analytics"
+const StudentsManagement = dynamic(
+  () => import('@/components/students-management').then(m => m.StudentsManagement),
+  { ssr: false }
+)
+const TeachersManagement = dynamic(
+  () => import('@/components/teachers-management').then(m => m.TeachersManagement),
+  { ssr: false }
+)
 
 interface StatsType {
   students: number
@@ -26,13 +30,7 @@ interface StatsType {
 }
 
 interface QuickStats {
-  feesExpected: number
-  feesCollected: number
-  feesPending: number
-  collectionRate: number
   attendanceRate: number
-  topStudentName: string
-  topStudentScore: number
 }
 
 export default function SchoolAdminPage() {
@@ -47,57 +45,32 @@ export default function SchoolAdminPage() {
   const [classesCount, setClassesCount] = useState(0)
   const [subjectsCount, setSubjectsCount] = useState(0)
   const [quickStats, setQuickStats] = useState<QuickStats>({
-    feesExpected: 0,
-    feesCollected: 0,
-    feesPending: 0,
-    collectionRate: 0,
     attendanceRate: 0,
-    topStudentName: "N/A",
-    topStudentScore: 0,
   })
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const [studentsRes, teachersRes, feesStats, attendanceRes, terminalReportsRes, studentsListRes, classesRes, subjectsRes] = await Promise.all([
+        const [studentsRes, teachersRes, attendanceRes, classesRes, subjectsRes] = await Promise.all([
           usersAPI.students(),
           usersAPI.teachers(),
-          billingAPI.getSchoolFeesStats(),
           attendanceAPI.overallReport(),
-          academicsAPI.terminalReports(),
-          usersAPI.students(),
           academicsAPI.classes(),
           academicsAPI.subjects(),
         ])
+
         setClassesCount(classesRes.data.results?.length || classesRes.data?.length || 0)
         setSubjectsCount(subjectsRes.data.results?.length || subjectsRes.data?.length || 0)
 
-        const totalRevenue = Number(feesStats?.total_collected || 0)
-
-        const reports = terminalReportsRes?.data?.results || terminalReportsRes?.data || []
-        const students = studentsListRes?.data?.results || studentsListRes?.data || []
-        const sortedReports = [...reports].sort((a: any, b: any) => (b.average_marks || 0) - (a.average_marks || 0))
-        const topReport = sortedReports[0]
-        const topStudent = students.find((s: any) => (s.user?.id || s.id) === topReport?.student)
-        const topStudentName = topStudent
-          ? `${topStudent.user?.first_name || ''} ${topStudent.user?.last_name || ''}`.trim()
-          : "N/A"
-
         setQuickStats({
-          feesExpected: Number(feesStats?.total_expected || 0),
-          feesCollected: Number(feesStats?.total_collected || 0),
-          feesPending: Number(feesStats?.pending_fees || 0),
-          collectionRate: Number(feesStats?.collection_rate || 0),
           attendanceRate: Number(attendanceRes?.data?.attendance_percentage || 0),
-          topStudentName,
-          topStudentScore: Number(topReport?.average_marks || 0),
         })
 
         setStats({
-          students: studentsRes?.data?.results?.length || 0,
+          students: studentsRes?.data?.results?.length || studentsRes?.data?.length || 0,
           teachers: teachersRes?.data?.results?.length || 0,
           parents: 0,
-          earnings: totalRevenue,
+          earnings: 0,
           loading: false,
         })
       } catch (error) {
@@ -198,67 +171,29 @@ export default function SchoolAdminPage() {
               </Link>
             </div>
 
-            <div className="stagger grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mt-6">
-              <div className="glass-card p-4">
-                <p className="text-xs uppercase tracking-wider text-muted-foreground">Fees Expected</p>
-                <p className="text-2xl font-bold mt-1 tabular-nums">
-                  <CountUp value={quickStats.feesExpected} format={(n) => `¢${n.toLocaleString()}`} />
-                </p>
-              </div>
-              <div className="glass-card p-4">
-                <p className="text-xs uppercase tracking-wider text-muted-foreground">Fees Collected</p>
-                <p className="text-2xl font-bold mt-1 text-emerald-600 dark:text-emerald-400 tabular-nums">
-                  <CountUp value={quickStats.feesCollected} format={(n) => `¢${n.toLocaleString()}`} />
-                </p>
-              </div>
-              <div className="glass-card p-4 flex items-center justify-between">
-                <div>
-                  <p className="text-xs uppercase tracking-wider text-muted-foreground">Attendance Rate</p>
-                  <p className="text-2xl font-bold mt-1 tabular-nums">{quickStats.attendanceRate.toFixed(1)}%</p>
-                </div>
-                <CheckCircle2 className="h-8 w-8 text-emerald-500" />
-              </div>
-              <div className="glass-card p-4 flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-xs uppercase tracking-wider text-muted-foreground">Top Student</p>
-                  <p className="font-semibold truncate">{quickStats.topStudentName}</p>
-                  <p className="text-sm text-muted-foreground tabular-nums">{quickStats.topStudentScore.toFixed(1)}%</p>
-                </div>
-                <Trophy className="h-8 w-8 text-amber-500 shrink-0" />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              <div className="stagger lg:col-span-8 space-y-6">
-                <div className="glass-card p-6">
-                  <h2 className="text-xl font-semibold text-foreground mb-6 flex items-center gap-2">
-                    <DollarSign className="w-6 h-6 text-primary" />
-                    Fee Collection Overview
-                  </h2>
-                  <FeesChart />
-                </div>
-
-                <div className="glass-card p-6">
-                  <BestPerformingClass />
-                </div>
-
-                <div className="glass-card p-6">
-                  <RecentPayments />
+            {!stats.loading && (
+              <div className="stagger grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+                <div className="glass-card p-4 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground">Attendance Rate</p>
+                    <p className="text-2xl font-bold mt-1 tabular-nums">{quickStats.attendanceRate.toFixed(1)}%</p>
+                  </div>
+                  <CheckCircle2 className="h-8 w-8 text-emerald-500" />
                 </div>
               </div>
+            )}
 
-              <div className="stagger lg:col-span-4 space-y-6">
-                <div className="glass-card p-6">
-                  <GenderDistributionChart />
-                </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="glass-card p-6">
+                <h2 className="text-xl font-semibold text-foreground mb-6 flex items-center gap-2">
+                  <DollarSign className="w-6 h-6 text-primary" />
+                  Fee Collection Overview
+                </h2>
+                <FeesChart />
+              </div>
 
-                <div className="glass-card p-6">
-                  <EventCalendar />
-                </div>
-
-                <div className="glass-card p-6">
-                  <NoticeBoard />
-                </div>
+              <div className="glass-card p-6">
+                <BestPerformingClass />
               </div>
             </div>
           </>

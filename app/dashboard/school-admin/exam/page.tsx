@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge"
 import { Calendar, Clock, MapPin, BookOpen, Users, Plus, Edit, Trash2, Search, Filter } from "lucide-react"
 import { academicsAPI } from "@/lib/api"
 import { useAuthContext } from "@/lib/auth-context"
+import { PageLoadingState } from "@/components/page-loading-state"
 
 interface Exam {
   id: number
@@ -369,6 +370,7 @@ export default function ExamManagementPage() {
       </div>
 
       {/* Stats Cards */}
+      {!loading && (
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardContent className="pt-6">
@@ -412,6 +414,7 @@ export default function ExamManagementPage() {
           </CardContent>
         </Card>
       </div>
+      )}
 
       {/* Filters */}
       <Card>
@@ -456,7 +459,9 @@ export default function ExamManagementPage() {
           </div>
         </CardHeader>
         <CardContent>
-          {filteredExams.length === 0 ? (
+          {loading ? (
+            <PageLoadingState message="Loading exams..." />
+          ) : filteredExams.length === 0 ? (
             <div className="text-center py-8">
               <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-3" />
               <p className="text-gray-500">No exams found</p>

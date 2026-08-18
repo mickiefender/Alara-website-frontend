@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Calendar } from "lucide-react"
 import { academicsAPI } from "@/lib/api"
+import { PageLoadingState } from "@/components/page-loading-state"
 
 interface Timetable {
   id: number
@@ -120,6 +121,8 @@ export default function ViewTimetablePage() {
       return t.day === day && t.start_time.startsWith(slotStart)
     })
   }
+
+  if (loading) return <div className="min-h-screen p-8"><PageLoadingState message="Loading timetable..." /></div>
 
   return (
     <div className="min-h-screen p-8" style={{ backgroundColor: "#F39C12" }}>

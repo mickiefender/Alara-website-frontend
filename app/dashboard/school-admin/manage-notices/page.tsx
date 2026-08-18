@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Trash2, Edit2, Plus } from "lucide-react"
+import { PageLoadingState } from "@/components/page-loading-state"
 
 interface Notice {
   id: number
@@ -179,6 +180,9 @@ export default function ManageNoticesPage() {
           <CardTitle>Notices List</CardTitle>
         </CardHeader>
         <CardContent>
+          {loading ? (
+            <PageLoadingState message="Loading notices..." />
+          ) : (
           <div className="space-y-4">
             {notices.map((notice) => (
               <div key={notice.id} className={`border-l-4 ${notice.priority === "high" ? "border-red-500" : notice.priority === "low" ? "border-green-500" : "border-yellow-500"} pl-4 py-3 bg-gray-50 rounded`}>
@@ -215,6 +219,7 @@ export default function ManageNoticesPage() {
               </div>
             ))}
           </div>
+          )}
         </CardContent>
       </Card>
     </div>

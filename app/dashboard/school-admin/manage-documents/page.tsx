@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Trash2, Edit2, Plus, Download } from "lucide-react"
+import { PageLoadingState } from "@/components/page-loading-state"
 
 interface Document {
   id: number
@@ -214,6 +215,9 @@ export default function ManageDocumentsPage() {
           <CardTitle>Documents List</CardTitle>
         </CardHeader>
         <CardContent>
+          {loading ? (
+            <PageLoadingState message="Loading documents..." />
+          ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -251,6 +255,7 @@ export default function ManageDocumentsPage() {
               </tbody>
             </table>
           </div>
+          )}
         </CardContent>
       </Card>
     </div>

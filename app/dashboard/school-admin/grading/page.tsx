@@ -12,8 +12,9 @@ import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 
 import { GradingPolicyManagement } from "@/components/grading-policy-management"
-import { gradesAPI, usersAPI, academicsAPI } from "@/lib/api"
+import { gradesAPI, usersAPI, academicsAPI, getErrorMessage } from "@/lib/api"
 import { Search, ArrowRight, Users, TrendingUp, Award } from "lucide-react"
+import { DataStateTableRow } from "@/components/data-state"
 
 interface Grade {
   id: number
@@ -44,6 +45,7 @@ export default function GradingPage() {
   const [subjects, setSubjects] = useState<any[]>([])
   const [sessions, setSessions] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [filterSession, setFilterSession] = useState("")
   const [isOpen, setIsOpen] = useState(false)
@@ -92,6 +94,7 @@ export default function GradingPage() {
       }
     } catch (err) {
       console.error("Failed to load data:", err)
+      setError(getErrorMessage(err, "Failed to load grading data. Please try again."))
     } finally {
       setLoading(false)
     }
@@ -379,10 +382,10 @@ export default function GradingPage() {
                     </td>
                   </tr>
                 ))}
-                {studentsSummary.length === 0 && (
+                {loading ? <DataStateTableRow colSpan={5} loading={loading} emptyMessage="No students with grades found" /> : studentsSummary.length === 0 && (
                   <tr>
                     <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
-                      No students with grades found. Add grades to see summaries here.
+                      {error ? error : "No students with grades found. Add grades to see summaries here."}
                     </td>
                   </tr>
                 )}

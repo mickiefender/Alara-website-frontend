@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ProtectedRoute } from "@/lib/protected-route"
-import { academicsAPI } from "@/lib/api"
+import { academicsAPI, getErrorMessage } from "@/lib/api"
 import { useToast } from "@/hooks/use-toast"
+import { DataStateLoading } from "@/components/data-state"
 import { Download, FileSpreadsheet, FileText, Loader2, Award, RefreshCcw, Users } from "lucide-react"
 
 interface TerminalReportRow {
@@ -90,7 +91,7 @@ function ExportResultsContent() {
       if (defaultTemplate) setTemplateId(defaultTemplate.id.toString())
     } catch (err) {
       console.error("Failed to load export results data:", err)
-      setError("Failed to load results. Please check if backend is running.")
+      setError(getErrorMessage(err, "Failed to load results. Please check if backend is running."))
     } finally {
       setLoading(false)
     }
@@ -339,7 +340,8 @@ function ExportResultsContent() {
           <CardDescription>Generated terminal reports ready for export</CardDescription>
         </CardHeader>
         <CardContent>
-          {filteredReports.length === 0 ? (
+          {loading && <DataStateLoading message="Loading results..." />}
+          {!loading && filteredReports.length === 0 ? (
             <div className="text-center py-16">
               <FileText className="w-14 h-14 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-semibold mb-2">No results to export</h3>

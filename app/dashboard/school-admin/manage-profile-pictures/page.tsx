@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Trash2, Plus, Upload } from "lucide-react"
 import Image from "next/image"
+import { PageLoadingState } from "@/components/page-loading-state"
 
 interface ProfilePicture {
   id: number
@@ -107,6 +108,8 @@ export default function ManageProfilePicturesPage() {
   }
 
   const allUsers = [...students.map((s) => ({ id: s.user, name: `${s.first_name} ${s.last_name}`, type: "Student" })), ...teachers.map((t) => ({ id: t.user, name: `${t.first_name} ${t.last_name}`, type: "Teacher" }))]
+
+  if (loading) return <div className="p-6"><PageLoadingState message="Loading profile pictures..." /></div>
 
   return (
     <div className="p-6">

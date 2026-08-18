@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useAuthContext } from "@/lib/auth-context"
-import { billingAPI } from "@/lib/api"
+import { bgFetch } from "@/lib/api"
 import { 
   Wallet, 
   TrendingUp, 
@@ -39,8 +39,8 @@ export function RecentPayments() {
       
       // Fetch using authenticated billingAPI (same endpoints as receipts page)
       const [manualRes, onlineRes] = await Promise.all([
-        billingAPI.manualPaymentsBySchool(),
-        billingAPI.onlinePaymentsBySchool()
+        bgFetch.get("/billing/manual-payments/by_school/"),
+        bgFetch.get("/billing/online-payments/by_school/")
       ])
       
       let apiPayments = [
@@ -228,4 +228,3 @@ export function RecentPayments() {
     </div>
   )
 }
-

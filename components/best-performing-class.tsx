@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { academicsAPI } from "@/lib/api"
+import { bgFetch } from "@/lib/api"
 import {
   AreaChart,
   Area,
@@ -64,7 +64,7 @@ export function BestPerformingClass() {
     const fetchClassData = async () => {
       try {
         setLoading(true)
-        const response = await academicsAPI.classPerformanceWithAttendance()
+        const response = await bgFetch.get("/academics/classes/performance/")
         const classes = response.data.results || []
 
         const processedData = [...classes].sort(
@@ -347,4 +347,4 @@ export function BestPerformingClass() {
   )
 } 
 
-export default BestPerformingClass  
+export default BestPerformingClass

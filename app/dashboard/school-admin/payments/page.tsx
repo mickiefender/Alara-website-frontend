@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ProtectedRoute } from "@/lib/protected-route"
 import { useAuthContext } from "@/lib/auth-context"
 
-import { billingAPI } from "@/lib/api"
+import { bgFetch } from "@/lib/api"
 
 import PaymentHistory from "@/components/payments/PaymentHistory"
 
@@ -32,8 +32,8 @@ export default function SchoolAdminPaymentsPage() {
       // Total revenue comes from the backend's real payment records —
       // the local /api/revenue store is in-memory and resets on restart
       const [manualRes, onlineRes] = await Promise.all([
-        billingAPI.manualPaymentsBySchool(),
-        billingAPI.onlinePaymentsBySchool(),
+        bgFetch.get("/billing/manual-payments/by_school/"),
+        bgFetch.get("/billing/online-payments/by_school/"),
       ])
       const manual = manualRes.data?.results || manualRes.data || []
       const online = onlineRes.data?.results || onlineRes.data || []

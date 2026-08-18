@@ -193,11 +193,23 @@ export function FeesManagement() {
             </thead>
             <tbody>
               {fees.length === 0 ? (
+                loading ? (
+                  <tr>
+                    <td colSpan={5} className="text-center py-8">
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="animate-spin w-6 h-6 border-3 border-primary border-t-transparent rounded-full" />
+                        <span className="text-sm text-muted-foreground">Loading fees...</span>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
                 <tr>
-                  <td colSpan={5} className="text-center py-4 text-muted-foreground dark:text-slate-500">
-                    No fees found. Add your first fee.
+                  <td colSpan={5} className="text-center py-8">
+                    <p className="text-muted-foreground font-medium">No fees found</p>
+                    <p className="text-sm text-muted-foreground/70 mt-1">Create your first fee type to get started.</p>
                   </td>
                 </tr>
+                )
               ) : (
                 fees.map((fee) => (
                   <tr key={fee.id} className="border-b border-border dark:border-slate-800 hover:bg-muted/50 dark:hover:bg-slate-800/50">

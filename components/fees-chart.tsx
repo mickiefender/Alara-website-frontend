@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from "recharts"
-import { billingAPI } from "@/lib/api"
+import { bgFetch } from "@/lib/api"
 
 interface RevenueData {
   month: string
@@ -19,7 +19,20 @@ export function FeesChart() {
   useEffect(() => {
     const fetchRevenueData = async () => {
       try {
-        const stats = await billingAPI.getSchoolFeesStats()
+        const statsRes = await bgFetch.get("/billing/student-fee-assignments/?school=my_school")
+        const manualRes = await bgFetch.get("/billing/manual-payments/by_school/")
+        const onlineRes = await bgFetch.get("/billing/online-payments/by_school/")
+        const assignments = statsRes.data?.results || statsRes.data || []
+        const manualPayments = manualRes.data?.results || manualRes.data || []
+        const onlinePayments = onlineRes.data?.results || onlineRes.data || []
+        const totalExpected = assignments.reduce((sum: number, a: any) => sum + (parseFloat(a.amount) || 0), 0)
+        const totalCollected = [...manualPayments, ...onlinePayments].reduce((sum: number, p: any) => sum + (parseFloat(p.amount) || 0), 0)
+        const stats = {
+          total_expected: totalExpected,
+          total_collected: totalCollected,
+          pending_fees: Math.max(0, totalExpected - totalCollected),
+          collection_rate: totalExpected > 0 ? Math.round((totalCollected / totalExpected) * 100) : 0,
+        }
         const expected = Number(stats?.total_expected || 0)
         const collected = Number(stats?.total_collected || 0)
         const pending = Number(stats?.pending_fees || Math.max(0, expected - collected))
@@ -72,10 +85,21 @@ export function FeesChart() {
     return null
   }
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="flex flex-col items-center gap-3">
+          <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+          <p className="text-sm text-muted-foreground">Loading fee data...</p>
+        </div>
+      </div>
+    )
+  }
+
   if (!hasData) {
     return (
       <div className="rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 p-10 text-center">
-        <p className="text-sm text-slate-500 dark:text-slate-400">No fees statistics available.</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400">No fee data available yet. Fee records will appear here once payments are recorded.</p>
       </div>
     )
   }

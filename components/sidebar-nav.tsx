@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { LogOut } from "lucide-react"
 import { useState, useEffect } from "react"
 import Image from "next/image"
-import { academicsAPI } from "@/lib/api"
+import { academicsAPI, bgFetch } from "@/lib/api"
 import {
   ChevronDown,
   ChevronLeft,
@@ -281,7 +281,7 @@ function SidebarNavContent({ isCollapsed, onClose, isMobile, onToggleCollapse }:
     const fetchProfilePic = async () => {
       if (!user?.id) return
       try {
-        const picRes = await academicsAPI.profilePictureByUser(user.id)
+        const picRes = await bgFetch.get(`/academics/profile-pictures/?user=${user.id}`)
         const pics = picRes.data.results || picRes.data || []
         if (pics.length > 0) {
           const picUrl = pics[0].display_url || pics[0].storage_url || pics[0].picture || ""
@@ -615,4 +615,3 @@ relative h-16 px-4 flex items-center justify-between
     </aside>
   )
 }
-

@@ -10,6 +10,7 @@ import { useAuthContext } from "@/lib/auth-context"
 import { ProtectedRoute } from "@/lib/protected-route"
 import { TeacherClassStats } from "@/components/teacher-class-stats"
 import { ClassPerformanceAnalytics } from "@/components/class-performance-analytics"
+import { PageLoadingState } from "@/components/page-loading-state"
 
 interface ClassPerformanceData {
   classId: number
@@ -47,6 +48,9 @@ export default function SchoolAdminPerformancePage() {
 
   return (
     <ProtectedRoute allowedRoles={["school_admin"]}>
+      {loading ? (
+        <div className="space-y-8 p-4 md:p-6 lg:p-8"><PageLoadingState message="Loading performance data..." /></div>
+      ) : (
       <div className="space-y-8 p-4 md:p-6 lg:p-8 bg-background">
         {/* Header */}
         <div className="space-y-2">
@@ -197,6 +201,7 @@ export default function SchoolAdminPerformancePage() {
           </TabsContent>
         </Tabs>
       </div>
+      )}
     </ProtectedRoute>
   )
 }

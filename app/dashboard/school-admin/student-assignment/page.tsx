@@ -10,6 +10,7 @@ import { Search, Plus, Users, ArrowRight, AlertCircle } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { EnrollStudentsInClass } from "@/components/enroll-students-in-class"
+import { PageLoadingState } from "@/components/page-loading-state"
 
 interface Class {
   id: number
@@ -57,6 +58,8 @@ export default function StudentAssignmentsPage() {
     setSelectedClassName(classItem.name)
     setDialogOpen(true)
   }
+
+  if (loading) return <div className="space-y-6 pb-8"><PageLoadingState message="Loading classes..." /></div>
 
   return (
     <div className="space-y-6 pb-8">

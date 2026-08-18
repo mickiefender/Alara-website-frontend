@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { CountUp } from "@/components/ui/count-up"
+import { DataStateLoading, DataStateTableRow } from "@/components/data-state"
 import { Button } from "@/components/ui/button"
 import { academicsAPI, authAPI, assignmentAPI, billingAPI, gradesAPI, attendanceAPI, usersAPI } from "@/lib/api"
 import { BookOpen, DollarSign, Calendar, FileText, Edit2, Download, Share2, ClipboardList, UserCheck } from "lucide-react"
@@ -512,6 +513,9 @@ export default function StudentDashboard() {
                 <Button className="w-full sm:w-auto" onClick={() => handleOpenModal(assignment)}>Submit</Button>
               </div>
             ))}
+            {!loading && assignments.length === 0 && (
+              <p className="text-center text-gray-500 py-4">No assignments found</p>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -531,7 +535,9 @@ export default function StudentDashboard() {
           </div>
         </CardHeader>
         <CardContent>
-          {grades.length === 0 ? (
+          {loading ? (
+            <DataStateLoading message="Loading grades..." />
+          ) : grades.length === 0 ? (
             <p className="text-center text-gray-500 py-4">No grades found</p>
           ) : (
             <div className="overflow-x-auto">
@@ -634,7 +640,9 @@ export default function StudentDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {data?.schoolFees && data.schoolFees.length > 0 ? (
+                  {loading ? (
+                    <DataStateTableRow colSpan={6} loading={loading} emptyMessage="No fees found" />
+                  ) : data?.schoolFees && data.schoolFees.length > 0 ? (
                     data.schoolFees.map((fee: any, index: number) => {
                       const feeAmount = parseFloat(fee.amount) || 0
                       const amountPaid = fee.amount_paid || 0

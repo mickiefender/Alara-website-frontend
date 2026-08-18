@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { messagingAPI } from "@/lib/api"
+import { bgFetch } from "@/lib/api"
 import { Bell, Megaphone, Pin, AlertCircle, Info, AlertTriangle } from "lucide-react"
 
 interface Notice {
@@ -34,8 +34,8 @@ export function NoticeBoard() {
       try {
         setLoading(true)
         const [noticesRes, announcementsRes] = await Promise.all([
-          messagingAPI.notices(),
-          messagingAPI.announcements(),
+          bgFetch.get("/messaging/notices/"),
+          bgFetch.get("/messaging/announcements/"),
         ])
 
         const allNotices = noticesRes.data.results || noticesRes.data || []
@@ -269,4 +269,3 @@ export function NoticeBoard() {
     </div>
   )
 }
-

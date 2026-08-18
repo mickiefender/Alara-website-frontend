@@ -1,4 +1,10 @@
 import axios from "axios"
+import { loadingManager } from "./loading-manager"
+
+export const authLoading = {
+  hold: () => loadingManager.hold(),
+  release: () => loadingManager.release(),
+}
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/"
 
@@ -16,12 +22,75 @@ export const resolveImageUrl = (url?: string | null): string => {
   return `${base}${normalizedPath}`
 }
 
+/**
+ * Extract a human-friendly, custom error message from an API error.
+ *
+ * Handles the common response shapes (DRF `detail`, field errors, string
+ * bodies, network failures) and falls back to a caller-supplied default.
+ */
+export function getErrorMessage(
+  error: unknown,
+  fallback = "Something went wrong. Please try again.",
+): string {
+  if (!error) return fallback
+
+  const err = error as {
+    response?: { data?: unknown; status?: number }
+    message?: string
+  }
+
+  if (err.response?.data) {
+    const raw = err.response.data
+
+    // DRF detail / non-field errors
+    if (typeof raw === "string" && raw.trim()) return raw
+
+    const data = raw as Record<string, unknown>
+
+    if (typeof data.detail === "string" && data.detail.trim()) return data.detail
+    if (typeof data.error === "string" && data.error.trim()) return data.error
+    if (typeof data.message === "string" && data.message.trim()) return data.message
+
+    // non_field_errors can be a string or an array of strings
+    const nfe = data.non_field_errors
+    if (typeof nfe === "string" && nfe.trim()) return nfe
+    if (Array.isArray(nfe) && typeof nfe[0] === "string" && nfe[0].trim()) return nfe[0]
+
+    // Field-level errors: pick the first non-empty message
+    const entries = Object.entries(data) as Array<[string, unknown]>
+    const fieldError = entries.find(
+      ([, value]) =>
+        (typeof value === "string" && value.trim().length > 0) ||
+        (Array.isArray(value) && typeof value[0] === "string" && value[0].trim().length > 0),
+    )
+    if (fieldError) {
+      const [field, value] = fieldError
+      const message = Array.isArray(value) ? String(value[0]) : String(value)
+      return `${field}: ${message}`
+    }
+  }
+
+  if (err.message?.trim()) return err.message
+
+  return fallback
+}
+
 export const apiClient = axios.create({
   baseURL: API_URL,
   headers: {
     "Content-Type": "application/json",
   },
 })
+
+/**
+ * Background fetch — GET that does NOT block the global page loader.
+ * Use for secondary/child-component fetches (profile pictures, charts, etc.)
+ * that should load in the background after the main page data is ready.
+ */
+export const bgFetch = {
+  get: <T = any>(url: string, config?: any) =>
+    apiClient.get<T>(url, { ...config, _trackLoading: false }),
+}
 
 apiClient.interceptors.request.use((config) => {
   if (typeof window !== "undefined" && process.env.NODE_ENV === 'development') {
@@ -33,12 +102,28 @@ apiClient.interceptors.request.use((config) => {
       config.headers.Authorization = `Bearer ${token}`
     }
   }
+  // Track data (GET) requests so the global loader stays until data is ready.
+  // Mutations (POST/PUT/PATCH/DELETE) keep their own inline spinners and are not tracked.
+  // Components can pass { _trackLoading: false } in request config to skip global tracking
+  // (useful for background/secondary fetches that shouldn't block the page loader).
+  if (typeof window !== "undefined" && config.method === "get" && (config as any)._trackLoading !== false) {
+    loadingManager.beginRequest()
+  }
   return config
 })
 
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Every tracked request must be released exactly once, success or failure.
+    if (typeof window !== "undefined" && response.config.method === "get" && (response.config as any)._trackLoading !== false) {
+      loadingManager.endRequest()
+    }
+    return response
+  },
   (error) => {
+    if (typeof window !== "undefined" && error.config?.method === "get" && (error.config as any)._trackLoading !== false) {
+      loadingManager.endRequest()
+    }
     const status = error.response?.status
     const url = error.config?.url
     const details = error.response?.data

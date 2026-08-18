@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts"
-import { usersAPI } from "@/lib/api"
+import { bgFetch } from "@/lib/api"
 import { Users, User } from "lucide-react"
 
 interface GenderData {
@@ -41,7 +41,7 @@ export function GenderDistributionChart() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await usersAPI.students()
+        const res = await bgFetch.get("/users/students/")
         const students = res.data.results || []
 
         const male = students.filter((s: any) => s.gender === "male").length

@@ -5,7 +5,8 @@ import type React from "react"
 import { useState, useEffect, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import Link from "next/link"
-import { usersAPI } from "@/lib/api"
+import { usersAPI, getErrorMessage } from "@/lib/api"
+import { DataStateTableRow } from "@/components/data-state"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
@@ -90,7 +91,7 @@ const [formData, setFormData] = useState({
       const data = response.data.results || response.data || []
       setStudents(Array.isArray(data) ? data : [])
     } catch (err: any) {
-      setError("Failed to load students")
+      setError(getErrorMessage(err, "Failed to load students. Please try again."))
       setStudents([])
     } finally {
       setLoading(false)
@@ -533,6 +534,9 @@ const [formData, setFormData] = useState({
             </thead>
             <tbody className="divide-y divide-border">
               {paginatedStudents.length === 0 ? (
+                loading ? (
+                  <DataStateTableRow colSpan={7} loading={loading} emptyMessage="No students found" />
+                ) : (
                 <tr>
                   <td colSpan={7} className="px-6 py-16 text-center">
                     <div className="flex flex-col items-center gap-3 text-muted-foreground">
@@ -560,6 +564,7 @@ const [formData, setFormData] = useState({
                     </div>
                   </td>
                 </tr>
+                )
               ) : (
                 paginatedStudents.map((student) => {
                   const name = getStudentName(student)

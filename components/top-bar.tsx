@@ -3,7 +3,7 @@
 import { useAuthContext } from "@/lib/auth-context"
 import { useNotifications } from "@/lib/notifications-context"
 import { useState, useEffect, useRef } from "react"
-import { academicsAPI, resolveImageUrl } from "@/lib/api"
+import { academicsAPI, bgFetch, resolveImageUrl } from "@/lib/api"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Bell, Menu } from "lucide-react"
 import Link from "next/link"
@@ -53,7 +53,7 @@ function TopBarContent({ onToggle }: TopBarProps) {
     const fetchProfilePic = async () => {
       if (!user?.id) return
       try {
-        const picRes = await academicsAPI.profilePictureByUser(user.id)
+        const picRes = await bgFetch.get(`/academics/profile-pictures/?user=${user.id}`)
         const pics = picRes.data.results || picRes.data || []
 
         if (pics.length > 0) {

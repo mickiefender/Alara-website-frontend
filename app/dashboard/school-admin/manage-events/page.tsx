@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Trash2, Edit2, Plus } from "lucide-react"
+import { PageLoadingState } from "@/components/page-loading-state"
 
 interface SchoolEvent {
   id: number
@@ -182,6 +183,9 @@ export default function ManageEventsPage() {
           <CardTitle>Events List</CardTitle>
         </CardHeader>
         <CardContent>
+          {loading ? (
+            <PageLoadingState message="Loading events..." />
+          ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -215,6 +219,7 @@ export default function ManageEventsPage() {
               </tbody>
             </table>
           </div>
+          )}
         </CardContent>
       </Card>
     </div>

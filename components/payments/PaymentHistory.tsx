@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Download } from "lucide-react"
-import { billingAPI } from "@/lib/api"
+import { bgFetch } from "@/lib/api"
 import { exportToCSV, exportToExcel } from "@/lib/export-utils"
 
 
@@ -47,15 +47,15 @@ export default function PaymentHistory({ studentId, schoolId, showStudentColumn 
         }
 
         const [manualRes, onlineRes] = await Promise.all([
-          billingAPI.manualPaymentsByStudent(numericStudentId),
-          billingAPI.onlinePaymentsByStudent(numericStudentId),
+          bgFetch.get(`/billing/manual-payments/by_student/?student_id=${numericStudentId}`),
+          bgFetch.get(`/billing/online-payments/by_student/?student_id=${numericStudentId}`),
         ])
         manualPayments = manualRes.data?.results || manualRes.data || []
         onlinePayments = onlineRes.data?.results || onlineRes.data || []
       } else if (schoolId) {
         const [manualRes, onlineRes] = await Promise.all([
-          billingAPI.manualPaymentsBySchool(),
-          billingAPI.onlinePaymentsBySchool(),
+          bgFetch.get("/billing/manual-payments/by_school/"),
+          bgFetch.get("/billing/online-payments/by_school/"),
         ])
         manualPayments = manualRes.data?.results || manualRes.data || []
         onlinePayments = onlineRes.data?.results || onlineRes.data || []

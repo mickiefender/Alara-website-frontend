@@ -4,7 +4,7 @@ import type React from "react"
 
 import { createContext, useContext, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { authAPI, schoolsAPI } from "./api"
+import { authAPI, schoolsAPI, authLoading } from "./api"
 
 interface User {
   teacher_id: any
@@ -41,7 +41,7 @@ interface AuthContextType {
   school: School | null
   loading: boolean
   isAuthenticated: boolean
-  login: (credential: string, password:string, loginType?: "email" | "student_id") => Promise<void>
+  login: (credential: string, password: string, loginType?: "email" | "student_id") => Promise<void>
   logout: () => void
   register: (data: any) => Promise<void>
 }
@@ -56,7 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter()
 
   const fetchSchool = async (schoolId: number) => {
-      if (process.env.NODE_ENV === 'development') { console.log('[Auth] fetchSchool called with schoolId:', schoolId) }
+    if (process.env.NODE_ENV === 'development') { console.log('[Auth] fetchSchool called with schoolId:', schoolId) }
     if (!schoolId) {
       if (process.env.NODE_ENV === 'development') { console.warn('[Auth] No schoolId provided, skipping school fetch') }
       setSchool(null)
@@ -72,76 +72,83 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error: any) {
       const status = error.response?.status
       if (status === 401) {
-          if (process.env.NODE_ENV === 'development') { console.warn('[Auth] 401 on school fetch - likely public page or token issue') }
+        if (process.env.NODE_ENV === 'development') { console.warn('[Auth] 401 on school fetch - likely public page or token issue') }
         // Don't trigger global authError, just set null
         setSchool(null)
         return
       }
-        if (process.env.NODE_ENV === 'development') { console.error("[Auth] Failed to fetch school data:", status, error.message) }
+      if (process.env.NODE_ENV === 'development') { console.error("[Auth] Failed to fetch school data:", status, error.message) }
       setSchool(null)
     }
   }
 
-    const validateToken = async () => {
-      const token = sessionStorage.getItem("authToken")
-      const storedUser = sessionStorage.getItem("user")
-        if (process.env.NODE_ENV === 'development') { console.log('[Auth] validateToken: token exists?', !!token, 'storedUser exists?', !!storedUser) }
-      if (!token || !storedUser) return false
+  const validateToken = async () => {
+    const token = sessionStorage.getItem("authToken")
+    const storedUser = sessionStorage.getItem("user")
+    if (process.env.NODE_ENV === 'development') { console.log('[Auth] validateToken: token exists?', !!token, 'storedUser exists?', !!storedUser) }
+    if (!token || !storedUser) return false
 
-      try {
-        if (process.env.NODE_ENV === 'development') { console.log('[Auth] Calling authAPI.me() with token...') }
-        const meResponse = await authAPI.me()
-        const meData = meResponse.data
-        if (process.env.NODE_ENV === 'development') { console.log('[Auth] meResponse:', meData) }
-        const parsedUser: User = { ...JSON.parse(storedUser || '{}'), ...meData, permissions: meData.permissions || meData.role_permission?.permission || [] }
-        if (process.env.NODE_ENV === 'development') { console.log('[Auth] parsedUser school_id:', parsedUser.school_id) }
-        sessionStorage.setItem("user", JSON.stringify(parsedUser))
-        setUser(parsedUser)
-        // Only fetch school if user has school_id and is authenticated successfully
-        if (parsedUser.school_id) {
-          try {
-            await fetchSchool(parsedUser.school_id)
-          } catch (schoolError: any) {
-            console.warn('[Auth] School fetch failed (non-critical):', schoolError.response?.status, schoolError.message)
-            setSchool(null)
-          }
-        } else {
-        if (process.env.NODE_ENV === 'development') { console.log('[Auth] No school_id, skipping fetchSchool') }
+    try {
+      if (process.env.NODE_ENV === 'development') { console.log('[Auth] Calling authAPI.me() with token...') }
+      const meResponse = await authAPI.me()
+      const meData = meResponse.data
+      if (process.env.NODE_ENV === 'development') { console.log('[Auth] meResponse:', meData) }
+      const parsedUser: User = { ...JSON.parse(storedUser || '{}'), ...meData, permissions: meData.permissions || meData.role_permission?.permission || [] }
+      if (process.env.NODE_ENV === 'development') { console.log('[Auth] parsedUser school_id:', parsedUser.school_id) }
+      sessionStorage.setItem("user", JSON.stringify(parsedUser))
+      setUser(parsedUser)
+      // Only fetch school if user has school_id and is authenticated successfully
+      if (parsedUser.school_id) {
+        try {
+          await fetchSchool(parsedUser.school_id)
+        } catch (schoolError: any) {
+          console.warn('[Auth] School fetch failed (non-critical):', schoolError.response?.status, schoolError.message)
           setSchool(null)
         }
-        setIsAuthenticated(true)
-        return true
-      } catch (error: any) {
-        if (error.response?.status === 401) {
-        if (process.env.NODE_ENV === 'development') { console.warn('[Auth] Token invalid/expired (401), clearing storage') }
-        } else {
-          if (process.env.NODE_ENV === 'development') { console.warn("Token validation error:", error.response?.status, error.message) }
-        }
-        sessionStorage.removeItem("authToken")
-        sessionStorage.removeItem("user")
-        setUser(null)
+      } else {
+        if (process.env.NODE_ENV === 'development') { console.log('[Auth] No school_id, skipping fetchSchool') }
         setSchool(null)
-        setIsAuthenticated(false)
-        return false
       }
+      setIsAuthenticated(true)
+      return true
+    } catch (error: any) {
+      if (error.response?.status === 401) {
+        if (process.env.NODE_ENV === 'development') { console.warn('[Auth] Token invalid/expired (401), clearing storage') }
+      } else {
+        if (process.env.NODE_ENV === 'development') { console.warn("Token validation error:", error.response?.status, error.message) }
+      }
+      sessionStorage.removeItem("authToken")
+      sessionStorage.removeItem("user")
+      setUser(null)
+      setSchool(null)
+      setIsAuthenticated(false)
+      return false
     }
+  }
 
   useEffect(() => {
-    validateToken().finally(() => {
-      setLoading(false)
-      // Notify components of auth state change
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('authStateChanged'))
-      }
-    })
+    // Hold the global loader while boot-time auth state is being resolved.
+    // Released after validation AND the school fetch (if applicable) settle,
+    // guaranteeing the loader never finishes before onboarding data is ready.
+    authLoading.hold()
+    validateToken()
+      .catch(() => {})
+      .finally(() => {
+        setLoading(false)
+        authLoading.release()
+        // Notify components of auth state change
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('authStateChanged'))
+        }
+      })
   }, [])
 
   const login = async (credential: string, password: string, loginType: "email" | "student_id" = "email") => {
     try {
-      const loginData = loginType === "email" 
-        ? { email: credential, password } 
+      const loginData = loginType === "email"
+        ? { email: credential, password }
         : { student_id: credential, password }
-      
+
       const response = await authAPI.login(loginData)
       const { access, user: userData } = response.data
 
@@ -180,12 +187,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     authAPI.logout()
     setUser(null)
     setSchool(null)
-    
+
     // Notify auth state change
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('authStateChanged'))
     }
-    
+
     router.push("/auth/login")
   }
 
@@ -197,7 +204,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       sessionStorage.setItem("authToken", access)
       sessionStorage.setItem("user", JSON.stringify(userData))
       setUser(userData)
-      
+
       // Role-based redirect
       const adminStaffRoles = ['academic_admin', 'exam_officer', 'finance_officer', 'ct_admin_support'] as const
       if (userData.role && adminStaffRoles.includes(userData.role as any)) {

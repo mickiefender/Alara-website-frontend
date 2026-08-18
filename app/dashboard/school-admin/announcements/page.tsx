@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState, useEffect } from "react"
-import { announcementsAPI } from "@/lib/api"
+import { announcementsAPI, getErrorMessage } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Trash2, Edit2, Plus, Megaphone } from "lucide-react"
+import { DataStateError } from "@/components/data-state"
 
 interface Announcement {
   id: number
@@ -41,7 +42,7 @@ export default function AnnouncementsPage() {
       setError(null)
     } catch (err: any) {
       console.error("Error:", err)
-      setError("Failed to load announcements")
+      setError(getErrorMessage(err, "Failed to load announcements. Please try again."))
     } finally {
       setLoading(false)
     }
@@ -134,7 +135,7 @@ export default function AnnouncementsPage() {
         </Dialog>
       </div>
 
-      {error && <div className="bg-red-100 text-red-700 p-4 rounded mb-4">{error}</div>}
+      {error && <DataStateError message={error} onRetry={fetchData} className="mb-4" />}
 
       <Card>
         <CardHeader>

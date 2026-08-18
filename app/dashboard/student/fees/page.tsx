@@ -5,7 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { billingAPI } from "@/lib/api"
+import { billingAPI, getErrorMessage } from "@/lib/api"
+import { DataStateTableRow } from "@/components/data-state"
 import { useAuthContext } from "@/lib/auth-context"
 import { usePayment } from "@/hooks/usePayment"
 import { DollarSign, Download } from "lucide-react"
@@ -91,7 +92,7 @@ export default function StudentFeesPage() {
       setError(null)
     } catch (err: any) {
       if (process.env.NODE_ENV === 'development') { console.error("Error fetching fees:", err) }
-      setError("Failed to load fees")
+      setError(getErrorMessage(err, "Failed to load fees. Please try again."))
     } finally {
       setLoading(false)
     }
@@ -219,7 +220,9 @@ export default function StudentFeesPage() {
                 </tr>
               </thead>
               <tbody>
-                {fees.length > 0 ? (
+                {loading ? (
+                  <DataStateTableRow colSpan={7} loading={loading} emptyMessage="No fees assigned yet" />
+                ) : fees.length > 0 ? (
                   fees.map((fee) => {
                     const balance = fee.balance > 0 ? fee.balance : Number(fee.amount)
                     const isOverdue = !fee.paid && new Date(fee.due_date) < new Date()

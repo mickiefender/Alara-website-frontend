@@ -1,0 +1,35 @@
+=== FILE USAGE SUMMARY ===
+app/dashboard/admin-staff/permissions/page.tsx :: animate-pulse
+app/dashboard/loading.tsx :: ui/loader-11
+app/dashboard/page.tsx :: LoadingWrapper, loading-wrapper
+app/dashboard/school-admin/results/templates/page.tsx :: Skeleton, skeleton
+app/dashboard/school-admin/students/[id]/page-updated.tsx :: CircularLoader
+app/dashboard/student/timetable/page.tsx :: animate-pulse
+app/dashboard/super-admin/onboarding/page.tsx :: LoadingWrapper, loading-wrapper
+app/dashboard/teacher/ai-assistant/page.tsx :: animate-pulse
+app/layout.tsx :: PageLoader, page-loader
+app/loading.tsx :: ui/loader-11
+components/BookOpeningLoader.tsx :: spinner
+components/circular-loader.tsx :: ui/loader-11, CircularLoader, PageLoader, Spinner, spinner
+components/landing/hero-section.tsx :: animate-pulse
+components/loading-wrapper.tsx :: LoadingWrapper
+components/page-loader.tsx :: ui/loader-11, PageLoader
+components/sidebar-nav.tsx :: animate-pulse
+components/super-admin/team-applications-section.tsx :: animate-pulse
+components/ui/sidebar.tsx :: Skeleton, skeleton
+components/ui/skeleton.tsx :: Skeleton, skeleton
+components/ui/spinner.tsx :: Spinner
+lib/api.ts :: spinner
+
+=== PATTERN COUNTS ===
+animate-pulse: 6
+ui/loader-11: 4
+LoadingWrapper: 3
+Skeleton: 3
+skeleton: 3
+PageLoader: 3
+spinner: 3
+loading-wrapper: 2
+CircularLoader: 2
+Spinner: 2
+page-loader: 1

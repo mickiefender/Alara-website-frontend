@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { messagingAPI } from '@/lib/api'
+import { messagingAPI, getErrorMessage } from '@/lib/api'
+import { DataStateLoading, DataStateError } from '@/components/data-state'
 import { Bell, X } from 'lucide-react'
 
 interface Notice {
@@ -25,6 +26,7 @@ export default function TeacherNotificationsPage() {
   const [notices, setNotices] = useState<Notice[]>([])
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [selectedNotice, setSelectedNotice] = useState<Notice | null>(null)
   const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null)
 
@@ -49,6 +51,7 @@ export default function TeacherNotificationsPage() {
       setNotices(noticesRes.data.results || noticesRes.data || [])
       setAnnouncements(announcementsRes.data.results || announcementsRes.data || [])
     } catch (err) {
+      setError(getErrorMessage(err, "Failed to load notifications. Please try again."))
       console.error('Error fetching notifications:', err)
     } finally {
       setLoading(false)
@@ -77,6 +80,10 @@ export default function TeacherNotificationsPage() {
           <p className="text-gray-600">View notices and announcements from your school</p>
         </div>
 
+        {error && (
+          <DataStateError message={error} onRetry={fetchData} className="mb-6" />
+        )}
+
         {/* Tabs */}
         <div className="flex gap-4 mb-6 border-b border-gray-200">
           {(['notices', 'announcements'] as const).map((tab) => (
@@ -95,9 +102,11 @@ export default function TeacherNotificationsPage() {
         </div>
 
         {/* Notices Tab */}
-        {activeTab === 'notices' && !loading && (
+        {activeTab === 'notices' && (
           <div className="space-y-4">
-            {notices.length === 0 ? (
+            {loading ? (
+              <DataStateLoading message="Loading notices..." />
+            ) : notices.length === 0 ? (
               <div className="bg-white rounded-lg p-8 text-center border border-gray-200">
                 <Bell size={48} className="mx-auto mb-4 text-gray-300" />
                 <p className="text-gray-500">No notices available</p>
@@ -135,9 +144,11 @@ export default function TeacherNotificationsPage() {
         )}
 
         {/* Announcements Tab */}
-        {activeTab === 'announcements' && !loading && (
+        {activeTab === 'announcements' && (
           <div className="space-y-4">
-            {announcements.length === 0 ? (
+            {loading ? (
+              <DataStateLoading message="Loading announcements..." />
+            ) : announcements.length === 0 ? (
               <div className="bg-white rounded-lg p-8 text-center border border-gray-200">
                 <Bell size={48} className="mx-auto mb-4 text-gray-300" />
                 <p className="text-gray-500">No announcements available</p>

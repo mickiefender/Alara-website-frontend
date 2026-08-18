@@ -1,0 +1,14 @@
+=== BookOpeningLoader ===
+=== ui/loader-11 ===
+frontend/app/dashboard/loading.tsx
+frontend/app/loading.tsx
+frontend/components/page-loader.tsx
+=== components/loader ===
+=== circular-loader ===
+frontend/app/dashboard/school-admin/students/[id]/page-updated.tsx
+frontend/components/circular-loader.tsx
+=== page-loader ===
+frontend/app/layout.tsx
+frontend/components/page-loader.tsx
+frontend/components/circular-loader.tsx
+=== BookOpeningLoader importers ===

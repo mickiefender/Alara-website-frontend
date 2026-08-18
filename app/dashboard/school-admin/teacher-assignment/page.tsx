@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { AssignTeachersToClass } from "@/components/assign-teachers-to-class"
 import { AssignSubjectTeachers } from "@/components/assign-subject-teachers"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { PageLoadingState } from "@/components/page-loading-state"
 
 interface Class {
   id: number
@@ -60,6 +61,8 @@ export default function TeacherAssignmentsPage() {
     setSelectedClassName(classItem.name)
     setDialogOpen(true)
   }
+
+  if (loading) return <div className="space-y-6 pb-8"><PageLoadingState message="Loading classes..." /></div>
 
   return (
     <div className="space-y-6 pb-8">

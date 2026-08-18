@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { ChevronLeft, ChevronRight, Trash2, Edit2, Search } from "lucide-react"
+import { TableLoadingState } from "@/components/page-loading-state"
 import { Suspense } from "react"
 
 interface Subject {
@@ -238,7 +239,9 @@ function SubjectsPageContent() {
             </tr>
           </thead>
           <tbody>
-            {paginatedSubjects.map((subject) => (
+            {loading ? (
+              <TableLoadingState colSpan={4} message="Loading subjects..." />
+            ) : paginatedSubjects.map((subject) => (
               <tr key={subject.id} className="border-b hover:bg-gray-50">
                 <td className="px-6 py-3 font-medium">{subject.name}</td>
                 <td className="px-6 py-3">#{subject.code}</td>

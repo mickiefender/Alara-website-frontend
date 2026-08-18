@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { DataStateLoading } from "@/components/data-state"
 
 type Tab = 'mark' | 'summary'
 
@@ -484,7 +485,15 @@ const [studentNames, setStudentNames] = useState<Record<number, string>>({})
             </>
           )}
 
-          {selectedClass && students.length === 0 && (
+          {selectedClass && loading && (
+            <Card>
+              <CardContent className="py-12">
+                <DataStateLoading message="Loading students..." />
+              </CardContent>
+            </Card>
+          )}
+
+          {selectedClass && !loading && students.length === 0 && (
             <Card>
               <CardContent className="py-12 text-center text-gray-500">
                 <Users className="h-12 w-12 mx-auto mb-3 text-gray-300" />
@@ -592,7 +601,9 @@ const [studentNames, setStudentNames] = useState<Record<number, string>>({})
               </div>
             </CardHeader>
             <CardContent>
-              {summaryData.length > 0 ? (
+              {summaryLoading ? (
+                <DataStateLoading message="Loading attendance summary..." />
+              ) : summaryData.length > 0 ? (
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>

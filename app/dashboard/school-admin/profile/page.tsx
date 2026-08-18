@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { useToast } from "@/components/ui/use-toast"
 import { ProfilePictureUpload } from "@/components/profile-picture-upload"
 import { usersAPI, academicsAPI } from "@/lib/api"
+import { PageLoadingState } from "@/components/page-loading-state"
 
 interface SchoolAdminProfile {
   id: number
@@ -120,8 +121,10 @@ export default function SchoolAdminProfilePage() {
     }
   }
 
+  if (loading) return <div className="space-y-6 p-6"><PageLoadingState message="Loading profile..." /></div>
+
   if (!profile) {
-    return <div>Profile not found</div>
+    return <div className="space-y-6 p-6"><p className="text-center text-muted-foreground py-8">Profile not found.</p></div>
   }
 
   return (
