@@ -465,7 +465,6 @@ relative h-16 px-4 flex items-center justify-between
         )}
         {filteredSections.map((section) => {
           const isExpanded = expandedSections.has(section.label)
-          const isActive = section.href && pathname.includes(section.href.split("#")[0])
           const Icon = section.icon
           const hasItems = section.items && section.items.length > 0
 
@@ -475,16 +474,11 @@ relative h-16 px-4 flex items-center justify-between
                 <div
                   className={`
                     group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200
-                    ${isActive
-                      ? "bg-sidebar-primary/15 backdrop-blur-sm text-sidebar-primary ring-1 ring-sidebar-primary/40 shadow-[0_0_20px_-6px_var(--sidebar-primary)]"
-
-                      : "text-sidebar-foreground-computed/70 hover:bg-white/10 hover:text-sidebar-foreground-computed"
-
-                    }
+                    text-sidebar-foreground-computed/70 hover:bg-white/10 hover:text-sidebar-foreground-computed
                     ${isCollapsed && !isMobile ? "justify-center" : ""}
                   `}
                 >
-                  <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? "text-sidebar-primary" : "text-sidebar-foreground-computed/60 group-hover:text-sidebar-foreground-computed"}`} />
+                  <Icon className="w-4 h-4 flex-shrink-0 text-sidebar-foreground-computed/60 group-hover:text-sidebar-foreground-computed" />
                   {!isCollapsed || isMobile ? (
                     <span className="font-medium text-sm truncate">{section.label}</span>
                   ) : null}
