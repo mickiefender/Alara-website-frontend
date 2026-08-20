@@ -751,7 +751,12 @@ export function ModernTimetable() {
 
       {/* Content */}
       <CardContent className="p-4">
-        {filteredTimetables.length === 0 ? (
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-16 gap-3">
+            <div className="animate-spin w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full" />
+            <p className="text-sm text-slate-500">Loading timetable data...</p>
+          </div>
+        ) : filteredTimetables.length === 0 ? (
           <div className="text-center py-12">
             <Calendar className="w-12 h-12 mx-auto text-slate-300 mb-4" />
             <h3 className="text-lg font-medium text-slate-600">No timetable entries found</h3>

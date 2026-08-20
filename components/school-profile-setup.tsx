@@ -152,6 +152,19 @@ export function SchoolProfileSetup() {
     }
   }
 
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="py-12 text-center">
+          <div className="flex flex-col items-center justify-center gap-3">
+            <Loader2 className="h-7 w-7 animate-spin text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">Loading school profile...</p>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
   if (!school) {
     return (
       <Card>

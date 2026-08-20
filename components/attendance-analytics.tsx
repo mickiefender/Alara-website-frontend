@@ -23,7 +23,7 @@ import {
   Pie,
   Cell,
 } from "recharts"
-import { Calendar as CalendarIcon, Download, Filter, TrendingUp, TrendingDown, Users, BookOpen, Clock, CheckCircle, XCircle, AlertCircle } from "lucide-react"
+import { Calendar as CalendarIcon, Download, Filter, TrendingUp, TrendingDown, Users, BookOpen, Clock, CheckCircle, XCircle, AlertCircle, Loader2 } from "lucide-react"
 import { format, subDays } from "date-fns"
 
 interface OverallReport {
@@ -145,6 +145,21 @@ export function AttendanceAnalytics() {
     } catch {
       return dateStr
     }
+  }
+
+  if (loading && !overallReport) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="flex items-center justify-center py-16">
+            <div className="flex flex-col items-center gap-3">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">Loading attendance data...</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   if (error) {
@@ -599,4 +614,3 @@ export function AttendanceAnalytics() {
     </div>
   )
 }
-

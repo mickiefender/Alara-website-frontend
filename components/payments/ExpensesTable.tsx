@@ -125,7 +125,12 @@ export default function ExpensesTable({
         </div>
       </CardHeader>
       <CardContent className="p-0">
-        {expenses.length === 0 ? (
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-16 gap-3">
+            <div className="animate-spin w-8 h-8 border-4 border-gray-200 border-t-gray-900 rounded-full" />
+            <p className="text-sm text-gray-500">Loading expenses...</p>
+          </div>
+        ) : expenses.length === 0 ? (
           <div className="p-12 text-center border-2 border-dashed border-gray-200 rounded-lg">
             <div className="mx-auto w-16 h-16 text-gray-400 mb-4">
               <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" className="w-16 h-16">

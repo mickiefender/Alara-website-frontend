@@ -276,7 +276,12 @@ const getStudentUserId = (student: Student): number => {
             </div>
             
             <div className="max-h-[500px] overflow-y-auto space-y-2">
-              {filteredStudents.length === 0 ? (
+              {loading ? (
+                <div className="flex flex-col items-center justify-center py-8 gap-3">
+                  <div className="animate-spin w-6 h-6 border-2 border-secondary border-t-transparent rounded-full" />
+                  <p className="text-sm text-gray-500">Loading students...</p>
+                </div>
+              ) : filteredStudents.length === 0 ? (
                 <p className="text-center text-gray-500 py-4">No students found</p>
               ) : (
                 filteredStudents.map((student) => (
@@ -320,7 +325,12 @@ const getStudentUserId = (student: Student): number => {
                     <FileText className="h-4 w-4" />
                     Outstanding Fees
                   </h3>
-                  {studentFees.length === 0 ? (
+                  {feesLoading ? (
+                    <div className="flex items-center justify-center gap-2 py-6 text-gray-500">
+                      <div className="animate-spin w-5 h-5 border-2 border-secondary border-t-transparent rounded-full" />
+                      <p className="text-sm">Loading fees...</p>
+                    </div>
+                  ) : studentFees.length === 0 ? (
                     <p className="text-gray-500 text-sm">No fees assigned to this student</p>
                   ) : (
                     <div className="space-y-3">
@@ -580,4 +590,3 @@ const getStudentUserId = (student: Student): number => {
     </div>
   )
 }
-

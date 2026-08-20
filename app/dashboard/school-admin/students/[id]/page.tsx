@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { ChevronLeft, Edit2, AlertCircle, BookOpen, DollarSign, Flag, FileText, Camera, Save, X, User, Phone, Mail, MapPin, Calendar, Briefcase, Heart, Users, MessageSquare, Download, Trash2, Plus, Edit3, CheckCircle2 } from 'lucide-react'
+import { ChevronLeft, Edit2, AlertCircle, BookOpen, DollarSign, FileText, Camera, Save, X, User, Phone, Mail, MapPin, Calendar, Briefcase, Heart, Users, MessageSquare, Download, Trash2, Plus, Edit3, CheckCircle2 } from 'lucide-react'
 import { toast } from 'sonner'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -71,9 +71,6 @@ export default function StudentDetailPage() {
   const [debugInfo, setDebugInfo] = useState<any>({})
   const [notices, setNotices] = useState<any[]>([])
   const [dueFees, setDueFees] = useState(0)
-  const [upcomingExams, setUpcomingExams] = useState(0)
-  const [eventsCount, setEventsCount] = useState(0)
-  const [docsCount, setDocsCount] = useState(0)
   const [classes, setClasses] = useState<any[]>([])
   const [enrollments, setEnrollments] = useState<any[]>([])
   const [classesLoading, setClassesLoading] = useState(false)
@@ -239,9 +236,7 @@ export default function StudentDetailPage() {
         // Add school fees to due fees if no individual fees exist
         setDueFees((prev: number) => prev + totalSchoolFees)
       } catch { /* skip */ }
-      try { const e = await academicsAPI.exams(); setUpcomingExams((e.data.results || e.data || []).filter((x: any) => new Date(x.exam_date) > new Date()).length) } catch { /* skip */ }
-      try { const ev = await academicsAPI.events(); setEventsCount(ev.data.results?.length || 0) } catch { /* skip */ }
-      try { const d = await academicsAPI.documents(); setDocsCount(d.data.results?.length || 0) } catch { /* skip */ }
+      
       try { const n = await academicsAPI.notices(); setNotices((n.data.results || n.data || []).slice(0, 5)) } catch { /* skip */ }
       
       // Load classes and student enrollments
@@ -411,6 +406,15 @@ export default function StudentDetailPage() {
   const enrolledClassIds = new Set(enrollments.map((e) => e.class_obj))
   const availableClasses = classes.filter((c) => !enrolledClassIds.has(c.id))
 
+  if (loading) return (
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="flex flex-col items-center justify-center py-32 gap-4">
+        <div className="animate-spin w-10 h-10 border-4 border-secondary border-t-transparent rounded-full" />
+        <p className="text-gray-500 text-sm">Loading student details...</p>
+      </div>
+    </div>
+  )
+
   if (error || !student) return (
     <div className="flex items-center justify-center min-h-screen">
       <div className="text-red-600 flex flex-col items-center gap-4">
@@ -538,13 +542,7 @@ export default function StudentDetailPage() {
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <StatCard label="Upcoming Exams" value={upcomingExams} Icon={BookOpen} color="bg-secondary" />
-        <StatCard label="Due Fees" value={`¢${dueFees.toFixed(2)}`} Icon={DollarSign} color="bg-secondary" />
-        <StatCard label="Events" value={eventsCount} Icon={Flag} color="bg-secondary" />
-        <StatCard label="Documents" value={docsCount} Icon={FileText} color="bg-secondary" />
-      </div>
+     
 
       {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

@@ -238,7 +238,12 @@ export default function PaymentHistory({ studentId, schoolId, showStudentColumn 
         </div>
       </CardHeader>
       <CardContent>
-        {payments.length === 0 ? (
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-12 gap-3">
+            <div className="animate-spin w-7 h-7 border-4 border-gray-300 border-t-gray-900 rounded-full" />
+            <p className="text-sm text-gray-500">Loading payment history...</p>
+          </div>
+        ) : payments.length === 0 ? (
           <div className="p-8 text-center text-gray-500">
             No payment records found
           </div>

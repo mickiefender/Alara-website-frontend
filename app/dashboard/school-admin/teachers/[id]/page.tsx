@@ -252,6 +252,15 @@ export default function TeacherDetailPage() {
   const assignedClassIds = new Set(classes.map((c: any) => c.class_obj))
   const availableClassesForAssignment = allClasses.filter((c: any) => !assignedClassIds.has(c.id))
 
+  if (loading) return (
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="flex flex-col items-center justify-center py-32 gap-4">
+        <div className="animate-spin w-10 h-10 border-4 border-secondary border-t-transparent rounded-full" />
+        <p className="text-gray-500 text-sm">Loading teacher details...</p>
+      </div>
+    </div>
+  )
+
   if (error || !teacher) return (
     <div className="flex items-center justify-center min-h-screen">
       <div className="text-red-600 flex flex-col items-center gap-4">

@@ -93,13 +93,13 @@ export default function ReceiptsTable({
     
     const printContent = document.getElementById('receipts-printable')
     if (printContent) {
-      html2pdf().from(printContent).set({
+      html2pdf(printContent, {
         margin: 1,
         filename: `school-receipts-${new Date().toISOString().slice(0,10)}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true },
         jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
-      }).save()
+      })
     }
   }
 
@@ -164,7 +164,12 @@ export default function ReceiptsTable({
         </div>
       </CardHeader>
       <CardContent className="p-0">
-        {localPayments.length === 0 ? (
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-16 gap-3">
+            <div className="animate-spin w-8 h-8 border-4 border-gray-200 border-t-gray-900 rounded-full" />
+            <p className="text-sm text-gray-500">Loading receipts...</p>
+          </div>
+        ) : localPayments.length === 0 ? (
           <div className="p-12 text-center border-2 border-dashed border-gray-200 rounded-lg">
             <div className="mx-auto w-16 h-16 text-gray-400 mb-4">
               <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" className="w-16 h-16">
@@ -311,4 +316,3 @@ export default function ReceiptsTable({
     </Card>
   )
 }
-
