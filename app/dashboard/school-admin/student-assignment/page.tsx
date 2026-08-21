@@ -310,15 +310,33 @@ export default function StudentAssignmentsPage() {
                             <ArrowRight size={15} />
                           </Button>
                         </DialogTrigger>
-                        <DialogContent className="max-w-2xl">
-                          <DialogHeader>
-                            <DialogTitle className="text-2xl">
-                              Enroll Students in <span className="text-secondary">{selectedClassName}</span>
-                            </DialogTitle>
-                          </DialogHeader>
-                          {selectedClassId && (
-                            <EnrollStudentsInClass classId={selectedClassId} className={selectedClassName} />
-                          )}
+                        <DialogContent className="sm:max-w-6xl w-[95vw] p-0 gap-0 overflow-hidden">
+                          {/* Header */}
+                          <div className="bg-gradient-to-r from-secondary/10 via-secondary/5 to-transparent border-b border-border px-6 py-4">
+                            <DialogHeader className="space-y-0">
+                              <div className="flex items-start gap-3.5">
+                                <div className="w-11 h-11 rounded-xl bg-secondary/15 ring-1 ring-secondary/20 flex items-center justify-center flex-shrink-0">
+                                  <Users size={20} className="text-secondary" />
+                                </div>
+                                <div className="min-w-0">
+                                  <DialogTitle className="text-lg font-bold text-foreground">
+                                    Manage Students
+                                  </DialogTitle>
+                                  <p className="text-sm text-muted-foreground mt-0.5 truncate">
+                                    Enrolled students in{" "}
+                                    <span className="font-medium text-foreground">{selectedClassName}</span>
+                                  </p>
+                                </div>
+                              </div>
+                            </DialogHeader>
+                          </div>
+
+                          {/* Body */}
+                          <div className="px-6 py-4 max-h-[65vh] overflow-y-auto">
+                            {selectedClassId && (
+                              <EnrollStudentsInClass classId={selectedClassId} className={selectedClassName} />
+                            )}
+                          </div>
                         </DialogContent>
                       </Dialog>
                     </TableCell>

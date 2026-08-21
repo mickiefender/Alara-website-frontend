@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Trash2, Plus, BookOpen } from "lucide-react"
-import { academicsAPI } from "@/lib/api"
+import { academicsAPI, usersAPI } from "@/lib/api"
 import { useAuthContext } from "@/lib/auth-context"
 
 interface ClassSubjectTeacher {
@@ -78,8 +78,13 @@ export function AssignSubjectTeachers({ classId, className }: { classId: number;
         : []
       setSubjectTeachers(filtered)
 
-      // Get teachers - mock for now as we need to get from API
-      setTeachers([]) // Will be populated from classSubjectTeachers or separate API
+      // Get all teachers in the school
+      const teachersRes = await usersAPI.teachers()
+      const allTeachers = teachersRes.data.results || teachersRes.data || []
+      if (allTeachers.length === 0) {
+        setError("No teachers found. Please create teachers first before assigning.")
+      }
+      setTeachers(allTeachers)
     } catch (err: any) {
       setError(err?.response?.data?.detail || "Failed to load data")
     } finally {
@@ -142,6 +147,13 @@ export function AssignSubjectTeachers({ classId, className }: { classId: number;
     }
   }
 
+  // Teachers not yet assigned to any subject in this class
+  const assignedTeacherIds = new Set(subjectTeachers.map((st) => st.teacher))
+  const availableTeachers = teachers.filter((t) => {
+    const userId = t.user_data?.id || t.user
+    return userId ? !assignedTeacherIds.has(userId) : false
+  })
+
   const handleRemove = async (id: number) => {
     if (!confirm("Are you sure you want to remove this assignment?")) return
     try {
@@ -194,12 +206,21 @@ export function AssignSubjectTeachers({ classId, className }: { classId: number;
                         <SelectValue placeholder="Choose a teacher" />
                       </SelectTrigger>
                       <SelectContent>
-                        {/* Teachers would be fetched from API - placeholder for now */}
-                        <SelectItem value="1">Teacher 1</SelectItem>
+                        {availableTeachers.length === 0 ? (
+                          <div className="px-3 py-2 text-sm text-muted-foreground">
+                            No unassigned teachers available
+                          </div>
+                        ) : (
+                          availableTeachers.map((teacher) => (
+                            <SelectItem key={teacher.id} value={teacher.id.toString()}>
+                              {teacher.first_name} {teacher.last_name} ({teacher.email})
+                            </SelectItem>
+                          ))
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
-                  <Button type="submit" className="w-full">
+                  <Button type="submit" className="w-full" disabled={availableTeachers.length === 0}>
                     Assign Teacher
                   </Button>
                 </form>

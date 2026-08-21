@@ -12,8 +12,8 @@ import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 
 import { GradingPolicyManagement } from "@/components/grading-policy-management"
-import { gradesAPI, usersAPI, academicsAPI, getErrorMessage } from "@/lib/api"
-import { Search, ArrowRight, Users, TrendingUp, Award } from "lucide-react"
+import { gradesAPI, usersAPI, academicsAPI, getErrorMessage, fetchAllGrades } from "@/lib/api"
+import { Search, ArrowRight, Users, TrendingUp, Award, Plus, GraduationCap } from "lucide-react"
 import { DataStateTableRow } from "@/components/data-state"
 
 interface Grade {
@@ -37,6 +37,31 @@ interface StudentSummary {
   subjectCount: number
   avgPercentage: number
   overallGrade: string
+}
+
+const getInitials = (name: string) =>
+  name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("") || "?"
+
+const gradeTone = (grade: string) => {
+  switch (grade) {
+    case "A":
+      return "bg-emerald-100 text-emerald-800 border-emerald-200"
+    case "B":
+      return "bg-sky-100 text-sky-800 border-sky-200"
+    case "C":
+      return "bg-amber-100 text-amber-800 border-amber-200"
+    case "D":
+      return "bg-orange-100 text-orange-800 border-orange-200"
+    case "F":
+      return "bg-red-100 text-red-800 border-red-200"
+    default:
+      return "bg-gray-100 text-gray-800 border-gray-200"
+  }
 }
 
 export default function GradingPage() {
@@ -73,20 +98,23 @@ export default function GradingPage() {
   const fetchData = async () => {
     try {
       setLoading(true)
-      const [gradesRes, studentsRes, subjectsRes, sessionsRes] = await Promise.all([
-        gradesAPI.list({ ordering: '-percentage' }),
+      // fetchAllGrades walks every paginated page — without it the summary
+      // only covers grades that happened to land on the first page (20 rows),
+      // so students with older grades never appear in the ranking.
+      const [allGrades, studentsRes, subjectsRes, sessionsRes] = await Promise.all([
+        fetchAllGrades<Grade>({ ordering: "-percentage" }),
         usersAPI.students(),
         academicsAPI.subjects(),
         academicsAPI.academicSessions(),
       ])
 
-      setGrades(gradesRes.data.results || gradesRes.data || [])
+      setGrades(allGrades)
       setStudents(studentsRes.data.results || studentsRes.data || [])
       setSubjects(subjectsRes.data.results || subjectsRes.data || [])
-      
+
       const sessionsData = sessionsRes.data.results || sessionsRes.data || []
       setSessions(sessionsData)
-      
+
       const currentSession = sessionsData.find((s: any) => s.is_current)
       if (currentSession) {
         setFilterSession(currentSession.id.toString())
@@ -102,7 +130,7 @@ export default function GradingPage() {
 
   const studentsSummary = useMemo((): StudentSummary[] => {
     const filteredGrades = grades.filter((g) => {
-      if (filterSession && g.academic_session?.toString() !== filterSession) return false
+      if (filterSession && filterSession !== "all" && g.academic_session?.toString() !== filterSession) return false
       return true
     })
 
@@ -110,7 +138,7 @@ export default function GradingPage() {
 
     filteredGrades.forEach((g) => {
       if (!studentMap.has(g.student)) {
-        studentMap.set(g.student, { grades: [], name: g.student_name || '' })
+        studentMap.set(g.student, { grades: [], name: g.student_name || "" })
       }
       studentMap.get(g.student)!.grades.push(g)
     })
@@ -118,7 +146,7 @@ export default function GradingPage() {
     return Array.from(studentMap.values())
       .map(({ grades, name }) => {
         const avgPercentage = grades.reduce((sum, g) => sum + g.percentage, 0) / grades.length || 0
-        const overallGrade = avgPercentage >= 90 ? 'A' : avgPercentage >= 80 ? 'B' : avgPercentage >= 70 ? 'C' : avgPercentage >= 60 ? 'D' : 'F'
+        const overallGrade = avgPercentage >= 90 ? "A" : avgPercentage >= 80 ? "B" : avgPercentage >= 70 ? "C" : avgPercentage >= 60 ? "D" : "F"
         const subjectCount = new Set(grades.map((g) => g.subject)).size
         return {
           studentId: grades[0].student,
@@ -164,7 +192,7 @@ export default function GradingPage() {
         assessment_type: "exam",
         score: "",
         max_score: "100",
-        academic_session: filterSession,
+        academic_session: filterSession === "all" ? "" : filterSession,
       })
       await fetchData()
     } catch (err: any) {
@@ -173,135 +201,151 @@ export default function GradingPage() {
     }
   }
 
-  const stats = [
-    { label: 'Students Graded', value: studentsSummary.length, icon: Users, color: 'blue' },
-    { label: 'Total Assessments', value: grades.filter(g => filterSession === '' || g.academic_session?.toString() === filterSession).length, icon: TrendingUp, color: 'green' },
-    { label: 'A Grade Students', value: studentsSummary.filter(s => s.overallGrade === 'A').length, icon: Award, color: 'yellow' },
-  ]
+  const sessionAssessmentCount = grades.filter((g) => filterSession === "" || filterSession === "all" || g.academic_session?.toString() === filterSession).length
 
-  
+  const stats = [
+    { label: "Students Graded", value: studentsSummary.length, icon: Users, iconClass: "bg-red-50 text-red-600", valueClass: "text-gray-900" },
+    { label: "Total Assessments", value: sessionAssessmentCount, icon: TrendingUp, iconClass: "bg-emerald-50 text-emerald-600", valueClass: "text-gray-900" },
+    { label: "A Grade Students", value: studentsSummary.filter(s => s.overallGrade === "A").length, icon: Award, iconClass: "bg-amber-50 text-amber-600", valueClass: "text-gray-900" },
+  ]
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-start">
-        <div>
-          <h1 className="text-3xl font-bold text-secondary">Student Grades Overview</h1>
-          <p className="text-gray-600 mt-1">View overall student performance and drill down into details</p>
-        </div>
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-secondary hover:bg-primary">+ Add New Grade</Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Add Grade</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Student</Label>
-                  <Select value={formData.student} onValueChange={(v) => setFormData({ ...formData, student: v })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Student" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {students.map((s) => {
-                        const studentValue = (s.user?.id || s.id).toString()
-                        const studentLabel = getStudentName(s.user?.id || s.id)
-                        return (
-                          <SelectItem key={s.id} value={studentValue}>
-                            {studentLabel}
+      {/* ── Header ─────────────────────────────────────────── */}
+      <div className="relative overflow-hidden rounded-2xl border border-border/70 bg-card p-6 md:p-8 shadow-sm">
+        <div className="pointer-events-none absolute -top-20 -right-16 h-64 w-64 rounded-full bg-primary/10 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-24 right-40 h-56 w-56 rounded-full bg-secondary/5 blur-3xl" />
+        <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="flex items-start gap-4">
+            <div className="hidden sm:flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-white shadow-md">
+              <GraduationCap size={28} />
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-secondary">Academic Records</p>
+              <h1 className="mt-1 text-2xl md:text-3xl font-bold text-gray-900">Student Grades Overview</h1>
+              <p className="mt-1 text-sm text-muted-foreground">
+                View overall student performance and drill down into details
+              </p>
+            </div>
+          </div>
+          <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild>
+              <Button className="gap-2 bg-primary hover:bg-primary-dark text-white shadow-sm">
+                <Plus size={16} />
+                Add New Grade
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Add Grade</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Student</Label>
+                    <Select value={formData.student} onValueChange={(v) => setFormData({ ...formData, student: v })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Student" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {students.map((s) => {
+                          const studentValue = (s.user?.id || s.id).toString()
+                          const studentLabel = getStudentName(s.user?.id || s.id)
+                          return (
+                            <SelectItem key={s.id} value={studentValue}>
+                              {studentLabel}
+                            </SelectItem>
+                          )
+                        })}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Subject</Label>
+                    <Select value={formData.subject} onValueChange={(v) => setFormData({ ...formData, subject: v })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Subject" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {subjects.map((s) => (
+                          <SelectItem key={s.id} value={s.id.toString()}>
+                            {s.name}
                           </SelectItem>
-                        )
-                      })}
-                    </SelectContent>
-                  </Select>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-                <div>
-                  <Label>Subject</Label>
-                  <Select value={formData.subject} onValueChange={(v) => setFormData({ ...formData, subject: v })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Subject" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {subjects.map((s) => (
-                        <SelectItem key={s.id} value={s.id.toString()}>
-                          {s.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Assessment Type</Label>
+                    <Select value={formData.assessment_type} onValueChange={(v) => setFormData({ ...formData, assessment_type: v })}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {assessmentTypes.map((type) => (
+                          <SelectItem key={type.value} value={type.value}>
+                            {type.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Academic Session</Label>
+                    <Select value={formData.academic_session} onValueChange={(v) => setFormData({ ...formData, academic_session: v })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Session" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {sessions.map((session) => (
+                          <SelectItem key={session.id} value={session.id.toString()}>
+                            {session.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Assessment Type</Label>
-                  <Select value={formData.assessment_type} onValueChange={(v) => setFormData({ ...formData, assessment_type: v })}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {assessmentTypes.map((type) => (
-                        <SelectItem key={type.value} value={type.value}>
-                          {type.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Score</Label>
+                    <Input type="number" value={formData.score} onChange={(e) => setFormData({ ...formData, score: e.target.value })} required />
+                  </div>
+                  <div>
+                    <Label>Max Score</Label>
+                    <Input type="number" value={formData.max_score} onChange={(e) => setFormData({ ...formData, max_score: e.target.value })} required />
+                  </div>
                 </div>
-                <div>
-                  <Label>Academic Session</Label>
-                  <Select value={formData.academic_session} onValueChange={(v) => setFormData({ ...formData, academic_session: v })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Session" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {sessions.map((session) => (
-                        <SelectItem key={session.id} value={session.id.toString()}>
-                          {session.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Score</Label>
-                  <Input type="number" value={formData.score} onChange={(e) => setFormData({ ...formData, score: e.target.value })} required />
-                </div>
-                <div>
-                  <Label>Max Score</Label>
-                  <Input type="number" value={formData.max_score} onChange={(e) => setFormData({ ...formData, max_score: e.target.value })} required />
-                </div>
-              </div>
-              <Button type="submit" className="w-full">Add Grade</Button>
-            </form>
-          </DialogContent>
-        </Dialog>
+                <Button type="submit" className="w-full bg-primary hover:bg-primary-dark text-white">
+                  Add Grade
+                </Button>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {stats.map((stat, index) => (
-          <div key={index} className="bg-gradient-to-r from-white to-gray-50 dark:from-slate-800 dark:to-slate-700 border rounded-xl p-6 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div className={`p-3 rounded-xl bg-${stat.color}-100 dark:bg-${stat.color}-900/30`}>
-                <stat.icon className={`w-6 h-6 text-${stat.color}-600`} />
-              </div>
-              <div className="text-right">
-                <p className={`text-3xl font-bold text-${stat.color}-600`}>{stat.value}</p>
-                <p className="text-sm text-gray-600 dark:text-slate-400">{stat.label}</p>
-              </div>
+      {/* ── Stats Cards ────────────────────────────────────── */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 stagger">
+        {stats.map((stat) => (
+          <div key={stat.label} className="glass-card glass-hover p-5 flex items-center gap-4">
+            <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${stat.iconClass}`}>
+              <stat.icon size={22} />
+            </div>
+            <div className="min-w-0">
+              <p className={`text-3xl font-bold leading-none ${stat.valueClass}`}>{stat.value}</p>
+              <p className="mt-1.5 text-sm text-muted-foreground">{stat.label}</p>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col md:flex-row gap-4 items-end">
+      {/* ── Filters ────────────────────────────────────────── */}
+      <div className="glass-card p-4 flex flex-col md:flex-row gap-4 items-end">
         <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={18} />
           <Input
             placeholder="Search students by name..."
             value={searchTerm}
@@ -309,88 +353,111 @@ export default function GradingPage() {
             className="pl-10"
           />
         </div>
-        <div className="w-full md:w-auto">
+        <div className="w-full md:w-64">
           <Label>Academic Session</Label>
           <Select value={filterSession} onValueChange={setFilterSession}>
             <SelectTrigger>
               <SelectValue placeholder="All Sessions" />
             </SelectTrigger>
             <SelectContent>
-<SelectItem value="all">All Sessions</SelectItem>
+              <SelectItem value="all">All Sessions</SelectItem>
               {sessions.map((session: any) => (
                 <SelectItem key={session.id} value={session.id.toString()}>
-                  {session.name} {session.is_current ? '(Current)' : ''}
+                  {session.name} {session.is_current ? "(Current)" : ""}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
+        {studentsSummary.length > 0 && (
+          <div className="hidden md:flex items-center gap-2 px-3 py-2 rounded-lg bg-muted text-sm text-muted-foreground">
+            <Users size={16} />
+            {studentsSummary.length} student{studentsSummary.length === 1 ? "" : "s"}
+          </div>
+        )}
       </div>
 
+      {/* ── Tabs ───────────────────────────────────────────── */}
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList>
           <TabsTrigger value="overview">Student Overview</TabsTrigger>
           <TabsTrigger value="policy">Grading Policy</TabsTrigger>
-          <TabsTrigger value="templates">
-            Templates
-          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
-          <div className="bg-white rounded-xl shadow border overflow-hidden">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Student</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Subjects</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Avg Score</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Overall Grade</th>
-                  <th className="px-6 py-4 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {studentsSummary.map((summary) => (
-                  <tr key={summary.studentId} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="font-medium text-gray-900">{summary.studentName}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {summary.subjectCount}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-2xl font-bold text-emerald-600">{summary.avgPercentage.toFixed(1)}%</span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <Badge className={`font-bold text-lg px-4 py-2 ${
-                        summary.overallGrade === 'A' ? 'bg-green-100 text-green-800 border-green-200' :
-                        summary.overallGrade === 'B' ? 'bg-blue-100 text-blue-800 border-blue-200' :
-                        summary.overallGrade === 'C' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' :
-                        summary.overallGrade === 'D' ? 'bg-orange-100 text-orange-800 border-orange-200' :
-                        'bg-red-100 text-red-800 border-red-200'
-                      }`}>
-                        {summary.overallGrade}
-                      </Badge>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <Link 
-                        href={`/dashboard/school-admin/grading/${summary.studentId}`}
-                        className="flex items-center gap-1 text-secondary hover:text-primary font-semibold"
-                      >
-                        View Details
-                        <ArrowRight className="w-4 h-4" />
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-                {loading ? <DataStateTableRow colSpan={5} loading={loading} emptyMessage="No students with grades found" /> : studentsSummary.length === 0 && (
+          <div className="glass-card overflow-hidden">
+            <div className="flex items-center justify-between px-6 pt-5 pb-3">
+              <div>
+                <h2 className="text-base font-semibold text-gray-900">Student Performance</h2>
+                <p className="text-sm text-muted-foreground">
+                  Ranked by average score for the selected session
+                </p>
+              </div>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-muted/60">
                   <tr>
-                    <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
-                      {error ? error : "No students with grades found. Add grades to see summaries here."}
-                    </td>
+                    <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Student</th>
+                    <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Subjects</th>
+                    <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Avg Score</th>
+                    <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Overall Grade</th>
+                    <th className="px-6 py-3.5 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">Actions</th>
                   </tr>
-                )}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-border/70">
+                  {studentsSummary.map((summary) => (
+                    <tr key={summary.studentId} className="hover:bg-muted/40 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground text-xs font-bold">
+                            {getInitials(summary.studentName)}
+                          </div>
+                          <span className="font-medium text-gray-900">{summary.studentName}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                        {summary.subjectCount}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xl font-bold text-gray-900">{summary.avgPercentage.toFixed(1)}%</span>
+                          <div className="h-1.5 w-20 overflow-hidden rounded-full bg-muted">
+                            <div
+                              className="h-full rounded-full bg-primary"
+                              style={{ width: `${Math.min(100, summary.avgPercentage)}%` }}
+                            />
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <Badge className={`font-bold px-3 py-1.5 border ${gradeTone(summary.overallGrade)}`}>
+                          {summary.overallGrade}
+                        </Badge>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <Link
+                          href={`/dashboard/school-admin/grading/${summary.studentId}`}
+                          className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-secondary hover:bg-secondary/10 font-semibold transition-colors"
+                        >
+                          View Details
+                          <ArrowRight className="w-4 h-4" />
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                  {loading ? (
+                    <DataStateTableRow colSpan={5} loading={loading} emptyMessage="No students with grades found" />
+                  ) : studentsSummary.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="px-6 py-12 text-center text-muted-foreground">
+                        {error ? error : "No students with grades found. Add grades to see summaries here."}
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </TabsContent>
 

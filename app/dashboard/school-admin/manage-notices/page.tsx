@@ -2,24 +2,61 @@
 
 import type React from "react"
 import { useState, useEffect } from "react"
-import { academicsAPI } from "@/lib/api"
+import { messagingAPI, getErrorMessage } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Trash2, Edit2, Plus } from "lucide-react"
-import { PageLoadingState } from "@/components/page-loading-state"
+import { RecipientPicker } from "@/components/recipient-picker"
+import { Trash2, Plus, Bell, Pin, PinOff, Users } from "lucide-react"
+
+type Audience = "all" | "students" | "teachers" | "individual"
 
 interface Notice {
   id: number
   title: string
   content: string
   priority: string
-  posted_by_name: string
+  send_to_all: boolean
+  send_to_teachers: boolean
+  send_to_students: boolean
+  recipient_names: string[]
+  is_pinned: boolean
+  created_by_name?: string
   created_at: string
-  is_active: boolean
+}
+
+const PRIORITY_OPTIONS = [
+  { value: "low", label: "Low Priority" },
+  { value: "medium", label: "Medium Priority" },
+  { value: "high", label: "High Priority" },
+  { value: "urgent", label: "Urgent" },
+]
+
+const AUDIENCE_OPTIONS: { value: Audience; label: string; hint: string }[] = [
+  { value: "all", label: "Everyone", hint: "All students and teachers in your school" },
+  { value: "students", label: "All Students", hint: "Every student in your school" },
+  { value: "teachers", label: "All Teachers", hint: "Every teacher in your school" },
+  { value: "individual", label: "Specific People", hint: "Pick individual students and/or teachers" },
+]
+
+const emptyForm = {
+  title: "",
+  content: "",
+  audience: "all" as Audience,
+  priority: "medium",
+  recipientIds: [] as number[],
+}
+
+function describeAudience(a: Notice): string {
+  if (a.send_to_all) return "Everyone"
+  if (a.send_to_teachers && a.send_to_students) return "Students & Teachers"
+  if (a.send_to_teachers) return "Teachers"
+  if (a.send_to_students) return "Students"
+  if (a.recipient_names?.length) return `${a.recipient_names.length} specific recipient(s)`
+  return "—"
 }
 
 export default function ManageNoticesPage() {
@@ -27,13 +64,8 @@ export default function ManageNoticesPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isOpen, setIsOpen] = useState(false)
-  const [editingNotice, setEditingNotice] = useState<Notice | null>(null)
-  const [formData, setFormData] = useState({
-    title: "",
-    content: "",
-    priority: "medium",
-    is_active: true,
-  })
+  const [submitting, setSubmitting] = useState(false)
+  const [formData, setFormData] = useState(emptyForm)
 
   useEffect(() => {
     fetchData()
@@ -42,57 +74,72 @@ export default function ManageNoticesPage() {
   const fetchData = async () => {
     try {
       setLoading(true)
-      const noticesRes = await academicsAPI.notices()
-      setNotices(noticesRes.data.results || noticesRes.data || [])
+      const res = await messagingAPI.notices()
+      setNotices(res.data.results || res.data || [])
       setError(null)
-    } catch (err: any) {
+    } catch (err) {
       console.error("Error:", err)
-      setError("Failed to load notices")
+      setError(getErrorMessage(err, "Failed to load notices"))
     } finally {
       setLoading(false)
     }
   }
 
+  const buildPayload = () => ({
+    title: formData.title.trim(),
+    content: formData.content.trim(),
+    priority: formData.priority,
+    send_to_all: formData.audience === "all",
+    send_to_students: formData.audience === "students",
+    send_to_teachers: formData.audience === "teachers",
+    recipients:
+      formData.audience === "individual"
+        ? formData.recipientIds
+        : [],
+  })
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!formData.title.trim() || !formData.content.trim()) {
+      setError("Please fill in all required fields")
+      return
+    }
+    if (formData.audience === "individual" && formData.recipientIds.length === 0) {
+      setError("Select at least one recipient")
+      return
+    }
+
     try {
-      if (!formData.title || !formData.content) {
-        setError("Please fill in all required fields")
-        return
-      }
-
-      const data = {
-        title: formData.title,
-        content: formData.content,
-        priority: formData.priority,
-        is_active: formData.is_active,
-      }
-
-      if (editingNotice) {
-        await academicsAPI.updateNotice(editingNotice.id, data)
-      } else {
-        await academicsAPI.createNotice(data)
-      }
-
+      setSubmitting(true)
+      await messagingAPI.createNotice(buildPayload())
       setIsOpen(false)
-      setEditingNotice(null)
-      setFormData({ title: "", content: "", priority: "medium", is_active: true })
+      setFormData(emptyForm)
       setError(null)
       fetchData()
     } catch (err: any) {
       console.error("Error:", err?.response?.data)
-      setError(err?.response?.data?.detail || "Failed to save notice")
+      setError(getErrorMessage(err, "Failed to save notice"))
+    } finally {
+      setSubmitting(false)
     }
   }
 
   const handleDelete = async (id: number) => {
-    if (confirm("Are you sure?")) {
-      try {
-        await academicsAPI.deleteNotice(id)
-        fetchData()
-      } catch (err) {
-        setError("Failed to delete notice")
-      }
+    if (!confirm("Are you sure?")) return
+    try {
+      await messagingAPI.deleteNotice(id)
+      fetchData()
+    } catch (err) {
+      setError("Failed to delete notice")
+    }
+  }
+
+  const handlePin = async (id: number) => {
+    try {
+      await messagingAPI.pinNotice(id)
+      fetchData()
+    } catch (err) {
+      setError("Failed to pin notice")
     }
   }
 
@@ -104,18 +151,18 @@ export default function ManageNoticesPage() {
           <DialogTrigger asChild>
             <Button
               onClick={() => {
-                setEditingNotice(null)
-                setFormData({ title: "", content: "", priority: "medium", is_active: true })
+                setFormData(emptyForm)
+                setError(null)
               }}
-              className="bg-purple-600"
+              className="bg-purple-600 hover:bg-purple-700"
             >
               <Plus className="w-4 h-4 mr-2" />
               Post Notice
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
             <DialogHeader>
-              <DialogTitle>{editingNotice ? "Edit Notice" : "Post New Notice"}</DialogTitle>
+              <DialogTitle>Post New Notice</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               {error && <div className="bg-red-100 text-red-700 p-3 rounded">{error}</div>}
@@ -135,45 +182,65 @@ export default function ManageNoticesPage() {
                   value={formData.content}
                   onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                   placeholder="Write your notice here..."
-                  rows={6}
+                  rows={5}
                 />
               </div>
+
+              <div>
+                <Label>Send To *</Label>
+                <div className="grid grid-cols-2 gap-2 mt-1">
+                  {AUDIENCE_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, audience: opt.value })}
+                      className={`p-2.5 border rounded-md text-left transition-colors ${
+                        formData.audience === opt.value
+                          ? "border-purple-600 bg-purple-50 ring-1 ring-purple-600"
+                          : "hover:bg-gray-50"
+                      }`}
+                    >
+                      <span className="block text-sm font-medium">{opt.label}</span>
+                      <span className="block text-xs text-muted-foreground">{opt.hint}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {formData.audience === "individual" && (
+                <div>
+                  <Label>Select Recipients</Label>
+                  <RecipientPicker
+                    selected={formData.recipientIds}
+                    onChange={(recipientIds) => setFormData({ ...formData, recipientIds })}
+                  />
+                </div>
+              )}
 
               <div>
                 <Label>Priority</Label>
                 <select
                   value={formData.priority}
                   onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full border rounded px-3 py-2 text-sm"
                 >
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
+                  {PRIORITY_OPTIONS.map((p) => (
+                    <option key={p.value} value={p.value}>
+                      {p.label}
+                    </option>
+                  ))}
                 </select>
               </div>
 
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="is_active"
-                  checked={formData.is_active}
-                  onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                  className="w-4 h-4"
-                />
-                <Label htmlFor="is_active" className="cursor-pointer">
-                  Make this notice active
-                </Label>
-              </div>
-
-              <Button type="submit" className="w-full bg-purple-600">
-                {editingNotice ? "Update" : "Post"} Notice
+              <Button type="submit" disabled={submitting} className="w-full bg-purple-600 hover:bg-purple-700">
+                {submitting ? "Posting..." : "Post Notice"}
               </Button>
             </form>
           </DialogContent>
         </Dialog>
       </div>
 
-      {error && <div className="bg-red-100 text-red-700 p-4 rounded mb-4">{error}</div>}
+      {error && !isOpen && <div className="bg-red-100 text-red-700 p-4 rounded mb-4">{error}</div>}
 
       <Card>
         <CardHeader>
@@ -181,44 +248,74 @@ export default function ManageNoticesPage() {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <PageLoadingState message="Loading notices..." />
+            <div className="flex justify-center py-12">
+              <div
+                className="h-10 w-10 animate-spin rounded-full border-4 border-black/10 border-t-purple-600"
+                role="status"
+                aria-label="Loading"
+              />
+            </div>
+          ) : notices.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <Bell className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
+              <p>No notices yet. Post your first one.</p>
+            </div>
           ) : (
-          <div className="space-y-4">
-            {notices.map((notice) => (
-              <div key={notice.id} className={`border-l-4 ${notice.priority === "high" ? "border-red-500" : notice.priority === "low" ? "border-green-500" : "border-yellow-500"} pl-4 py-3 bg-gray-50 rounded`}>
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <h3 className="font-bold text-lg">{notice.title}</h3>
-                    <p className="text-gray-600 text-sm mt-1">{notice.content}</p>
-                    <p className="text-xs text-gray-500 mt-2">
-                      By {notice.posted_by_name} • {new Date(notice.created_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <div className="flex gap-2 ml-4">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setEditingNotice(notice)
-                        setFormData({
-                          title: notice.title,
-                          content: notice.content,
-                          priority: notice.priority,
-                          is_active: notice.is_active,
-                        })
-                        setIsOpen(true)
-                      }}
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={() => handleDelete(notice.id)}>
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+            <div className="space-y-4">
+              {notices.map((notice) => (
+                <div
+                  key={notice.id}
+                  className={`border-l-4 ${
+                    notice.priority === "urgent" || notice.priority === "high"
+                      ? "border-red-500"
+                      : notice.priority === "low"
+                        ? "border-green-500"
+                        : "border-yellow-500"
+                  } pl-4 py-3 bg-gray-50 rounded`}
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-lg flex items-center gap-2">
+                        {notice.is_pinned && <Pin className="w-4 h-4 text-purple-600 flex-shrink-0" />}
+                        {notice.title}
+                      </h3>
+                      <p className="text-gray-600 text-sm mt-1 whitespace-pre-wrap">{notice.content}</p>
+
+                      {/* Audience */}
+                      <div className="flex flex-wrap items-center gap-2 mt-2">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-200 text-gray-700 text-xs font-medium">
+                          <Users className="w-3 h-3" />
+                          {describeAudience(notice)}
+                        </span>
+                        {(notice.priority === "urgent" || notice.priority === "high") && (
+                          <span className="px-2 py-0.5 rounded-full bg-red-100 text-red-700 text-xs font-medium capitalize">
+                            {notice.priority} priority
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Individual recipients */}
+                      {!notice.send_to_all && notice.recipient_names?.length > 0 && (
+                        <p className="text-xs text-gray-500 mt-1.5">To: {notice.recipient_names.join(", ")}</p>
+                      )}
+
+                      <p className="text-xs text-gray-500 mt-2">
+                        Posted {new Date(notice.created_at).toLocaleDateString()}
+                        {notice.created_by_name ? ` by ${notice.created_by_name}` : ""}
+                      </p>
+                    </div>
+                    <div className="flex gap-2 ml-4">
+                      <Button size="sm" variant="outline" onClick={() => handlePin(notice.id)} title={notice.is_pinned ? "Unpin" : "Pin"}>
+                        {notice.is_pinned ? <PinOff className="w-4 h-4" /> : <Pin className="w-4 h-4" />}
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => handleDelete(notice.id)}>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
           )}
         </CardContent>
       </Card>

@@ -9,7 +9,6 @@ import { useState, useEffect } from "react"
 import Image from "next/image"
 import { academicsAPI, bgFetch } from "@/lib/api"
 import {
-  ChevronDown,
   ChevronLeft,
   LayoutDashboard,
   Settings,
@@ -18,7 +17,6 @@ import {
   BookOpen,
   School,
   Book,
-  Clock,
   Calendar,
   ClipboardEdit,
   Wrench,
@@ -47,12 +45,12 @@ import {
 } from "lucide-react"
 
 import { NAV_LINK_PERMISSIONS } from "@/lib/permissions"
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogHeader, 
-  DialogTitle 
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle
 } from "@/components/ui/dialog"
 
 type NavItem = {
@@ -71,18 +69,17 @@ type NavSection = {
 const navSections: Record<string, NavSection[]> = {
   super_admin: [
     {
-      label: "Dashboard",
-      icon: LayoutDashboard,
-      href: "/dashboard/super-admin",
-    },
-    
+      label: "Super Admin",
+      icon: Shield,
+      items: [
         { label: "Super Admin Home", href: "/dashboard/super-admin", icon: LayoutDashboard },
         { label: "Schools & Usage", href: "/dashboard/super-admin#schools-usage", icon: School },
-{ label: "School Onboarding", href: "/dashboard/super-admin/onboarding", icon: School },
+        { label: "School Onboarding", href: "/dashboard/super-admin/onboarding", icon: School },
         { label: "Global Users", href: "/dashboard/super-admin#global-users", icon: Users },
         { label: "Subscriptions & Billing", href: "/dashboard/super-admin#billing", icon: CreditCard },
         { label: "Analytics & Reports", href: "/dashboard/super-admin#analytics", icon: BarChart },
-     
+      ],
+    },
   ],
   school_admin: [
     {
@@ -94,41 +91,38 @@ const navSections: Record<string, NavSection[]> = {
       label: "Admin",
       icon: Settings,
       items: [
-         { label: "Admin Staff Management", href: "/dashboard/school-admin/manage-admin-staff", icon: Users },
+        { label: "Admin Staff Management", href: "/dashboard/school-admin/manage-admin-staff", icon: Users },
         { label: "Students", href: "/dashboard/school-admin/students", icon: Users },
         { label: "Teachers", href: "/dashboard/school-admin/teachers", icon: User },
-        { label: "Student Assignment", href: "/dashboard/school-admin/student-assignment", icon: ClipboardCheck},
+        { label: "Student Assignment", href: "/dashboard/school-admin/student-assignment", icon: ClipboardCheck },
         { label: "Teacher Assignment", href: "/dashboard/school-admin/teacher-assignment", icon: FilePen },
         { label: "School Profile", href: "/dashboard/school-admin/settings", icon: Settings },
       ],
     },
-    
     {
       label: "Academics",
       icon: BookOpen,
       items: [
         { label: "Class", href: "/dashboard/school-admin/classes", icon: School },
         { label: "Subject", href: "/dashboard/school-admin/subjects", icon: Book },
-        
         { label: "Timetable", href: "/dashboard/school-admin/timetable", icon: Calendar },
         { label: "Grading", href: "/dashboard/school-admin/grading", icon: ClipboardEdit },
         { label: "Attendance", href: "/dashboard/school-admin/attendance", icon: CheckSquare },
         { label: "Exam", href: "/dashboard/school-admin/exam", icon: FileText },
-      
       ],
     },
     {
-    label: "Results",
+      label: "Results",
       icon: BarChart,
       items: [
-
+        { label: "Examination", href: "/dashboard/school-admin/results/examination", icon: ClipboardEdit },
+        { label: "Report Cards", href: "/dashboard/school-admin/results/report-cards", icon: FileText },
         { label: "Export Results", href: "/dashboard/school-admin/results/export", icon: FileText },
         { label: "Report Templates", href: "/dashboard/school-admin/results/templates", icon: FileText },
-        
       ],
     },
     {
-    label: "Finance",
+      label: "Finance",
       icon: CreditCard,
       items: [
         { label: "Manage Types", href: "/dashboard/school-admin/manage-fees", icon: CreditCard },
@@ -138,7 +132,7 @@ const navSections: Record<string, NavSection[]> = {
         { label: "Receipts", href: "/dashboard/school-admin/receipts", icon: BookUser },
         { label: "Expenses", href: "/dashboard/school-admin/expenses", icon: FileText },
       ],
-      },
+    },
     {
       label: "Operations",
       icon: Wrench,
@@ -157,7 +151,7 @@ const navSections: Record<string, NavSection[]> = {
       ],
     },
     {
-   label: "Library",
+      label: "Library",
       icon: Library,
       items: [
         { label: "Books", href: "/dashboard/school-admin/library/books", icon: Book },
@@ -210,9 +204,9 @@ const navSections: Record<string, NavSection[]> = {
         { label: "Attendance", href: "/dashboard/teacher/attendance", icon: CheckSquare },
         { label: "Grades", href: "/dashboard/teacher/grades", icon: ClipboardEdit },
         { label: "Assignments", href: "/dashboard/teacher/assignments", icon: ClipboardCheck },
-        { label: "Ai Chat", href: "/dashboard/teacher/ai-assistant", icon: Sparkles }, 
+        { label: "Ai Chat", href: "/dashboard/teacher/ai-assistant", icon: Sparkles },
         { label: "Submissions", href: "/dashboard/teacher/submissions", icon: BookOpen },
-        { label: "Performance", href: "/dashboard/teacher/performance", icon: BarChart},
+        { label: "Performance", href: "/dashboard/teacher/performance", icon: BarChart },
         { label: "Materials", href: "/dashboard/teacher/materials", icon: UploadCloud },
         { label: "Messages", href: "/dashboard/teacher/messages", icon: MessageCircle },
         { label: "Notifications", href: "/dashboard/teacher/notifications", icon: Bell },
@@ -223,7 +217,6 @@ const navSections: Record<string, NavSection[]> = {
     {
       label: "Dashboard",
       icon: LayoutDashboard,
-      href: "/dashboard/student",
       items: [
         { label: "Overview", href: "/dashboard/student", icon: LayoutDashboard },
         { label: "AI Chat", href: "/dashboard/student/ai-chat", icon: Sparkles },
@@ -251,7 +244,7 @@ import { AuthBoundary } from "@/components/auth-boundary"
 export function SidebarNav({ isCollapsed = false, onClose, isMobile = false, onToggleCollapse }: SidebarNavProps) {
   return (
     <AuthBoundary>
-      <SidebarNavContent 
+      <SidebarNavContent
         isCollapsed={isCollapsed}
         onClose={onClose}
         isMobile={isMobile}
@@ -271,11 +264,9 @@ interface SidebarNavContentProps {
 function SidebarNavContent({ isCollapsed, onClose, isMobile, onToggleCollapse }: SidebarNavContentProps) {
   const { user, logout, school, loading } = useAuthContext()
   const pathname = usePathname()
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(["Dashboard"]))
   const [searchQuery, setSearchQuery] = useState("")
   const [profilePic, setProfilePic] = useState<string>("")
   const [showPermissionsDialog, setShowPermissionsDialog] = useState(false)
-
 
   useEffect(() => {
     const fetchProfilePic = async () => {
@@ -301,7 +292,7 @@ function SidebarNavContent({ isCollapsed, onClose, isMobile, onToggleCollapse }:
   // Permission-based filtering for admin staff roles
   const userPerms = user.permissions || []
   const isAdminStaff = ['academic_admin', 'exam_officer', 'finance_officer', 'ct_admin_support'].includes(user.role || '')
-  
+
   const permissionFilteredSections = sections.map(section => ({
     ...section,
     items: section.items?.filter(item => {
@@ -312,10 +303,10 @@ function SidebarNavContent({ isCollapsed, onClose, isMobile, onToggleCollapse }:
         // Exact match by href from NAV_LINK_PERMISSIONS
         const hrefMatch = NAV_LINK_PERMISSIONS.find(p => p.href === item.href)
         if (hrefMatch && userPerms.includes(hrefMatch.id as any)) return true
-        
+
         // Fallback heuristic
         const itemId = item.href.split('/').pop()?.replace(/-/g, '_') || ''
-        return userPerms.includes(itemId) || 
+        return userPerms.includes(itemId) ||
                userPerms.includes('view_' + itemId)
       }
       return true
@@ -329,32 +320,24 @@ function SidebarNavContent({ isCollapsed, onClose, isMobile, onToggleCollapse }:
         items: section.items?.filter(
           item => item.label.toLowerCase().includes(searchQuery.toLowerCase())
         ) || []
-      })).filter(section => 
+      })).filter(section =>
         section.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (section.items?.length ?? 0) > 0 ||
         // Always show core admin_staff sections
         (isAdminStaff && ['Dashboard', 'Profile', 'Permissions', 'My Tasks'].includes(section.label))
       )
-    : permissionFilteredSections.filter(section => 
+    : permissionFilteredSections.filter(section =>
         !(section.items && section.items.length === 0) ||
         // Always show core admin_staff sections even if filtered items empty
         (isAdminStaff && ['Dashboard', 'Profile', 'Permissions', 'My Tasks'].includes(section.label))
       )
 
-  const toggleSection = (label: string) => {
-    const newExpanded = new Set(expandedSections)
-    if (newExpanded.has(label)) {
-      newExpanded.delete(label)
-    } else {
-      newExpanded.add(label)
-    }
-    setExpandedSections(newExpanded)
-  }
-
   const schoolName = school?.name || "School Name"
 
   const schoolLogoUrl = school?.logo_url || school?.logo_url_computed
   const schoolInitial = school?.name?.charAt(0) || "S"
+
+  const isIconOnly = isCollapsed && !isMobile
 
   return (
     <aside
@@ -379,10 +362,10 @@ function SidebarNavContent({ isCollapsed, onClose, isMobile, onToggleCollapse }:
       {/* Header */}
       <div className={`
 relative h-16 px-4 flex items-center justify-between
-        ${isCollapsed && !isMobile ? "justify-center px-2 gap-0" : "gap-3"}
+        ${isIconOnly ? "justify-center px-2 gap-0" : "gap-3"}
       `}>
         {isMobile && onClose && (
-          <button 
+          <button
             onClick={onClose}
             className="absolute top-4 right-4 p-1 rounded-lg hover:bg-sidebar-accent text-sidebar-foreground-computed/70 hover:text-sidebar-foreground-computed transition-colors"
           >
@@ -392,9 +375,9 @@ relative h-16 px-4 flex items-center justify-between
 
         {schoolLogoUrl ? (
           <div className="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0 bg-sidebar-primary/10 shadow-lg">
-            <img 
-              src={schoolLogoUrl} 
-              alt={school?.name || "School"} 
+            <img
+              src={schoolLogoUrl}
+              alt={school?.name || "School"}
               className="w-full h-full object-contain"
             />
           </div>
@@ -403,8 +386,8 @@ relative h-16 px-4 flex items-center justify-between
             {schoolInitial}
           </div>
         )}
-        
-        {!isCollapsed || isMobile ? (
+
+        {!isIconOnly ? (
           <>
             <div className="min-w-0 flex-1 pt-1">
               <h1 className="text-base font-bold text-sidebar-foreground-computed truncate">{schoolName}</h1>
@@ -416,7 +399,7 @@ relative h-16 px-4 flex items-center justify-between
       </div>
 
       {/* Search Bar */}
-      {!isCollapsed || isMobile ? (
+      {!isIconOnly ? (
         <div className="px-4 py-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-sidebar-foreground-computed/50" size={16} />
@@ -434,7 +417,7 @@ relative h-16 px-4 flex items-center justify-between
       ) : null}
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto p-3 space-y-1 scrollbar-thin scrollbar-thumb-sidebar-accent scrollbar-track-transparent">
+      <nav className="flex-1 overflow-y-auto p-3 space-y-4 scrollbar-thin scrollbar-thumb-sidebar-accent scrollbar-track-transparent">
         {isAdminStaff && (
           <div>
             <button
@@ -444,11 +427,11 @@ relative h-16 px-4 flex items-center justify-between
 
                 text-sidebar-foreground-computed/70 hover:bg-white/10 hover:text-sidebar-foreground-computed group
 
-                ${isCollapsed && !isMobile ? "justify-center" : ""}
+                ${isIconOnly ? "justify-center" : ""}
               `}
             >
               <Shield className="w-4 h-4 flex-shrink-0 text-sidebar-foreground-computed/60 group-hover:text-sidebar-foreground-computed" />
-              {!isCollapsed || isMobile ? (
+              {!isIconOnly ? (
                 <>
                   <span className="font-medium text-sm flex-1 text-left truncate">My Permissions</span>
                   <div className="flex items-center gap-1 bg-sidebar-primary/20 text-sidebar-primary text-xs px-2 py-0.5 rounded-full font-medium">
@@ -464,82 +447,89 @@ relative h-16 px-4 flex items-center justify-between
           </div>
         )}
         {filteredSections.map((section) => {
-          const isExpanded = expandedSections.has(section.label)
           const Icon = section.icon
           const hasItems = section.items && section.items.length > 0
 
+          /* ── Simple link (no children) ─────────────────────────── */
           if (!hasItems) {
+            const isActive = pathname === section.href || (section.href && pathname.startsWith(section.href))
             return (
               <Link key={section.label} href={section.href || "#"} onClick={isMobile ? onClose : undefined}>
                 <div
-                  className={`
+                  title={isIconOnly ? section.label : undefined}
+                    className={`
                     group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200
-                    text-sidebar-foreground-computed/70 hover:bg-white/10 hover:text-sidebar-foreground-computed
-                    ${isCollapsed && !isMobile ? "justify-center" : ""}
+                    ${isActive
+                      ? "text-sidebar-foreground-computed"
+                      : "text-sidebar-foreground-computed/70 hover:bg-white/10 hover:text-sidebar-foreground-computed"
+                    }
+                    ${isIconOnly ? "justify-center" : ""}
                   `}
                 >
-                  <Icon className="w-4 h-4 flex-shrink-0 text-sidebar-foreground-computed/60 group-hover:text-sidebar-foreground-computed" />
-                  {!isCollapsed || isMobile ? (
-                    <span className="font-medium text-sm truncate">{section.label}</span>
+                  <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? "text-sidebar-primary" : "text-sidebar-foreground-computed/60 group-hover:text-sidebar-foreground-computed"}`} />
+                  {!isIconOnly ? (
+                    <span className="font-medium text-[15px] truncate">{section.label}</span>
                   ) : null}
                 </div>
               </Link>
             )
           }
 
+          /* ── Category with permanently visible sub-links ───────── */
           return (
             <div key={section.label}>
-              <button
-                onClick={() => toggleSection(section.label)}
+              {/* Category header */}
+              <div
+                title={isIconOnly ? section.label : undefined}
                 className={`
-                  w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200
-
-                  text-sidebar-foreground-computed/70 hover:bg-white/10 hover:text-sidebar-foreground-computed
-
-                  ${isCollapsed && !isMobile ? "justify-center" : ""}
+                  flex items-center gap-3 px-3 pb-1.5
+                  ${isIconOnly ? "justify-center pt-1" : ""}
                 `}
               >
-                <Icon className="w-4 h-4 flex-shrink-0 text-sidebar-foreground-computed/60" />
-                {!isCollapsed || isMobile ? (
-                  <>
-                    <span className="font-medium text-sm flex-1 text-left truncate">{section.label}</span>
-    <ChevronDown 
-      size={16} 
-      className={`text-sidebar-foreground-computed/50 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} 
-    />
-                  </>
+                <Icon className="w-4 h-4 flex-shrink-0 text-sidebar-primary/90" />
+                {!isIconOnly ? (
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground-computed/50 truncate">
+                    {section.label}
+                  </span>
                 ) : null}
-              </button>
+              </div>
 
-              {isExpanded && hasItems && (
-                <div className="ml-3 mt-1 space-y-1 border-l-2 border-sidebar-primary/70 pl-3">
-                  {section.items?.map((item) => {
-                    const ItemIcon = item.icon
-                    const isItemActive = pathname.includes(item.href.split("#")[0])
-                    return (
-                      <Link key={item.href} href={item.href} onClick={isMobile ? onClose : undefined}>
-                        <div
-                          className={`
-                            group flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-200
-                            ${isItemActive
-                              ? "bg-sidebar-primary/15 backdrop-blur-sm text-sidebar-primary ring-1 ring-sidebar-primary/30"
-
-                              : "text-sidebar-foreground-computed/60 hover:text-sidebar-foreground-computed hover:bg-white/10"
-
-                            }
-                            ${isCollapsed && !isMobile ? "justify-center" : ""}
-                          `}
-                        >
-  <ItemIcon className={`w-3.5 h-3.5 flex-shrink-0 ${isItemActive ? "text-sidebar-primary" : "text-sidebar-foreground-computed/50 group-hover:text-sidebar-foreground-computed"}`} />
-                          {!isCollapsed || isMobile ? (
-                            <span className="truncate">{item.label}</span>
-                          ) : null}
-                        </div>
-                      </Link>
-                    )
-                  })}
-                </div>
+              {/* Divider under the category header */}
+              {!isIconOnly && (
+                <div className="ml-10 h-px bg-gradient-to-r from-white/15 to-transparent mb-1.5" />
               )}
+
+              {/* Sub-links — always rendered, no click needed */}
+              <div className={isIconOnly ? "space-y-1" : "ml-3 space-y-0.5 border-l border-white/10 pl-3"}>
+                {section.items?.map((item) => {
+                  const ItemIcon = item.icon
+                  const isItemActive = pathname.includes(item.href.split("#")[0])
+                  return (
+                    <Link key={item.href} href={item.href} onClick={isMobile ? onClose : undefined}>
+                      <div
+                        title={isIconOnly ? item.label : undefined}
+                        className={`
+                          group relative flex items-center gap-3 px-3 py-2 rounded-lg text-[15px] transition-all duration-200
+                          ${isItemActive
+                            ? "bg-sidebar-primary/15 backdrop-blur-sm text-sidebar-primary font-medium ring-1 ring-sidebar-primary/30"
+                            : "text-sidebar-foreground-computed/60 hover:text-sidebar-foreground-computed hover:bg-white/10"
+                          }
+                          ${isIconOnly ? "justify-center" : ""}
+                        `}
+                      >
+                        {/* Active indicator bar */}
+                        {isItemActive && !isIconOnly && (
+                          <span className="absolute -left-[13px] top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-full bg-sidebar-primary" />
+                        )}
+                        <ItemIcon className={`w-3.5 h-3.5 flex-shrink-0 ${isItemActive ? "text-sidebar-primary" : "text-sidebar-foreground-computed/50 group-hover:text-sidebar-foreground-computed"}`} />
+                        {!isIconOnly ? (
+                          <span className="truncate">{item.label}</span>
+                        ) : null}
+                      </div>
+                    </Link>
+                  )
+                })}
+              </div>
             </div>
           )
         })}
@@ -588,7 +578,7 @@ relative h-16 px-4 flex items-center justify-between
 
       {/* Footer */}
       <div className="p-4 border-t border-sidebar-border">
-        
+
         <Button
           onClick={logout}
           className={`
@@ -596,11 +586,11 @@ relative h-16 px-4 flex items-center justify-between
             w-full bg-white/10 backdrop-blur-sm hover:bg-white/15 text-sidebar-foreground-computed hover:text-white
             border border-white/15 hover:border-sidebar-primary/50 font-semibold transition-all duration-200
 
-            ${isCollapsed && !isMobile ? "px-2" : ""}
+            ${isIconOnly ? "px-2" : ""}
           `}
           variant="ghost"
         >
-          <span className={isCollapsed && !isMobile ? "sr-only" : "flex items-center gap-2 justify-center"}>
+          <span className={isIconOnly ? "sr-only" : "flex items-center gap-2 justify-center"}>
             <LogOut className="w-4 h-4 shrink-0" />
             <span>Logout</span>
           </span>

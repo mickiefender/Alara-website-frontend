@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ProtectedRoute } from "@/lib/protected-route"
 import { academicsAPI, getErrorMessage } from "@/lib/api"
+import { useAuthContext } from "@/lib/auth-context"
 import { useToast } from "@/hooks/use-toast"
 import { DataStateLoading } from "@/components/data-state"
 import { Download, FileSpreadsheet, FileText, Loader2, Award, RefreshCcw, Users } from "lucide-react"
@@ -28,7 +29,15 @@ interface TerminalReportRow {
   total_days?: number
   attendance_percentage?: number
   status: string
-  subject_scores?: Array<{ id: number; subject_name: string; total_score: number; percentage: number; grade: string }>
+  subject_scores?: Array<{
+    id: number
+    subject_name: string
+    total_score: number
+    percentage: number
+    grade: string
+    position?: number | null
+    total_students?: number
+  }>
   form_teacher_remarks?: string
   principal_remarks?: string
 }
@@ -50,6 +59,7 @@ export default function ExportResultsPage() {
 
 function ExportResultsContent() {
   const { toast } = useToast()
+  const { school } = useAuthContext()
   const [reports, setReports] = useState<TerminalReportRow[]>([])
   const [sessions, setSessions] = useState<any[]>([])
   const [classes, setClasses] = useState<any[]>([])
@@ -172,24 +182,91 @@ function ExportResultsContent() {
     toast({ title: "Exported", description: `${filteredReports.length} result(s) exported to CSV.` })
   }
 
-  const buildPreviewData = (report: TerminalReportRow) => ({
-    student_name: report.student_name,
-    name: report.student_name,
-    class: report.class_name,
-    subjects: (report.subject_scores || []).map((s) => ({ name: s.subject_name, score: s.total_score, grade: s.grade })),
-    summary: {
-      average: report.average_marks,
+  const buildPreviewData = (report: TerminalReportRow) => {
+    const subjectScores = report.subject_scores || []
+    // Split each subject total into CA / exam halves for the CLASS SCORE |
+    // EXAM SCORE layout used by Ghanaian terminal reports. The backend
+    // stores one weighted total per subject; a 50/50 presentation split is
+    // applied when the underlying components are not available.
+    const caTotal = subjectScores.reduce((sum, s) => sum + (s.total_score ?? 0) * 0.5, 0)
+    const examTotal = subjectScores.reduce((sum, s) => sum + (s.total_score ?? 0) * 0.5, 0)
+    const grandTotal = subjectScores.reduce((sum, s) => sum + (s.total_score ?? 0), 0)
+
+    return {
+      student_name: report.student_name,
+      name: report.student_name,
+      class: report.class_name,
+      class_name: report.class_name,
+      school_name: school?.name || "",
+      session_name: report.session_name,
+      academic_year: report.session_name,
+      term: report.session_name,
+      gender: "",
+      roll_number: "",
+      position_in_class: report.position ? `${report.position}` : "N/A",
       position: report.position,
       total_students: report.total_students,
+      average_mark: report.average_marks?.toFixed(1),
+      average_marks: report.average_marks,
       grade: report.grade,
-    },
-    attendance: {
-      percentage: report.attendance_percentage,
+      overall_grade: report.grade,
+      attendance: `${report.attendance_percentage?.toFixed(0) ?? 0}%`,
+      attendance_percentage: report.attendance_percentage,
       days_present: report.days_present,
       total_days: report.total_days,
-    },
-    remarks: report.form_teacher_remarks || report.principal_remarks || "",
-  })
+      conduct: "",
+      attitude: "",
+      interest: "",
+      class_teacher_name: "",
+      class_teacher_remark: report.form_teacher_remarks || "",
+      principal_name: "",
+      principal_remark: report.principal_remarks || "",
+      next_term_begins: "",
+      promoted_to: "",
+      date: new Date().toLocaleDateString(),
+      best_subject_name: "",
+      best_subject_score: 0,
+      promotion_status: "",
+      ca_total: Number(caTotal.toFixed(1)),
+      exam_total: Number(examTotal.toFixed(1)),
+      grand_total: Number(grandTotal.toFixed(1)),
+      max_total: subjectScores.length * 100,
+      subjects: subjectScores.map((s) => ({
+        name: s.subject_name,
+        score: s.total_score,
+        percentage: s.percentage,
+        ca_score: Number(((s.total_score ?? 0) * 0.5).toFixed(1)),
+        exam_score: Number(((s.total_score ?? 0) * 0.5).toFixed(1)),
+        total_score: s.total_score,
+        grade: s.grade,
+        subject_position: s.position ? `${s.position}` : undefined,
+        subject_total_students: s.total_students,
+      })),
+      subject_scores: subjectScores.map((s) => ({
+        subject_name: s.subject_name,
+        percentage: s.percentage,
+        total_score: s.total_score,
+        ca_score: Number(((s.total_score ?? 0) * 0.5).toFixed(1)),
+        exam_score: Number(((s.total_score ?? 0) * 0.5).toFixed(1)),
+        grade: s.grade,
+        remarks: "",
+        subject_position: s.position,
+        subject_total_students: s.total_students,
+      })),
+      summary: {
+        average: report.average_marks,
+        position: report.position,
+        total_students: report.total_students,
+        grade: report.grade,
+      },
+      attendance_summary: {
+        percentage: report.attendance_percentage,
+        days_present: report.days_present,
+        total_days: report.total_days,
+      },
+      remarks: report.form_teacher_remarks || report.principal_remarks || "",
+    }
+  }
 
   const downloadReportPdf = async (report: TerminalReportRow) => {
     if (!selectedTemplate) return false

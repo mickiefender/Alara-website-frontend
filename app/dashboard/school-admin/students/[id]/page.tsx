@@ -122,14 +122,18 @@ export default function StudentDetailPage() {
     console.log("Loading data for user ID:", userIdNum, "student ID:", student.id)
     
     // Load Exam Results
+    // Filter server-side by this student and request the largest supported
+    // page size so EVERY grade shows. No client-side slice — otherwise a new
+    // grade pushes existing ones off the screen.
     setExamResultsLoading(true)
     try {
-      const examRes = await academicsAPI.examResults()
+      const examRes = await academicsAPI.examResults({ student: userIdNum, page_size: 500 })
       const all = examRes.data.results || examRes.data || []
-      console.log("All exam results:", all.slice(0, 3)) // Log first 3 for debugging
+      // Retain the server's newest-first order; defensive filter keeps the
+      // display correct even if a caller ignores the query param.
       const filtered = all.filter((r: any) => r.student === userIdNum)
-      console.log("Filtered exam results for user", userIdNum, ":", filtered)
-      setExamResults(filtered.slice(0, 6))
+      console.log("Exam results for user", userIdNum, ":", filtered)
+      setExamResults(filtered)
       setDebugInfo((prev: any) => ({ ...prev, examResultsCount: filtered.length, allExamResultsCount: all.length, userId: userIdNum }))
     } catch (err: any) { 
       console.error("Exam results error:", err)

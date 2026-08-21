@@ -279,30 +279,65 @@ export default function TeacherAssignmentsPage() {
                               <ArrowRight size={15} />
                             </Button>
                           </DialogTrigger>
-                          <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
-                            <DialogHeader>
-                              <DialogTitle className="text-2xl">
-                                Teacher Management for <span className="text-secondary">{selectedClassName}</span>
-                              </DialogTitle>
-                            </DialogHeader>
+                          <DialogContent className="sm:max-w-5xl w-[95vw] p-0 gap-0 overflow-hidden">
+                            {/* Header */}
+                            <div className="bg-gradient-to-r from-secondary/10 via-secondary/5 to-transparent border-b border-border px-6 py-4">
+                              <DialogHeader className="space-y-0">
+                                <div className="flex items-start gap-3.5">
+                                  <div className="w-11 h-11 rounded-xl bg-secondary/15 ring-1 ring-secondary/20 flex items-center justify-center flex-shrink-0">
+                                    <UserCheck size={20} className="text-secondary" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <DialogTitle className="text-lg font-bold text-foreground">
+                                      Manage Teachers
+                                    </DialogTitle>
+                                    <p className="text-sm text-muted-foreground mt-0.5 truncate">
+                                      Class & subject teacher assignments for{" "}
+                                      <span className="font-medium text-foreground">{selectedClassName}</span>
+                                    </p>
+                                  </div>
+                                </div>
+                              </DialogHeader>
+                            </div>
+
+                            {/* Body */}
                             {selectedClassId && (
                               <Tabs defaultValue="class-teachers" className="w-full">
-                                <TabsList className="grid w-full grid-cols-2 mb-4">
-                                  <TabsTrigger value="class-teachers">Class Teachers</TabsTrigger>
-                                  <TabsTrigger value="subject-teachers">Subject Teachers</TabsTrigger>
-                                </TabsList>
-                                <TabsContent value="class-teachers" className="space-y-4">
-                                  <div className="text-sm text-slate-500 mb-4">
-                                    Assign main teachers who manage the entire class
-                                  </div>
-                                  <AssignTeachersToClass classId={selectedClassId} className={selectedClassName} />
-                                </TabsContent>
-                                <TabsContent value="subject-teachers" className="space-y-4">
-                                  <div className="text-sm text-slate-500 mb-4">
-                                    Assign teachers to specific subjects within this class
-                                  </div>
-                                  <AssignSubjectTeachers classId={selectedClassId} className={selectedClassName} />
-                                </TabsContent>
+                                <div className="px-6 pt-4 border-b border-border bg-muted/20">
+                                  <TabsList className="grid w-full sm:w-fit grid-cols-2 h-10 p-1 rounded-lg">
+                                    <TabsTrigger
+                                      value="class-teachers"
+                                      className="gap-2 px-6 data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                                    >
+                                      <Users size={14} />
+                                      Class Teachers
+                                    </TabsTrigger>
+                                    <TabsTrigger
+                                      value="subject-teachers"
+                                      className="gap-2 px-6 data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                                    >
+                                      <BookOpen size={14} />
+                                      Subject Teachers
+                                    </TabsTrigger>
+                                  </TabsList>
+                                </div>
+
+                                <div className="px-6 py-5 max-h-[65vh] overflow-y-auto">
+                                  <TabsContent value="class-teachers" className="space-y-3 mt-0">
+                                    <p className="text-sm text-muted-foreground flex items-center gap-2">
+                                      <Users size={14} className="text-secondary" />
+                                      Assign main teachers who manage the entire class.
+                                    </p>
+                                    <AssignTeachersToClass classId={selectedClassId} className={selectedClassName} />
+                                  </TabsContent>
+                                  <TabsContent value="subject-teachers" className="space-y-3 mt-0">
+                                    <p className="text-sm text-muted-foreground flex items-center gap-2">
+                                      <BookOpen size={14} className="text-secondary" />
+                                      Assign teachers to specific subjects within this class.
+                                    </p>
+                                    <AssignSubjectTeachers classId={selectedClassId} className={selectedClassName} />
+                                  </TabsContent>
+                                </div>
                               </Tabs>
                             )}
                           </DialogContent>

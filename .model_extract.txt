@@ -1,0 +1,45 @@
+class ExamResult(models.Model):
+    """Student exam results"""
+    school = models.ForeignKey(School, on_delete=models.CASCADE, related_name='exam_results')
+    exam = models.ForeignKey(Exam, on_delete=models.CASCADE, related_name='results')
+    student = models.ForeignKey('users.User', on_delete=models.CASCADE, limit_choices_to={'role': 'student'}, related_name='exam_results')
+    marks_obtained = models.FloatField()
+    percentage = models.FloatField(default=0, editable=False)
+    grade = models.CharField(max_length=5, blank=True)
+    remarks = models.TextField(blank=True)
+    recorded_by = models.ForeignKey('users.User', on_delete=models.SET_NULL, null=True, related_name='recorded_exam_results', limit_choices_to={'role': 'teacher'})
+    recorded_date = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        unique_together = ['exam', 'student']
+        ordering = ['-recorded_date']
+    
+    def save(self, *args, **kwargs):
+        if self.exam.total_marks > 0:
+            self.percentage = (self.marks_obtained / self.exam.total_marks) * 100
+            self.grade = self.calculate_grade()
+        super().save(*args, **kwargs)
+    
+    def calculate_grade(self):
+        if self.percentage >= 90:
+            return 'A'
+        elif self.percentage >= 80:
+            return 'B'
+        elif self.percentage >= 70:
+            return 'C'
+        elif self.percentage >= 60:
+            return 'D'
+        else:
+            return 'F'
+    
+    def __str__(self):
+        return f"{self.student.get_full_name()} - {self.exam.subject.name}"
+
+
+class SchoolFees(models.Model):
+    """Student school fees - linked to fee types"""
+    STATUS_CHOICES = (
+        ('pending', 'Pending'),
+        ('partial', 'Partial'),
+        ('paid', 'Paid'),

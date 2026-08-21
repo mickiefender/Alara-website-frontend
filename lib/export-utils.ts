@@ -33,3 +33,30 @@ export async function exportToExcel(filename: string, sheetName: string, headers
   XLSX.utils.book_append_sheet(workbook, worksheet, sheetName.slice(0, 31))
   XLSX.writeFile(workbook, filename)
 }
+
+interface ExcelSheet {
+  name: string
+  headers: string[]
+  rows: ExportCell[][]
+}
+
+/**
+ * Build an .xlsx workbook with multiple sheets in one download.
+ * Used when a single export must carry both a summary and a detailed
+ * breakdown (e.g. student summary + every grade record).
+ */
+export async function exportToExcelMulti(filename: string, sheets: ExcelSheet[]) {
+  const XLSX = await import("xlsx")
+  const workbook = XLSX.utils.book_new()
+  for (const sheet of sheets) {
+    const worksheet = XLSX.utils.aoa_to_sheet([sheet.headers, ...sheet.rows])
+    worksheet["!cols"] = sheet.headers.map((h, i) => ({
+      wch: Math.min(
+        40,
+        Math.max(h.length, ...sheet.rows.map((r) => String(r[i] ?? "").length)) + 2,
+      ),
+    }))
+    XLSX.utils.book_append_sheet(workbook, worksheet, sheet.name.slice(0, 31))
+  }
+  XLSX.writeFile(workbook, filename)
+}

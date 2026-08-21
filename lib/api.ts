@@ -239,7 +239,7 @@ export const academicsAPI = {
   createExam: (data: any) => apiClient.post("/academics/exams/", data),
   updateExam: (id: number, data: any) => apiClient.put(`/academics/exams/${id}/`, data),
   deleteExam: (id: number) => apiClient.delete(`/academics/exams/${id}/`),
-  examResults: () => apiClient.get("/academics/exam-results/"),
+  examResults: (params?: any) => apiClient.get("/academics/exam-results/", { params }),
   createExamResult: (data: any) => apiClient.post("/academics/exam-results/", data),
   updateExamResult: (id: number, data: any) => apiClient.put(`/academics/exam-results/${id}/`, data),
   deleteExamResult: (id: number) => apiClient.delete(`/academics/exam-results/${id}/`),
@@ -300,6 +300,11 @@ export const academicsAPI = {
   terminalReportDetail: (id: number) => apiClient.get(`/academics/terminal-reports/${id}/`),
   generateTerminalReport: (data: any) => apiClient.post("/academics/terminal-reports/generate_report/", data),
   calculatePositions: (data: any) => apiClient.post("/academics/terminal-reports/calculate_positions/", data),
+  // Rich per-class payload: every student's terminal report with subject scores,
+  // positions, attendance, plus the active grading system and assessments.
+  classReports: (params?: any) => apiClient.get("/academics/terminal-reports/class_reports/", { params }),
+  // Generate/regenerate terminal reports for ALL students in a class at once.
+  computeClassReports: (data: any) => apiClient.post("/academics/terminal-reports/compute_class_reports/", data),
   publishTerminalReport: (id: number) => apiClient.post(`/academics/terminal-reports/${id}/publish/`),
   addTerminalReportRemarks: (id: number, data: any) => apiClient.post(`/academics/terminal-reports/${id}/add_remarks/`, data),
 }
@@ -383,6 +388,40 @@ export const gradesAPI = {
   validateGradeAccess: (data: any) => apiClient.post("/students/grades/validate-grade-access/", data),
 }
 
+/**
+ * Fetch EVERY row of the paginated grades endpoint by walking all pages.
+ *
+ * DRF paginates list responses (PAGE_SIZE=20) and returns `count`, `next`,
+ * `previous`, `results`. Callers that only read `results` see a truncated
+ * slice of the data — e.g. a student's detail page showing only the 3 grades
+ * that happened to land on page 1. This helper requests the largest allowed
+ * page (500 rows) and follows `next` until every grade is collected.
+ *
+ * Usage: const grades = await fetchAllGrades({ student: 12 })
+ */
+export async function fetchAllGrades<T = any>(
+  params: Record<string, any> = {},
+  pageSize = 500,
+): Promise<T[]> {
+  const all: T[] = []
+  let page = 1
+  for (;;) {
+    const res = await gradesAPI.list({ ...params, page_size: pageSize, page })
+    const data = res.data
+    // Unpaginated response (plain array) — nothing more to walk.
+    if (Array.isArray(data)) {
+      all.push(...(data as T[]))
+      break
+    }
+    const body = data as { results?: T[]; next?: string | null } | null
+    const results = body?.results || []
+    all.push(...results)
+    if (!body || !body.next) break
+    page += 1
+  }
+  return all
+}
+
 export const messagingAPI = {
   messages: () => apiClient.get("/messaging/messages/"),
   sentMessages: () => apiClient.get("/messaging/messages/sent/"),
@@ -403,6 +442,9 @@ export const messagingAPI = {
   pinNotice: (id: number) => apiClient.post(`/messaging/notices/${id}/pin/`),  
   sendPersonalNotice: (studentId: number, data: { title: string; content: string }) => apiClient.post("/messaging/notices/send_personal_notice/", { student_id: studentId, ...data }),  
   personalNotices: () => apiClient.get("/messaging/notices/my_personal_notices/"),  
+  // Directory of students + teachers in the school, for the recipient picker
+  recipientsDirectory: (params?: { role?: "student" | "teacher"; search?: string }) =>
+    apiClient.get("/messaging/notices/recipients/", { params }),
 }
 
 export const usersAPI = {

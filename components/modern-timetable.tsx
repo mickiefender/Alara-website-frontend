@@ -475,22 +475,27 @@ export function ModernTimetable() {
   return (
     <Card className="border-0 shadow-lg overflow-hidden">
       {/* Header */}
-      <CardHeader className="bg-gradient-to-r from-cyan-600 to-cyan-600 text-white pb-6">
+      <CardHeader className="bg-gradient-to-r from-secondary/10 via-secondary/5 to-transparent border-b border-border pb-6">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2 text-xl">
-              <Calendar className="w-6 h-6" />
-              Timetable Management
-            </CardTitle>
-            <CardDescription className="text-indigo-100 mt-1">
-              Manage class schedules and weekly timetables
-            </CardDescription>
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 rounded-xl bg-secondary/15 ring-1 ring-secondary/20 flex items-center justify-center flex-shrink-0">
+              <Calendar className="w-6 h-6 text-secondary" />
+            </div>
+            <div>
+              <CardTitle className="text-xl font-bold text-foreground">
+                Timetable Management
+              </CardTitle>
+              <CardDescription className="text-muted-foreground mt-0.5">
+                Manage class schedules and weekly timetables
+              </CardDescription>
+            </div>
           </div>
+          <div className="hidden" aria-hidden="true"></div>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <Button
               onClick={handleDownloadPDF}
               disabled={downloadLoading || filteredTimetables.length === 0}
-              className="bg-white text-cyan-600 hover:bg-indigo-50 gap-2 print:no-print"
+              className="bg-secondary hover:bg-blue-700 text-white gap-2 print:no-print"
             >
               <Download className="w-4 h-4" />
               {downloadLoading ? "Generating..." : "Download PDF"}
@@ -498,7 +503,7 @@ export function ModernTimetable() {
             <Button
               onClick={handleDownloadExcel}
               disabled={excelLoading || filteredTimetables.length === 0}
-              className="bg-white text-cyan-600 hover:bg-indigo-50 gap-2 print:no-print"
+              className="bg-secondary hover:bg-blue-700 text-white gap-2 print:no-print"
             >
               <Download className="w-4 h-4" />
               {excelLoading ? "Preparing..." : "Download Excel"}
@@ -509,7 +514,7 @@ export function ModernTimetable() {
                 if (!open) resetForm()
               }}>
                 <DialogTrigger asChild>
-                  <Button className="bg-white text-indigo-600 hover:bg-indigo-50 gap-2">
+                  <Button className="bg-secondary hover:bg-blue-700 text-white gap-2">
                     <Plus className="w-4 h-4" />
                     Add Slot
                   </Button>
@@ -661,7 +666,7 @@ export function ModernTimetable() {
                       <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                         Cancel
                       </Button>
-                      <Button type="submit" className="bg-indigo-600 hover:bg-indigo-700">
+                      <Button type="submit" className="bg-secondary hover:bg-blue-700">
                         {editingEntry ? "Update" : "Create"}
                       </Button>
                     </DialogFooter>
@@ -724,13 +729,13 @@ export function ModernTimetable() {
             <div className="flex rounded-lg bg-white p-1 border col-span-2 md:col-span-1">
               <button
                 onClick={() => setViewMode("grid")}
-                className={`flex-1 p-2 rounded-md transition-colors text-xs md:text-sm ${viewMode === "grid" ? "bg-indigo-100 text-indigo-700" : "text-slate-500 hover:text-slate-700"}`}
+                className={`flex-1 p-2 rounded-md transition-colors text-xs md:text-sm ${viewMode === "grid" ? "bg-secondary/10 text-secondary" : "text-slate-500 hover:text-slate-700"}`}
               >
                 <Grid3X3 className="w-4 h-4 mx-auto" />
               </button>
               <button
                 onClick={() => setViewMode("list")}
-                className={`flex-1 p-2 rounded-md transition-colors text-xs md:text-sm ${viewMode === "list" ? "bg-indigo-100 text-indigo-700" : "text-slate-500 hover:text-slate-700"}`}
+                className={`flex-1 p-2 rounded-md transition-colors text-xs md:text-sm ${viewMode === "list" ? "bg-secondary/10 text-secondary" : "text-slate-500 hover:text-slate-700"}`}
               >
                 <List className="w-4 h-4 mx-auto" />
               </button>
@@ -753,7 +758,7 @@ export function ModernTimetable() {
       <CardContent className="p-4">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3">
-            <div className="animate-spin w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full" />
+            <div className="animate-spin w-8 h-8 border-4 border-secondary border-t-transparent rounded-full" />
             <p className="text-sm text-slate-500">Loading timetable data...</p>
           </div>
         ) : filteredTimetables.length === 0 ? (
@@ -925,7 +930,7 @@ export function ModernTimetable() {
         {filteredTimetables.length > 0 && (
           <div className="mt-4 md:mt-6 pt-4 border-t flex flex-wrap gap-2 md:gap-4 text-xs md:text-sm text-slate-500">
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-indigo-500"></div>
+              <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-secondary"></div>
               <span>{filteredTimetables.length} entries</span>
             </div>
             <div className="flex items-center gap-2">

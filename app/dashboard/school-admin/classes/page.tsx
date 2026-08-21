@@ -7,15 +7,15 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import { ChevronLeft, ChevronRight, Trash2, Edit2, Search, Plus, Users, BookOpen, Users2, UserCheck } from "lucide-react"
+import { ChevronLeft, ChevronRight, Trash2, Edit2, Search, Plus, Users, BookOpen, Users2, UserCheck, School } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Suspense } from "react"
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { ClassSubjectsManagement } from "@/components/class-subjects-management"
 import { EnrollStudentsInClass } from "@/components/enroll-students-in-class"
 import { AssignTeachersToClass } from "@/components/assign-teachers-to-class"
 import { AssignSubjectTeachers } from "@/components/assign-subject-teachers"
 import { ProfileAvatar } from "@/components/profile-avatar"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 interface Class {
   id: number
@@ -215,6 +215,17 @@ function ClassesPageContent() {
   const totalPages = Math.ceil(filteredClasses.length / itemsPerPage)
   const paginatedClasses = filteredClasses.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
 
+  // Inline full-page manage view — keeps the sidebar & top bar visible
+  if (selectedClassId) {
+    return (
+      <ManageClassView
+        classId={selectedClassId}
+        className={selectedClassName}
+        onBack={() => setSelectedClassId(null)}
+      />
+    )
+  }
+
   return (
     <div className="space-y-6 pb-8">
       {/* Header Section */}
@@ -317,9 +328,6 @@ function ClassesPageContent() {
                 <thead className="bg-gray-50 border-b">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-12">
-                      ID
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-12">
                       Photo
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
@@ -333,9 +341,6 @@ function ClassesPageContent() {
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       Class
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                      Section
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       Date
@@ -357,7 +362,6 @@ function ClassesPageContent() {
                 <tbody className="divide-y divide-gray-200">
                   {paginatedClasses.map((cls, idx) => (
                     <tr key={cls.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-4 py-3 text-gray-600">#{cls.code}</td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-center">
                           <ProfileAvatar 
@@ -379,7 +383,6 @@ function ClassesPageContent() {
                           {cls.name}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-gray-600">—</td>
                       <td className="px-4 py-3 text-gray-600">—</td>
                       <td className="px-4 py-3 text-gray-600">—</td>
                       <td className="px-4 py-3 text-gray-600 font-medium">
@@ -412,7 +415,6 @@ function ClassesPageContent() {
                             onClick={() => {
                               setSelectedClassId(cls.id)
                               setSelectedClassName(cls.name)
-                              setSheetOpen(true)
                             }}
                             className="ml-1 border-green-200 text-secondary hover:bg-secondary h-8 px-2 text-xs"
                           >
@@ -474,47 +476,93 @@ function ClassesPageContent() {
         </div>
       )}
 
-      {/* Class Management Sheet */}
-      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent side="right" className="w-full md:w-3/4 lg:w-2/3 overflow-y-auto bg-gray-50">
-          <SheetHeader className="border-b pb-4 mb-6">
-            <SheetTitle className="text-2xl">
-              Manage Class: <span className="text-secondary">{selectedClassName}</span>
-            </SheetTitle>
-            <p className="text-sm text-gray-600 mt-2">Configure students, teachers, subjects, and schedule for this class</p>
-          </SheetHeader>
-          <div className="space-y-6">
-            <div className="bg-white p-6 rounded-lg border border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <BookOpen size={20} className="text-secondary" />
-                Subjects
-              </h3>
-              <ClassSubjectsManagement classId={selectedClassId || 0} className={selectedClassName} />
-            </div>
-            <div className="bg-white p-6 rounded-lg border border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <Users size={20} className="text-secondary" />
-                Enroll Students
-              </h3>
-              <EnrollStudentsInClass classId={selectedClassId || 0} className={selectedClassName} />
-            </div>
-            <div className="bg-white p-6 rounded-lg border border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <UserCheck size={20} className="text-secondary" />
-                Assign Teachers
-              </h3>
-              <AssignTeachersToClass classId={selectedClassId || 0} className={selectedClassName} />
-            </div>
-            <div className="bg-white p-6 rounded-lg border border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <Users2 size={20} className="text-secondary" />
-                Subject Teachers
-              </h3>
-              <AssignSubjectTeachers classId={selectedClassId || 0} className={selectedClassName} />
-            </div>
+    </div>
+  )
+}
+
+interface ManageClassViewProps {
+  classId: number
+  className: string
+  onBack: () => void
+}
+
+/** Inline full-page class manager — renders inside the dashboard layout,
+ *  so the sidebar and top bar remain visible. */
+function ManageClassView({ classId, className, onBack }: ManageClassViewProps) {
+  return (
+    <div className="space-y-6 pb-8">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex items-start gap-4 min-w-0">
+          <Button variant="outline" size="icon" onClick={onBack} title="Back to classes" className="shrink-0">
+            <ChevronLeft size={18} />
+          </Button>
+          <div className="min-w-0">
+            <h1 className="text-2xl font-bold text-foreground tracking-tight">Manage Class</h1>
+            <p className="text-sm text-muted-foreground mt-0.5 truncate">
+              Configure subjects, students & teachers for{" "}
+              <span className="font-medium text-secondary">{className}</span>
+            </p>
           </div>
-        </SheetContent>
-      </Sheet>
+        </div>
+        <Button variant="outline" onClick={onBack} className="gap-2 shrink-0 self-start sm:self-auto">
+          <ChevronLeft size={15} />
+          Back to Classes
+        </Button>
+      </div>
+
+      {/* Single Tabs instance — controls both the tab bar and the panels */}
+      <Tabs defaultValue="subjects" className="w-full">
+        <TabsList className="grid grid-cols-2 lg:w-fit lg:grid-cols-4 w-full h-11 p-1 rounded-xl bg-muted/60">
+          <TabsTrigger value="subjects" className="gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg">
+            <BookOpen size={14} />
+            Subjects
+          </TabsTrigger>
+          <TabsTrigger value="students" className="gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg">
+            <Users size={14} />
+            Students
+          </TabsTrigger>
+          <TabsTrigger value="class-teachers" className="gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg">
+            <UserCheck size={14} />
+            Class Teachers
+          </TabsTrigger>
+          <TabsTrigger value="subject-teachers" className="gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg">
+            <Users2 size={14} />
+            Subject Teachers
+          </TabsTrigger>
+        </TabsList>
+
+        <div className="mt-6 space-y-4">
+          <TabsContent value="subjects" className="mt-0 space-y-3">
+            <p className="text-sm text-muted-foreground flex items-center gap-2">
+              <BookOpen size={14} className="text-secondary" />
+              Subjects offered by this class.
+            </p>
+            <ClassSubjectsManagement classId={classId} className={className} />
+          </TabsContent>
+          <TabsContent value="students" className="mt-0 space-y-3">
+            <p className="text-sm text-muted-foreground flex items-center gap-2">
+              <Users size={14} className="text-secondary" />
+              Students enrolled in this class.
+            </p>
+            <EnrollStudentsInClass classId={classId} className={className} />
+          </TabsContent>
+          <TabsContent value="class-teachers" className="mt-0 space-y-3">
+            <p className="text-sm text-muted-foreground flex items-center gap-2">
+              <UserCheck size={14} className="text-secondary" />
+              Main teachers who manage the entire class.
+            </p>
+            <AssignTeachersToClass classId={classId} className={className} />
+          </TabsContent>
+          <TabsContent value="subject-teachers" className="mt-0 space-y-3">
+            <p className="text-sm text-muted-foreground flex items-center gap-2">
+              <Users2 size={14} className="text-secondary" />
+              Teachers assigned to specific subjects within this class.
+            </p>
+            <AssignSubjectTeachers classId={classId} className={className} />
+          </TabsContent>
+        </div>
+      </Tabs>
     </div>
   )
 }

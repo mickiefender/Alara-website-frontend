@@ -28,6 +28,12 @@ import {
   Square,
   X,
   AlertCircle,
+  User,
+  AtSign,
+  Mail,
+  Phone,
+  MapPin,
+  Lock,
 } from "lucide-react"
 import { ProfileAvatar } from "@/components/profile-avatar"
 
@@ -308,118 +314,191 @@ const [formData, setFormData] = useState({
                 Add Student
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
-                  <GraduationCap size={18} className="text-secondary" />
-                  {editingStudent ? "Edit Student" : "Enrol New Student"}
-                </DialogTitle>
-                <p className="text-sm text-muted-foreground">
-                  {editingStudent
-                    ? "Update the student's information below."
-                    : "Fill in the details to register a new student."}
-                </p>
-              </DialogHeader>
-
-              {error && (
-                <div className="flex items-start gap-2 bg-destructive/10 text-destructive border border-destructive/20 px-4 py-3 rounded-lg text-sm">
-                  <AlertCircle size={16} className="mt-0.5 flex-shrink-0" />
-                  {error}
-                </div>
-              )}
-
-              <form onSubmit={handleSubmit} className="space-y-4 pt-1">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="first_name" className="text-xs font-medium text-muted-foreground uppercase tracking-wide">First Name *</Label>
-                    <Input
-                      id="first_name"
-                      placeholder="e.g. Kofi"
-                      value={formData.first_name}
-                      onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
-                      required
-                    />
+            <DialogContent className="sm:max-w-xl p-0 gap-0 overflow-hidden">
+              {/* Header */}
+              <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-b border-border px-6 py-5">
+                <DialogHeader className="space-y-0">
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-primary/15 ring-1 ring-primary/20 flex items-center justify-center flex-shrink-0">
+                      <GraduationCap size={22} className="text-primary" />
+                    </div>
+                    <div className="min-w-0">
+                      <DialogTitle className="text-lg font-bold text-foreground">
+                        {editingStudent ? "Edit Student" : "Enrol New Student"}
+                      </DialogTitle>
+                      <p className="text-sm text-muted-foreground mt-0.5">
+                        {editingStudent
+                          ? "Update the student's information below."
+                          : "Fill in the details below to register a new student. Fields marked * are required."}
+                      </p>
+                    </div>
                   </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="last_name" className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Last Name *</Label>
-                    <Input
-                      id="last_name"
-                      placeholder="e.g. Mensah"
-                      value={formData.last_name}
-                      onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
-                      required
-                    />
-                  </div>
+                </DialogHeader>
+              </div>
+
+              {/* Body */}
+              <form onSubmit={handleSubmit}>
+                <div className="px-6 py-5 space-y-6 max-h-[60vh] overflow-y-auto">
+                  {error && (
+                    <div className="flex items-start gap-2 bg-destructive/10 text-destructive border border-destructive/20 px-4 py-3 rounded-lg text-sm">
+                      <AlertCircle size={16} className="mt-0.5 flex-shrink-0" />
+                      {error}
+                    </div>
+                  )}
+
+                  {/* ── Personal Information ── */}
+                  <fieldset className="space-y-4">
+                    <legend className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+                      <span className="w-6 h-px bg-border" />
+                      Personal Information
+                      <span className="flex-1 h-px bg-border" />
+                    </legend>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="first_name" className="text-sm font-medium text-foreground">First Name <span className="text-destructive">*</span></Label>
+                        <div className="relative">
+                          <User size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                          <Input
+                            id="first_name"
+                            placeholder="e.g. Kofi"
+                            className="pl-9 bg-background"
+                            value={formData.first_name}
+                            onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                            required
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="last_name" className="text-sm font-medium text-foreground">Last Name <span className="text-destructive">*</span></Label>
+                        <div className="relative">
+                          <User size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                          <Input
+                            id="last_name"
+                            placeholder="e.g. Mensah"
+                            className="pl-9 bg-background"
+                            value={formData.last_name}
+                            onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                            required
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="username" className="text-sm font-medium text-foreground">Username <span className="text-destructive">*</span></Label>
+                        <div className="relative">
+                          <AtSign size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                          <Input
+                            id="username"
+                            placeholder="e.g. kmensah"
+                            className="pl-9 bg-background"
+                            value={formData.username}
+                            onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                            required
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="email" className="text-sm font-medium text-foreground">Email Address <span className="text-destructive">*</span></Label>
+                        <div className="relative">
+                          <Mail size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                          <Input
+                            id="email"
+                            type="email"
+                            placeholder="student@school.edu"
+                            className="pl-9 bg-background"
+                            value={formData.email}
+                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                            required
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </fieldset>
+
+                  {/* ── Contact Information ── */}
+                  <fieldset className="space-y-4">
+                    <legend className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+                      <span className="w-6 h-px bg-border" />
+                      Contact Information
+                      <span className="flex-1 h-px bg-border" />
+                    </legend>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="phone" className="text-sm font-medium text-foreground">Phone Number</Label>
+                        <div className="relative">
+                          <Phone size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                          <Input
+                            id="phone"
+                            placeholder="+233 XX XXX XXXX"
+                            className="pl-9 bg-background"
+                            value={formData.phone}
+                            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="address" className="text-sm font-medium text-foreground">Address</Label>
+                        <div className="relative">
+                          <MapPin size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                          <Input
+                            id="address"
+                            placeholder="City, Region"
+                            className="pl-9 bg-background"
+                            value={formData.address}
+                            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </fieldset>
+
+                  {/* ── Account Security ── */}
+                  {!editingStudent && (
+                    <fieldset className="space-y-4">
+                      <legend className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+                        <span className="w-6 h-px bg-border" />
+                        Account Security
+                        <span className="flex-1 h-px bg-border" />
+                      </legend>
+
+                      <div className="space-y-1.5">
+                        <Label htmlFor="password" className="text-sm font-medium text-foreground">Password <span className="text-destructive">*</span></Label>
+                        <div className="relative">
+                          <Lock size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                          <Input
+                            id="password"
+                            type="password"
+                            placeholder="Min. 8 characters"
+                            className="pl-9 bg-background"
+                            value={formData.password}
+                            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                            required
+                          />
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          The student will use this password to sign in to their account.
+                        </p>
+                      </div>
+                    </fieldset>
+                  )}
                 </div>
 
-                <div className="space-y-1.5">
-                  <Label htmlFor="username" className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Username *</Label>
-                  <Input
-                    id="username"
-                    placeholder="e.g. kmensah"
-                    value={formData.username}
-                    onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                    required
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label htmlFor="email" className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Email Address *</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="student@school.edu"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    required
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="phone" className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Phone</Label>
-                    <Input
-                      id="phone"
-                      placeholder="+233 XX XXX XXXX"
-                      value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="address" className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Address</Label>
-                    <Input
-                      id="address"
-                      placeholder="City, Region"
-                      value={formData.address}
-                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    />
-                  </div>
-                </div>
-
-                {!editingStudent && (
-                  <div className="space-y-1.5">
-                    <Label htmlFor="password" className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Password *</Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      placeholder="Min. 8 characters"
-                      value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      required
-                    />
-                  </div>
-                )}
-
-                <div className="flex gap-2 pt-2">
-                  <Button type="submit" className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground">
-                    {editingStudent ? "Save Changes" : "Enrol Student"}
-                  </Button>
+                {/* Footer */}
+                <div className="flex items-center justify-end gap-3 border-t border-border bg-muted/30 px-6 py-4">
                   <Button
                     type="button"
                     variant="outline"
                     onClick={() => { setIsOpen(false); setError(null) }}
                   >
                     Cancel
+                  </Button>
+                  <Button type="submit" className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground min-w-[150px]">
+                    <UserPlus size={15} />
+                    {editingStudent ? "Save Changes" : "Enrol Student"}
                   </Button>
                 </div>
               </form>
