@@ -1,0 +1,9 @@
+frontend/app/loading.tsx:1:import { BrandedSplashContent } from "@/components/boot-splash"
+frontend/app/loading.tsx:14:      <BrandedSplashContent />
+frontend/components/page-loader.tsx:4:import { BootSplash } from "@/components/boot-splash"
+frontend/components/page-loader.tsx:13: *  - `holds > 0`  → BootSplash: branded full-screen splash shown ONLY while
+frontend/components/page-loader.tsx:25:      <BootSplash />
+frontend/components/boot-splash.tsx:9: * line. Used by <BootSplash /> and the root route loading.tsx so the
+frontend/components/boot-splash.tsx:12:export function BrandedSplashContent() {
+frontend/components/boot-splash.tsx:71:export function BootSplash() {
+frontend/components/boot-splash.tsx:102:      <BrandedSplashContent />

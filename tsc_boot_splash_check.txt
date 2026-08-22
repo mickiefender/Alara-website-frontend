@@ -14,4 +14,4 @@ frontend/lib/api.ts-broken-backup.ts(304,182): error TS1005: ',' expected.
 frontend/lib/api.ts-broken-backup.ts(304,268): error TS1127: Invalid character.
 frontend/lib/api.ts-broken-backup.ts(304,272): error TS1005: ',' expected.
 frontend/lib/api.ts-broken-backup.ts(304,352): error TS1127: Invalid character.
-done
+exit_code: 1

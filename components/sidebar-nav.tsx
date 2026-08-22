@@ -42,9 +42,11 @@ import {
   ClipboardList,
   Sparkles,
   Megaphone,
+  ArrowRightLeft,
 } from "lucide-react"
 
 import { NAV_LINK_PERMISSIONS } from "@/lib/permissions"
+import { iconsMap } from "@/components/icons-map"
 import {
   Dialog,
   DialogContent,
@@ -106,6 +108,7 @@ const navSections: Record<string, NavSection[]> = {
         { label: "Class", href: "/dashboard/school-admin/classes", icon: School },
         { label: "Subject", href: "/dashboard/school-admin/subjects", icon: Book },
         { label: "Timetable", href: "/dashboard/school-admin/timetable", icon: Calendar },
+        { label: "Student Promotion", href: "/dashboard/school-admin/promotion", icon: ArrowRightLeft },
         { label: "Grading", href: "/dashboard/school-admin/grading", icon: ClipboardEdit },
         { label: "Attendance", href: "/dashboard/school-admin/attendance", icon: CheckSquare },
         { label: "Exam", href: "/dashboard/school-admin/exam", icon: FileText },
@@ -232,6 +235,107 @@ const navSections: Record<string, NavSection[]> = {
   ],
 }
 
+/**
+ * Icon for each permission id — used to render admin-staff nav items
+ * generated from their assigned permissions.
+ */
+const PERMISSION_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  manage_admins: Users,
+  manage_students: Users,
+  manage_teachers: User,
+  manage_student_assignment: ClipboardCheck,
+  manage_teacher_assignment: FilePen,
+  manage_school_profile: Settings,
+  manage_classes: School,
+  manage_subjects: Book,
+  manage_timetable: Calendar,
+  manage_grades: ClipboardEdit,
+  manage_attendance: CheckSquare,
+  manage_exams: FileText,
+  view_performance: BarChart,
+  export_results: FileText,
+  manage_report_templates: FileText,
+  manage_grading_policy: ClipboardEdit,
+  manage_fees: CreditCard,
+  collect_fees: DollarSignIcon,
+  view_payments: CreditCard,
+  manage_withdrawals: DollarSignIcon,
+  manage_expenses: FileText,
+  view_fees: BookUser,
+  manage_transport: Bus,
+  manage_hostel: Home,
+  manage_news: Newspaper,
+  manage_materials: Book,
+  manage_issued_books: BookUser,
+  manage_library_categories: BookOpen,
+}
+
+/** Category header icons for grouped permission sections. */
+const CATEGORY_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  Admin: Settings,
+  Academics: BookOpen,
+  Results: BarChart,
+  Finance: CreditCard,
+  Operations: Wrench,
+  Communication: MessageCircle,
+  Library: Library,
+}
+
+/**
+ * Build the admin-staff nav sections from their assigned permissions:
+ * core links (Dashboard / Profile / Permissions / My Tasks) plus one
+ * section per permission category, mirroring how the school-admin
+ * dashboard sidebar groups its items.
+ */
+function buildAdminStaffSections(perms: string[]): NavSection[] {
+  const coreSections: NavSection[] = [
+    {
+      label: "Dashboard",
+      icon: LayoutDashboard,
+      href: "/dashboard/admin-staff",
+    },
+    {
+      label: "Profile",
+      icon: UserCircle,
+      href: "/dashboard/admin-staff/profile",
+    },
+    {
+      label: "Permissions",
+      icon: Shield,
+      href: "/dashboard/admin-staff/permissions",
+    },
+    {
+      label: "My Tasks",
+      icon: ClipboardList,
+      items: [
+        { label: "Quick Actions", href: "/dashboard/admin-staff/tasks", icon: ClipboardCheck },
+      ],
+    },
+  ]
+
+  const grouped = new Map<string, NavItem[]>()
+  for (const perm of NAV_LINK_PERMISSIONS) {
+    if (perm.category === "Admin Staff") continue
+    if (!perms.includes(perm.id)) continue
+    const items = grouped.get(perm.category) ?? []
+    items.push({
+      label: perm.label,
+      href: perm.href,
+      icon: PERMISSION_ICONS[perm.id] ?? iconsMap.FileText ?? FileText,
+    })
+    grouped.set(perm.category, items)
+  }
+
+  return [
+    ...coreSections,
+    ...Array.from(grouped.entries()).map(([category, items]) => ({
+      label: category,
+      icon: CATEGORY_ICONS[category] ?? Wrench,
+      items,
+    })),
+  ]
+}
+
 interface SidebarNavProps {
   isCollapsed?: boolean
   onClose?: () => void
@@ -287,11 +391,15 @@ function SidebarNavContent({ isCollapsed, onClose, isMobile, onToggleCollapse }:
 
   if (!user || loading) return null
 
-  const sections = navSections[user.role as keyof typeof navSections] || []
-
   // Permission-based filtering for admin staff roles
   const userPerms = user.permissions || []
   const isAdminStaff = ['academic_admin', 'exam_officer', 'finance_officer', 'ct_admin_support'].includes(user.role || '')
+
+  // Admin staff: build nav directly from assigned permissions (grouped by
+  // category like the school-admin sidebar). Other roles use static sections.
+  const sections = isAdminStaff
+    ? buildAdminStaffSections(userPerms)
+    : navSections[user.role as keyof typeof navSections] || []
 
   const permissionFilteredSections = sections.map(section => ({
     ...section,

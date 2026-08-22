@@ -309,6 +309,46 @@ export const academicsAPI = {
   addTerminalReportRemarks: (id: number, data: any) => apiClient.post(`/academics/terminal-reports/${id}/add_remarks/`, data),
 }
 
+export const promotionAPI = {
+  // Academic years
+  academicYears: (params?: any) => apiClient.get("/academics/academic-years/", { params }),
+  createAcademicYear: (data: any) => apiClient.post("/academics/academic-years/", data),
+  updateAcademicYear: (id: number, data: any) => apiClient.put(`/academics/academic-years/${id}/`, data),
+  deleteAcademicYear: (id: number) => apiClient.delete(`/academics/academic-years/${id}/`),
+
+  // Configurable promotion rules (FROM class -> TO class; null TO = graduate)
+  promotionRules: () => apiClient.get("/academics/promotion-rules/"),
+  createPromotionRule: (data: any) => apiClient.post("/academics/promotion-rules/", data),
+  updatePromotionRule: (id: number, data: any) => apiClient.put(`/academics/promotion-rules/${id}/`, data),
+  deletePromotionRule: (id: number) => apiClient.delete(`/academics/promotion-rules/${id}/`),
+
+  // Per-school promotion policy (promote_all / average_threshold / grading_scale / manual_review)
+  promotionPolicy: () => apiClient.get("/academics/promotion-policy/"),
+  savePromotionPolicy: (data: any) => apiClient.post("/academics/promotion-policy/", data),
+  updatePromotionPolicy: (id: number, data: any) => apiClient.put(`/academics/promotion-policy/${id}/`, data),
+
+  // Preview (read-only, never mutates enrollments)
+  previewPromotion: (data: { source_academic_year: number; destination_academic_year: number; class_ids?: number[] }) =>
+    apiClient.post("/academics/promotion/preview/", data),
+
+  // Bulk promotion — ONE request for the whole school (atomic, idempotent)
+  bulkPromotion: (data: { source_academic_year: number; destination_academic_year: number; decisions?: any[] }) =>
+    apiClient.post("/academics/promotion/bulk/", data),
+
+  // Individual student promotion
+  promoteStudent: (studentId: number, data: any) =>
+    apiClient.post(`/academics/students/${studentId}/promote/`, data),
+
+  // Promotion history
+  promotionHistory: (params?: any) => apiClient.get("/academics/promotion-batches/", { params }),
+  promotionBatchDetail: (id: number, params?: any) =>
+    apiClient.get(`/academics/promotion-batches/${id}/`, { params }),
+
+  // Student academic history (permanent, per-year enrollment timeline)
+  academicHistory: (studentId: number) =>
+    apiClient.get(`/academics/students/${studentId}/academic-history/`),
+}
+
 export const announcementsAPI = {
   list: () => apiClient.get("/schools/announcements/"),
   create: (data: any) => apiClient.post("/schools/announcements/", data),
@@ -662,6 +702,7 @@ export default {
   authAPI,
   schoolsAPI,
   academicsAPI,
+  promotionAPI,
   announcementsAPI,
   attendanceAPI,
   gradesAPI,
