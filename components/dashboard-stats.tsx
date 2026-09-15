@@ -31,32 +31,32 @@ export function DashboardStats({ stats }: DashboardStatsProps) {
       label: "Students",
       value: stats.students,
       icon: Users,
-      chipBg: "bg-purple-500/15 dark:bg-purple-400/15",
-      iconColor: "text-purple-600 dark:text-purple-400",
+      iconColor: "text-primary",
+      cardBg: "!bg-red-500/10 dark:!bg-red-400/10",
       glow: "hover:shadow-purple-500/15",
     },
     {
       label: "Teachers",
       value: stats.teachers,
       icon: UserCheck,
-      chipBg: "bg-blue-500/15 dark:bg-blue-400/15",
-      iconColor: "text-blue-600 dark:text-blue-400",
+      iconColor: "text-primary",
+      cardBg: "!bg-fuchsia-500/10 dark:!bg-fuchsia-400/10",
       glow: "hover:shadow-blue-500/15",
     },
     {
       label: "Parents",
       value: stats.parents,
       icon: Users2,
-      chipBg: "bg-orange-500/15 dark:bg-orange-400/15",
-      iconColor: "text-orange-600 dark:text-orange-400",
+      iconColor: "text-primary",
+      cardBg: "!bg-orange-500/10 dark:!bg-orange-400/10",
       glow: "hover:shadow-orange-500/15",
     },
     {
       label: "Fee Collected",
       value: stats.earnings,
       icon: DollarSign,
-      chipBg: "bg-emerald-500/15 dark:bg-emerald-400/15",
-      iconColor: "text-emerald-600 dark:text-emerald-400",
+      iconColor: "text-primary",
+      cardBg: "!bg-emerald-500/10 dark:!bg-emerald-400/10",
       glow: "hover:shadow-emerald-500/15",
     },
   ];
@@ -78,14 +78,14 @@ export function DashboardStats({ stats }: DashboardStatsProps) {
         return (
           <Link key={idx} href={getHref(stat.label)} className="block h-full group">
             <div
-              className={`glass-card glass-hover h-full relative p-6 hover:shadow-2xl ${stat.glow}`}
+              className={`glass-card glass-hover h-full relative p-4 ${stat.cardBg}`}
             >
               <div className="flex items-center justify-between gap-4">
                 <div className="min-w-0">
-                  <p className="text-xs text-muted-foreground font-medium mb-2 uppercase tracking-wider">
+                  <p className="text-xs text-muted-foreground font-medium mb-1 uppercase tracking-wider">
                     {stat.label}
                   </p>
-                  <p className="text-3xl lg:text-4xl font-bold tracking-tight text-foreground tabular-nums">
+                  <p className="text-2xl lg:text-3xl font-bold tracking-tight text-foreground tabular-nums">
                     {stats.loading ? (
                       <span className="inline-block h-9 w-20 rounded-lg bg-accent/70 shimmer align-middle" />
                     ) : (
@@ -96,8 +96,8 @@ export function DashboardStats({ stats }: DashboardStatsProps) {
                     )}
                   </p>
                 </div>
-                <div className={`shrink-0 w-14 h-14 rounded-2xl ${stat.chipBg} border border-white/30 dark:border-white/10 flex items-center justify-center transition-transform duration-300 group-hover:scale-110`}>
-                  <Icon className={`w-7 h-7 ${stat.iconColor}`} />
+                <div className="shrink-0 w-11 h-11 flex items-center justify-center transition-transform duration-300 group-hover:scale-110">
+                  <Icon className={`w-6 h-6 ${stat.iconColor}`} />
                 </div>
               </div>
             </div>

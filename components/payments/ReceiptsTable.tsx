@@ -81,11 +81,11 @@ export default function ReceiptsTable({
   }
 
   const getPaymentMethodIcon = (method: string) => {
-    if (method?.includes('paystack') || method === 'online') return '💳'
-    if (method === 'cash') return '💵'
-    if (method?.includes('bank')) return '🏦'
-    if (method?.includes('mobile')) return '📱'
-    return '💰'
+    if (method?.includes('paystack') || method === 'online') return 'Card'
+    if (method === 'cash') return 'Cash'
+    if (method?.includes('bank')) return 'Bank'
+    if (method?.includes('mobile')) return 'Mobile'
+    return 'Other'
   }
 
   const printReceipts = () => {

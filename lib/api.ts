@@ -1,6 +1,143 @@
 import axios from "axios"
 import { loadingManager } from "./loading-manager"
 
+const ACCESS_TOKEN_KEY = "authToken"
+const REFRESH_TOKEN_KEY = "refreshToken"
+const REFRESH_LOCK_KEY = "alara:token-refresh-lock"
+const REFRESHED_ACCESS_TOKEN_KEY = "alara:refreshed-access-token"
+const REFRESH_LOCK_TIMEOUT = 15_000
+const REFRESH_WAIT_TIMEOUT = 20_000
+const refreshOwner = typeof window !== "undefined"
+  ? `${Date.now()}-${Math.random().toString(36).slice(2)}`
+  : "server"
+let refreshPromise: Promise<string> | null = null
+
+function getAccessToken(): string | null {
+  if (typeof window === "undefined") return null
+  return sessionStorage.getItem(ACCESS_TOKEN_KEY) || localStorage.getItem(ACCESS_TOKEN_KEY)
+}
+
+function getRefreshToken(): string | null {
+  if (typeof window === "undefined") return null
+  return localStorage.getItem(REFRESH_TOKEN_KEY) || sessionStorage.getItem(REFRESH_TOKEN_KEY)
+}
+
+function storeTokens(access: string, refresh?: string) {
+  if (typeof window === "undefined") return
+  sessionStorage.setItem(ACCESS_TOKEN_KEY, access)
+  localStorage.setItem(ACCESS_TOKEN_KEY, access)
+  if (refresh) {
+    localStorage.setItem(REFRESH_TOKEN_KEY, refresh)
+    sessionStorage.setItem(REFRESH_TOKEN_KEY, refresh)
+  }
+  localStorage.setItem(REFRESHED_ACCESS_TOKEN_KEY, access)
+}
+
+function clearStoredAuth() {
+  if (typeof window === "undefined") return
+  sessionStorage.removeItem(ACCESS_TOKEN_KEY)
+  sessionStorage.removeItem(REFRESH_TOKEN_KEY)
+  sessionStorage.removeItem("user")
+  localStorage.removeItem(ACCESS_TOKEN_KEY)
+  localStorage.removeItem(REFRESH_TOKEN_KEY)
+  localStorage.removeItem(REFRESHED_ACCESS_TOKEN_KEY)
+}
+
+function redirectToLogin() {
+  if (typeof window === "undefined") return
+  const path = `${window.location.pathname}${window.location.search}${window.location.hash}`
+  const returnUrl = path && !path.startsWith("/auth/") ? `?returnUrl=${encodeURIComponent(path)}` : ""
+  window.dispatchEvent(new CustomEvent("authStateChanged"))
+  window.location.href = `/auth/login${returnUrl}`
+}
+
+async function waitForOtherTabRefresh(previousToken: string): Promise<string | null> {
+  const startedAt = Date.now()
+  while (Date.now() - startedAt < REFRESH_WAIT_TIMEOUT) {
+    const latestToken = localStorage.getItem(REFRESHED_ACCESS_TOKEN_KEY) || localStorage.getItem(ACCESS_TOKEN_KEY)
+    const lock = localStorage.getItem(REFRESH_LOCK_KEY)
+    if (latestToken && latestToken !== previousToken && !lock) {
+      sessionStorage.setItem(ACCESS_TOKEN_KEY, latestToken)
+      return latestToken
+    }
+    await new Promise((resolve) => window.setTimeout(resolve, 100))
+  }
+  return null
+}
+
+async function refreshAccessToken(previousToken: string): Promise<string> {
+  if (refreshPromise) return refreshPromise
+  refreshPromise = (async () => {
+    const refresh = getRefreshToken()
+    if (!refresh) {
+      clearStoredAuth()
+      redirectToLogin()
+      throw new Error("Refresh token is missing")
+    }
+
+    const alreadyRefreshedToken = localStorage.getItem(ACCESS_TOKEN_KEY)
+    if (alreadyRefreshedToken && alreadyRefreshedToken !== previousToken) {
+      sessionStorage.setItem(ACCESS_TOKEN_KEY, alreadyRefreshedToken)
+      return alreadyRefreshedToken
+    }
+
+    const existingLock = localStorage.getItem(REFRESH_LOCK_KEY)
+    if (existingLock) {
+      try {
+        const lock = JSON.parse(existingLock) as { owner?: string; startedAt?: number }
+        if (lock.owner !== refreshOwner && lock.startedAt && Date.now() - lock.startedAt < REFRESH_LOCK_TIMEOUT) {
+          const updatedToken = await waitForOtherTabRefresh(previousToken)
+          if (updatedToken) return updatedToken
+        }
+      } catch {
+        localStorage.removeItem(REFRESH_LOCK_KEY)
+      }
+    }
+
+    localStorage.setItem(REFRESH_LOCK_KEY, JSON.stringify({ owner: refreshOwner, startedAt: Date.now() }))
+    try {
+      const lock = JSON.parse(localStorage.getItem(REFRESH_LOCK_KEY) || "{}") as { owner?: string }
+      if (lock.owner !== refreshOwner) {
+        const updatedToken = await waitForOtherTabRefresh(previousToken)
+        if (updatedToken) return updatedToken
+      }
+    } catch {
+      localStorage.removeItem(REFRESH_LOCK_KEY)
+    }
+    try {
+      const response = await axios.post(`${API_URL}users/auth/refresh/`, { refresh })
+      const latestStoredToken = localStorage.getItem(ACCESS_TOKEN_KEY)
+      const access = latestStoredToken && latestStoredToken !== previousToken
+        ? latestStoredToken
+        : response.data?.access
+      if (!access) throw new Error("Refresh response did not include an access token")
+      storeTokens(access, response.data?.refresh)
+      return access
+    } catch (error) {
+      const latestStoredToken = localStorage.getItem(ACCESS_TOKEN_KEY)
+      if (latestStoredToken && latestStoredToken !== previousToken) {
+        sessionStorage.setItem(ACCESS_TOKEN_KEY, latestStoredToken)
+        return latestStoredToken
+      }
+      clearStoredAuth()
+      redirectToLogin()
+      throw error
+    } finally {
+      const lock = localStorage.getItem(REFRESH_LOCK_KEY)
+      try {
+        if (!lock || JSON.parse(lock).owner === refreshOwner) localStorage.removeItem(REFRESH_LOCK_KEY)
+      } catch {
+        localStorage.removeItem(REFRESH_LOCK_KEY)
+      }
+    }
+  })()
+  try {
+    return await refreshPromise
+  } finally {
+    refreshPromise = null
+  }
+}
+
 export const authLoading = {
   hold: () => loadingManager.hold(),
   release: () => loadingManager.release(),
@@ -112,6 +249,14 @@ apiClient.interceptors.request.use((config) => {
   return config
 })
 
+// Read the shared token again after the legacy interceptor so another tab's
+// refresh is used for every request created after the storage update.
+apiClient.interceptors.request.use((config) => {
+  const token = getAccessToken()
+  if (token) config.headers.Authorization = `Bearer ${token}`
+  return config
+})
+
 apiClient.interceptors.response.use(
   (response) => {
     // Every tracked request must be released exactly once, success or failure.
@@ -128,21 +273,32 @@ apiClient.interceptors.response.use(
     const url = error.config?.url
     const details = error.response?.data
     
-    if (status === 401) {
-      console.error('[API 401] Auth failed:', { url, details })
-      // Let auth-context handle cleanup and redirect to avoid double-handling
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('authError'))
-      }
-      const currentPath = typeof window !== "undefined" ? window.location.pathname : ""
-      if (!currentPath.startsWith("/auth/") && !currentPath.startsWith("/dashboard/")) {
-        console.warn('[API] Clearing invalid token, redirecting to login')
-        sessionStorage.removeItem("authToken")
-        sessionStorage.removeItem("user")
-        if (typeof window !== "undefined") {
-          window.location.href = "/auth/login"
-        }
-      }
+    const requestConfig = error.config as (typeof error.config & {
+      _retry?: boolean
+      _skipAuthRefresh?: boolean
+    }) | undefined
+    const isAuthRequest = typeof url === "string" && (
+      url.includes("/auth/login") ||
+      url.includes("/auth/register") ||
+      url.includes("/auth/refresh")
+    )
+    const failedToken = requestConfig?.headers?.Authorization?.replace(/^Bearer\s+/i, "") || getAccessToken() || ""
+    const hasAuthState = Boolean(failedToken || getRefreshToken())
+    if (
+      status === 401 &&
+      requestConfig &&
+      hasAuthState &&
+      !requestConfig._retry &&
+      !requestConfig._skipAuthRefresh &&
+      !isAuthRequest &&
+      typeof window !== "undefined"
+    ) {
+      requestConfig._retry = true
+      return refreshAccessToken(failedToken).then((access) => {
+        requestConfig.headers = requestConfig.headers || {}
+        requestConfig.headers.Authorization = `Bearer ${access}`
+        return apiClient.request(requestConfig)
+      })
     } else if (status >= 500) {
       console.error('[API Error]', { status, url, details })
     }
@@ -155,14 +311,15 @@ export const authAPI = {
   login: (credentials: { email?: string; student_id?: string; password: string }) => apiClient.post("/users/auth/login/", credentials),
   register: (data: any) => apiClient.post("/users/auth/register/", data),
   logout: () => {
-    sessionStorage.removeItem("authToken")
-    sessionStorage.removeItem("user")
+    clearStoredAuth()
   },
   me: () => apiClient.get("/users/me/"),
 }
 
 export const schoolsAPI = {
   list: () => apiClient.get("/schools/schools/"),
+  subscriptionStatus: () => apiClient.get("/schools/schools/subscription_status/"),
+  plans: () => apiClient.get("/schools/plans/"),
   create: (data: any) => apiClient.post("/schools/schools/", data),
   update: (id: number, data: any) => apiClient.put(`/schools/schools/${id}/`, data),
   suspend: (id: number) => apiClient.post(`/schools/schools/${id}/suspend/`),
@@ -482,6 +639,27 @@ export const messagingAPI = {
   pinNotice: (id: number) => apiClient.post(`/messaging/notices/${id}/pin/`),  
   sendPersonalNotice: (studentId: number, data: { title: string; content: string }) => apiClient.post("/messaging/notices/send_personal_notice/", { student_id: studentId, ...data }),  
   personalNotices: () => apiClient.get("/messaging/notices/my_personal_notices/"),  
+  smsSettings: () => apiClient.get("/messaging/sms/settings/"),
+  updateSmsSettings: (data: { sender_id?: string; is_enabled?: boolean }) => apiClient.patch("/messaging/sms/settings/", data),
+  smsBalance: () => apiClient.get("/messaging/sms/balance/"),
+  smsDashboard: () => apiClient.get("/messaging/sms/dashboard/"),
+  smsTemplates: (params?: any) => apiClient.get("/messaging/sms/templates/", { params }),
+  createSmsTemplate: (data: any) => apiClient.post("/messaging/sms/templates/", data),
+  updateSmsTemplate: (id: number, data: any) => apiClient.patch(`/messaging/sms/templates/${id}/`, data),
+  deleteSmsTemplate: (id: number) => apiClient.delete(`/messaging/sms/templates/${id}/`),
+  smsMessages: (params?: any) => apiClient.get("/messaging/sms/messages/", { params }),
+  sendSms: (data: any, idempotencyKey?: string) => apiClient.post("/messaging/sms/send/", data, idempotencyKey ? { headers: { "Idempotency-Key": idempotencyKey } } : undefined),
+  adminSmsDashboard: () => apiClient.get("/messaging/admin/sms/dashboard/"),
+  approveSmsSender: (configurationId: number) =>
+    apiClient.post(`/messaging/admin/sms/sender-requests/${configurationId}/approve/`),
+  addSmsCredits: (schoolId: number, amount: number) =>
+    apiClient.post("/messaging/admin/sms/balance/", { school_id: schoolId, amount }),
+  adminSendSms: (data: any, idempotencyKey?: string) =>
+    apiClient.post(
+      "/messaging/admin/sms/send/",
+      data,
+      idempotencyKey ? { headers: { "Idempotency-Key": idempotencyKey } } : undefined,
+    ),
   // Directory of students + teachers in the school, for the recipient picker
   recipientsDirectory: (params?: { role?: "student" | "teacher"; search?: string }) =>
     apiClient.get("/messaging/notices/recipients/", { params }),
@@ -596,6 +774,9 @@ export const usersAPI = {
   update: (id: number, data: any) => apiClient.put(`/users/users/${id}/`, data),
   updateTeacher: (id: number, data: any) => apiClient.put(`/users/teachers/${id}/`, data),
   updateStudent: (id: number, data: any) => apiClient.put(`/users/students/${id}/`, data),
+  // Change the academic year a student belongs to (null clears it).
+  setStudentAcademicYear: (id: number, academicYearId: number | null) =>
+    apiClient.post(`/users/students/${id}/academic-year/`, { academic_year: academicYearId }),
   updateParent: (id: number, data: any) => apiClient.put(`/users/parents/${id}/`, data),
   delete: (id: number) => apiClient.delete(`/users/users/${id}/`),
   deleteTeacher: (id: number) => apiClient.delete(`/users/teachers/${id}/`),
@@ -714,6 +895,40 @@ export const superAdminAPI = {
 }
 
 export const platformAPI = {
+  platformStaff: () => apiClient.get("/platform/staff/"),
+  createPlatformStaff: (data: Record<string, unknown>) => apiClient.post("/platform/staff/", data),
+  deletePlatformStaff: (id: number) => apiClient.delete(`/platform/staff/${id}/`),
+  updatePlatformStaffRole: (id: number, platform_role: number) =>
+    apiClient.patch(`/platform/staff/${id}/`, { platform_role }),
+  publicBlogPosts: () => apiClient.get("/platform/public/blog/", { _trackLoading: false } as any),
+  blogPosts: () => apiClient.get("/platform/blog/"),
+  createBlogPost: (data: FormData) =>
+    apiClient.post("/platform/blog/", data, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }),
+  deleteBlogPost: (id: number) => apiClient.delete(`/platform/blog/${id}/`),
+  publicFaqs: () => apiClient.get("/platform/public/faqs/", { _trackLoading: false } as any),
+  faqs: () => apiClient.get("/platform/faqs/"),
+  createFaq: (data: { question: string; answer: string }) => apiClient.post("/platform/faqs/", data),
+  deleteFaq: (id: number) => apiClient.delete(`/platform/faqs/${id}/`),
+  submitContactInquiry: (data: {
+    name: string
+    email: string
+    school: string
+    phone: string
+    inquiry_type: string
+    message: string
+  }) => apiClient.post("/platform/contact-inquiries/", data),
+  contactInquiries: () => apiClient.get("/platform/contact-inquiries/"),
+  updateContactInquiry: (id: number, data: { status: string }) =>
+    apiClient.patch(`/platform/contact-inquiries/${id}/`, data),
+  publicTrustedSchools: () => apiClient.get("/platform/public/trusted-schools/", { _trackLoading: false } as any),
+  uploadTrustedSchoolLogo: (data: FormData) =>
+    apiClient.post("/platform/trusted-schools/upload/", data, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }),
+  deleteTrustedSchoolLogo: (id: number) =>
+    apiClient.delete(`/platform/trusted-schools/${id}/`),
   // Dashboard
   overview: () => apiClient.get("/platform/overview/"),
   health: () => apiClient.get("/platform/health/"),

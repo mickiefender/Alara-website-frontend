@@ -46,9 +46,7 @@ export function StatsSection() {
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-2">
               Empowering Education with Data-Driven Insights
           </h2>
-          <p className="text-3xl md:text-4xl lg:text-5xl font-bold text-[#00b3b3]">
-              Transforming Schools, One Insight at a Time
-          </p>
+          
         </div>
 
         {/* 🔥 Top Row */}

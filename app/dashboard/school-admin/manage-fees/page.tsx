@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Trash2, Edit2, Plus, DollarSign, Users2, GraduationCap, Building2 } from "lucide-react"
+import { Trash2, Edit2, Plus, Users2, GraduationCap, Building2 } from "lucide-react"
 
 // Helper function to safely format currency amounts
 const formatCurrency = (amount: any): string => {
@@ -336,8 +336,7 @@ setError(err?.message || err?.response?.data?.detail || "Failed to assign fee to
         <div>
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold flex items-center gap-2">
-                <DollarSign className="w-8 h-8 text-secondary" />
+              <h1 className="text-2xl font-bold flex items-center gap-2">
                 School Fees Management
               </h1>
               <p className="text-gray-600 mt-1">Manage fee types and assignments at all levels</p>

@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label"
 import { ProtectedRoute } from "@/lib/protected-route"
 import { useAuthContext } from "@/lib/auth-context"
 import { useNotifications } from "@/lib/notifications-context"
+import { Building2, Smartphone } from "lucide-react"
 
 const formatCurrency = (amount: number): string => {
   return `GH¢${Number(amount).toFixed(2)}`
@@ -234,7 +235,7 @@ export default function WithdrawalsPage() {
                 </p>
                 <p className="text-xs text-blue-600 mt-2">Ready for withdrawal</p>
               </div>
-              <div className="text-6xl">🏦</div>
+              <Building2 className="h-12 w-12 text-blue-700" aria-hidden="true" />
             </div>
           </CardContent>
         </Card>
@@ -270,7 +271,7 @@ export default function WithdrawalsPage() {
                           : "border-gray-200 hover:border-gray-300"
                       }`}
                     >
-                      <span className="text-3xl block mb-2">📱</span>
+                      <Smartphone className="h-8 w-8 mx-auto mb-2 text-current" aria-hidden="true" />
                       <p className="font-semibold">Mobile Money</p>
                       <p className="text-xs text-gray-500 mt-1">MTN, Vodafone, AirtelTigo</p>
                     </button>
@@ -282,7 +283,7 @@ export default function WithdrawalsPage() {
                           : "border-gray-200 hover:border-gray-300"
                       }`}
                     >
-                      <span className="text-3xl block mb-2">🏦</span>
+                      <Building2 className="h-8 w-8 mx-auto mb-2 text-current" aria-hidden="true" />
                       <p className="font-semibold">Bank Transfer</p>
                       <p className="text-xs text-gray-500 mt-1">Direct bank deposit</p>
                     </button>

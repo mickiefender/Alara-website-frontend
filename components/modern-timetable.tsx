@@ -475,12 +475,9 @@ export function ModernTimetable() {
   return (
     <Card className="border-0 shadow-lg overflow-hidden">
       {/* Header */}
-      <CardHeader className="bg-gradient-to-r from-secondary/10 via-secondary/5 to-transparent border-b border-border pb-6">
+      <CardHeader className="bg-card border-b border-border pb-6">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-xl bg-secondary/15 ring-1 ring-secondary/20 flex items-center justify-center flex-shrink-0">
-              <Calendar className="w-6 h-6 text-secondary" />
-            </div>
             <div>
               <CardTitle className="text-xl font-bold text-foreground">
                 Timetable Management

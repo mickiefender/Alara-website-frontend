@@ -217,7 +217,7 @@ export default function ExamManagementPage() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Exam Management</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Exam Management</h1>
           <p className="text-gray-600 mt-1">Schedule and manage exams for your school</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -372,44 +372,38 @@ export default function ExamManagementPage() {
       {/* Stats Cards */}
       {!loading && (
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
+        <Card className="!rounded-lg !shadow-none !bg-secondary/10 dark:!bg-secondary/20">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Total Exams</p>
                 <p className="text-3xl font-bold">{exams.length}</p>
               </div>
-              <div className="bg-blue-100 p-3 rounded-full">
-                <BookOpen className="w-6 h-6 text-blue-600" />
-              </div>
+              <BookOpen className="w-6 h-6 text-secondary" />
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="!rounded-lg !shadow-none !bg-secondary/10 dark:!bg-secondary/20">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Upcoming Exams</p>
                 <p className="text-3xl font-bold text-green-600">{upcomingExams.length}</p>
               </div>
-              <div className="bg-green-100 p-3 rounded-full">
-                <Calendar className="w-6 h-6 text-green-600" />
-              </div>
+              <Calendar className="w-6 h-6 text-secondary" />
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="!rounded-lg !shadow-none !bg-secondary/10 dark:!bg-secondary/20">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Past Exams</p>
                 <p className="text-3xl font-bold text-gray-600">{pastExams.length}</p>
               </div>
-              <div className="bg-gray-100 p-3 rounded-full">
-                <Clock className="w-6 h-6 text-gray-600" />
-              </div>
+              <Clock className="w-6 h-6 text-secondary" />
             </div>
           </CardContent>
         </Card>
@@ -543,4 +537,3 @@ export default function ExamManagementPage() {
     </div>
   )
 }
-

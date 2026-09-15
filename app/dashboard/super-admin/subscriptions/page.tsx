@@ -25,7 +25,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { billingAPI, getErrorMessage, platformAPI, superAdminAPI } from "@/lib/api"
+import { billingAPI, getErrorMessage, platformAPI, schoolsAPI, superAdminAPI } from "@/lib/api"
 import type { AnyObj } from "@/components/super-admin/types"
 import { useFetch } from "@/components/super-admin/use-fetch"
 import { PageHeader } from "@/components/super-admin/page-header"
@@ -36,11 +36,7 @@ import { ConfirmDialog } from "@/components/super-admin/confirm-dialog"
 import { SaDonutChart } from "@/components/super-admin/charts"
 import { downloadCSV } from "@/components/super-admin/export"
 
-const PLANS = [
-  { id: "1", name: "Starter" },
-  { id: "2", name: "Standard" },
-  { id: "3", name: "Premium" },
-]
+const PLAN_NAMES = ["Starter", "Standard", "Premium"]
 
 const EMPTY_COUPON = {
   code: "",
@@ -57,6 +53,7 @@ const EMPTY_COUPON = {
 export default function SubscriptionsPage() {
   const overview = useFetch<AnyObj>(() => billingAPI.superAdminOverview().then((r) => r.data), [])
   const usage = useFetch<AnyObj[]>(() => superAdminAPI.usage().then((r) => r.data?.results || r.data || []), [])
+  const plans = useFetch<AnyObj[]>(() => schoolsAPI.plans().then((r) => r.data?.results || r.data || []), [])
   const coupons = useFetch<AnyObj[]>(() => platformAPI.coupons().then((r) => r.data?.results || r.data || []), [])
 
   const [actionError, setActionError] = useState("")
@@ -96,7 +93,7 @@ export default function SubscriptionsPage() {
     try {
       await fn()
       done?.()
-      await Promise.all([overview.reload(), usage.reload(), coupons.reload()])
+      await Promise.all([overview.reload(), usage.reload(), plans.reload(), coupons.reload()])
     } catch (err) {
       setActionError(getErrorMessage(err, "Action failed."))
     } finally {
@@ -157,9 +154,9 @@ export default function SubscriptionsPage() {
 
       <StatCardGrid>
         <StatCard label="Active subscriptions" value={o?.subscriptions?.active ?? o?.active_tenants ?? 0} icon={BadgeDollarSign} tone="success" />
-        <StatCard label="Cancelled subscriptions" value={o?.subscriptions?.cancelled ?? o?.inactive_tenants ?? 0} icon={BadgeDollarSign} tone="danger" />
-        <StatCard label="Revenue total" value={`GH₵ ${Number(o?.revenue_total ?? o?.revenue?.total ?? 0).toLocaleString()}`} icon={BadgeDollarSign} tone="primary" />
-        <StatCard label="Coupons" value={(coupons.data || []).length} icon={Ticket} />
+        <StatCard label="Expiring within 7 days" value={o?.subscriptions?.expiring_soon ?? 0} icon={BadgeDollarSign} tone="warning" />
+        <StatCard label="Revenue total" value={`GH₵ ${Number(o?.revenue_total ?? 0).toLocaleString()}`} icon={BadgeDollarSign} tone="primary" />
+        <StatCard label="Active plans" value={o?.plans?.active ?? 0} icon={Ticket} />
       </StatCardGrid>
 
       <Tabs defaultValue="overview">
@@ -181,12 +178,12 @@ export default function SubscriptionsPage() {
           </div>
           <div className="rounded-xl border border-border p-4 space-y-2 text-sm">
             <p className="font-semibold mb-1">Plan summary</p>
-            {PLANS.map((p) => {
-              const rowsForPlan = (usage.data || []).filter((r) => String(r.plan)?.toLowerCase() === p.name.toLowerCase())
+            {PLAN_NAMES.map((name) => {
+              const rowsForPlan = (usage.data || []).filter((r) => String(r.plan)?.toLowerCase() === name.toLowerCase())
               const revenue = rowsForPlan.reduce((sum, r) => sum + Number(r.revenue ?? 0), 0)
               return (
-                <div key={p.id} className="flex items-center justify-between gap-4 py-1.5 border-b border-border last:border-0">
-                  <span className="font-medium">{p.name}</span>
+                <div key={name} className="flex items-center justify-between gap-4 py-1.5 border-b border-border last:border-0">
+                  <span className="font-medium">{name}</span>
                   <span className="text-muted-foreground">{rowsForPlan.length} schools</span>
                   <span>GH₵ {revenue.toLocaleString()}</span>
                 </div>
@@ -206,7 +203,7 @@ export default function SubscriptionsPage() {
                 value: planFilter,
                 onChange: setPlanFilter,
                 placeholder: "Plan",
-                options: PLANS.map((p) => ({ value: p.name.toLowerCase(), label: p.name })),
+                options: PLAN_NAMES.map((name) => ({ value: name.toLowerCase(), label: name })),
               },
             ]}
           >
@@ -251,6 +248,7 @@ export default function SubscriptionsPage() {
                 <TableRow>
                   <TableHead>School</TableHead>
                   <TableHead>Plan</TableHead>
+                  <TableHead>Ends</TableHead>
                   <TableHead className="text-right">Students</TableHead>
                   <TableHead className="text-right">Revenue</TableHead>
                   <TableHead>Status</TableHead>
@@ -260,12 +258,12 @@ export default function SubscriptionsPage() {
                 {usage.loading &&
                   [...Array(5)].map((_, i) => (
                     <TableRow key={i}>
-                      <TableCell colSpan={5}><Skeleton className="h-8 w-full" /></TableCell>
+                      <TableCell colSpan={6}><Skeleton className="h-8 w-full" /></TableCell>
                     </TableRow>
                   ))}
                 {!usage.loading && !subRows.length && (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground py-8">No subscription data.</TableCell>
+                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">No subscription data.</TableCell>
                   </TableRow>
                 )}
                 {!usage.loading &&
@@ -273,6 +271,11 @@ export default function SubscriptionsPage() {
                     <TableRow key={r.school_id}>
                       <TableCell className="font-medium">{r.school_name}</TableCell>
                       <TableCell><span className="capitalize">{String(r.plan ?? "—")}</span></TableCell>
+                      <TableCell className={r.subscription_status === "expiring_soon" ? "font-semibold text-red-600" : "text-muted-foreground"}>
+                        {r.subscription_end
+                          ? `${new Date(r.subscription_end).toLocaleDateString()}${r.days_remaining != null ? ` (${r.days_remaining}d)` : ""}`
+                          : "—"}
+                      </TableCell>
                       <TableCell className="text-right">{r.students ?? 0}</TableCell>
                       <TableCell className="text-right">GH₵ {Number(r.revenue ?? 0).toLocaleString()}</TableCell>
                       <TableCell><StatusBadge status={r.status} /></TableCell>
@@ -377,8 +380,8 @@ export default function SubscriptionsPage() {
                 onChange={(e) => setAssignPlanId(e.target.value)}
               >
                 <option value="">Select plan</option>
-                {PLANS.map((p) => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
+                {(plans.data || []).map((p) => (
+                  <option key={p.id} value={String(p.id)}>{p.name}</option>
                 ))}
               </select>
             </Field>
@@ -389,14 +392,14 @@ export default function SubscriptionsPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setAssignOpen(false)} disabled={busy}>Cancel</Button>
             <Button
-              disabled={busy || !assignSchoolId || !assignPlanId}
+              disabled={busy || !assignSchoolId || !assignPlanId || !assignEndDate}
               onClick={() =>
                 run(
                   () =>
                     billingAPI.superAdminAssignPlan({
                       school_id: Number(assignSchoolId),
                       plan_id: Number(assignPlanId),
-                      end_date: assignEndDate || undefined,
+                      end_date: assignEndDate,
                     }),
                   () => setAssignOpen(false),
                 )

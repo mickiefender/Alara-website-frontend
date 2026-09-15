@@ -299,7 +299,7 @@ function ReportCardsContent() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Report Cards</h1>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Report Cards</h1>
           <p className="text-muted-foreground text-lg mt-2">
             View each student's terminal report card on your chosen template and print it out.
           </p>

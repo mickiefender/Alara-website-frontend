@@ -161,7 +161,7 @@ function SubjectsPageContent() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-secondary">Subject List</h1>
+        <h1 className="text-2xl font-bold text-black">Subject List</h1>
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
             <Button className="bg-secondary hover:bg-primary">+ Add Subject</Button>

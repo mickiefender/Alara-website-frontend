@@ -6,7 +6,7 @@ import { PlatformTopbar } from "@/components/super-admin/platform-topbar"
 
 export default function SuperAdminLayout({ children }: { children: React.ReactNode }) {
   return (
-    <ProtectedRoute allowedRoles={["super_admin"]}>
+    <ProtectedRoute allowedRoles={["super_admin", "platform_staff"]}>
       <div className="sa-theme min-h-screen bg-background text-foreground">
         <div className="flex min-h-screen">
           <PlatformSidebar />

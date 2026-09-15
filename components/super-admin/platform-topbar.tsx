@@ -46,8 +46,8 @@ const HEALTH_PILL: Record<string, string> = {
   down: "border-red-200 bg-red-50",
 }
 
-function flattenNav() {
-  return NAV_GROUPS.flatMap((g) => g.items)
+function flattenNav(groups = NAV_GROUPS) {
+  return groups.flatMap((g) => g.items)
 }
 
 function pageTitle(pathname: string) {
@@ -61,6 +61,14 @@ export function PlatformTopbar() {
   const pathname = usePathname()
   const router = useRouter()
   const { user, logout } = useAuthContext()
+  const visibleNav = NAV_GROUPS
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) =>
+        user?.role === "super_admin" || !item.permission || Boolean(user?.platform_permissions?.includes(item.permission)),
+      ),
+    }))
+    .filter((group) => group.items.length > 0)
 
   const [navOpen, setNavOpen] = useState(false)
   const [query, setQuery] = useState("")
@@ -119,8 +127,8 @@ export function PlatformTopbar() {
   const results = useMemo(() => {
     const q = query.trim().toLowerCase()
     if (!q) return []
-    return flattenNav().filter((i) => i.label.toLowerCase().includes(q)).slice(0, 6)
-  }, [query])
+    return flattenNav(visibleNav).filter((i) => i.label.toLowerCase().includes(q)).slice(0, 6)
+  }, [query, visibleNav])
 
   function go(href: string) {
     setSearchOpen(false)
@@ -152,7 +160,7 @@ export function PlatformTopbar() {
               <SheetTitle className="text-sm">Navigation</SheetTitle>
             </SheetHeader>
             <nav className="px-3 py-4 space-y-5">
-              {NAV_GROUPS.map((group) => (
+              {visibleNav.map((group) => (
                 <div key={group.label}>
                   <p className="px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
                     {group.label}

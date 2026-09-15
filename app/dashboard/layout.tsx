@@ -3,7 +3,6 @@
 import type React from "react"
 import { SidebarNav } from "@/components/sidebar-nav"
 import { TopBar } from "@/components/top-bar"
-import { MobileBottomNav } from "@/components/mobile-bottom-nav"
 import { ProtectedRoute } from "@/lib/protected-route"
 import { NotificationProvider } from "@/lib/notifications-context"
 import { MobileToggleProvider } from "@/lib/mobile-toggle-context"
@@ -59,13 +58,6 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     <NotificationProvider userId={user?.id}>
       <MobileToggleProvider toggleSidebar={toggleUnified}>
         <div className="relative flex h-screen bg-background dark:bg-slate-950 overflow-hidden">
-          {/* Gradient-mesh background: drifting blurred blobs the glass panels refract */}
-          <div className="dashboard-bg" aria-hidden="true">
-            <div className="dashboard-blob dashboard-blob-1" />
-            <div className="dashboard-blob dashboard-blob-2" />
-            <div className="dashboard-blob dashboard-blob-3" />
-          </div>
-
           {!isSuperAdminRoute && (
             <>
               {/* Desktop Sidebar - Flex item that can collapse */}
@@ -93,7 +85,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           )}
 
           {/* Main Content - Flexes to fill remaining space */}
-          <div className="relative z-10 flex-1 flex flex-col min-w-0 h-screen overflow-hidden lg:pb-0 pb-20">
+          <div className="relative z-10 flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
             {/* Top Bar - includes hamburger for mobile */}
             {!isSuperAdminRoute && <TopBar onToggle={toggleUnified} />}
 
@@ -102,8 +94,6 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
               {children}
             </main>
 
-            {/* Mobile Bottom Nav */}
-            {!isSuperAdminRoute && <MobileBottomNav />}
           </div>
         </div>
       </MobileToggleProvider>

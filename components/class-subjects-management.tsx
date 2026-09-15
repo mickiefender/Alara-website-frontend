@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Trash2, Edit2, Plus, Search } from "lucide-react"
+import { Trash2, Edit2, Plus, Search, Loader2 } from "lucide-react"
 import { academicsAPI } from "@/lib/api"
 import { useAuthContext } from "@/lib/auth-context"
 
@@ -148,7 +148,11 @@ export function ClassSubjectsManagement({ classId, className }: { classId: numbe
         </div>
       </CardHeader>
       <CardContent>
-        {classSubjects.length === 0 ? (
+        {loading ? (
+          <div className="flex min-h-32 items-center justify-center" role="status" aria-label="Loading subjects">
+            <Loader2 className="h-7 w-7 animate-spin text-primary" />
+          </div>
+        ) : classSubjects.length === 0 ? (
           <p className="text-muted-foreground text-center py-8">No subjects assigned to this class yet</p>
         ) : (
           <div className="space-y-4">

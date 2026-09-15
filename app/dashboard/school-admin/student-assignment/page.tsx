@@ -71,7 +71,8 @@ interface StatCard {
   label: string
   value: number
   icon: React.ComponentType<{ className?: string }>
-  iconBg: string
+  iconColor: string
+  cardBg: string
 }
 
 export default function StudentAssignmentsPage() {
@@ -138,10 +139,10 @@ export default function StudentAssignmentsPage() {
   }, [students, enrolledUserIds])
 
   const stats: StatCard[] = [
-    { label: "Total Classes", value: classes.length, icon: School, iconBg: "bg-blue-50 text-blue-600" },
-    { label: "Total Students", value: students.length, icon: Users, iconBg: "bg-emerald-50 text-emerald-600" },
-    { label: "Class Enrollments", value: enrollments.length, icon: UserCheck, iconBg: "bg-violet-50 text-violet-600" },
-    { label: "Unassigned Students", value: unassignedCount, icon: ClipboardList, iconBg: "bg-amber-50 text-amber-600" },
+    { label: "Total Classes", value: classes.length, icon: School, iconColor: "text-secondary", cardBg: "!bg-blue-50/70 dark:!bg-blue-950/30" },
+    { label: "Total Students", value: students.length, icon: Users, iconColor: "text-secondary", cardBg: "!bg-emerald-50/70 dark:!bg-emerald-950/30" },
+    { label: "Class Enrollments", value: enrollments.length, icon: UserCheck, iconColor: "text-secondary", cardBg: "!bg-violet-50/70 dark:!bg-violet-950/30" },
+    { label: "Unassigned Students", value: unassignedCount, icon: ClipboardList, iconColor: "text-secondary", cardBg: "!bg-amber-50/70 dark:!bg-amber-950/30" },
   ]
 
   const filteredClasses = classes.filter(
@@ -168,14 +169,9 @@ export default function StudentAssignmentsPage() {
     <div className="space-y-6 pb-8">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-secondary text-white flex items-center justify-center shadow-lg shadow-secondary/25 shrink-0">
-            <UserCheck className="w-6 h-6" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">Student Enrollment</h1>
-            <p className="text-slate-500 text-sm mt-0.5">Manage student assignments to classes</p>
-          </div>
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Student Enrollment</h1>
+          <p className="text-slate-500 text-sm mt-0.5">Manage student assignments to classes</p>
         </div>
       </div>
 
@@ -195,13 +191,11 @@ export default function StudentAssignmentsPage() {
         {stats.map((stat) => {
           const Icon = stat.icon
           return (
-            <Card key={stat.label} className="border-0 shadow-sm">
-              <CardContent className="p-5 flex items-center gap-4">
-                <div className={`w-11 h-11 rounded-lg flex items-center justify-center shrink-0 ${stat.iconBg}`}>
-                  <Icon className="w-5 h-5" />
-                </div>
+            <Card key={stat.label} className={`rounded-lg border-0 shadow-sm ${stat.cardBg}`}>
+              <CardContent className="p-3 flex items-center gap-3">
+                <Icon className={`w-4 h-4 shrink-0 ${stat.iconColor}`} />
                 <div className="min-w-0">
-                  <p className="text-2xl font-bold text-slate-900 leading-tight">{stat.value.toLocaleString()}</p>
+                  <p className="text-xl font-bold text-slate-900 leading-tight">{stat.value.toLocaleString()}</p>
                   <p className="text-xs text-slate-500 truncate">{stat.label}</p>
                 </div>
               </CardContent>

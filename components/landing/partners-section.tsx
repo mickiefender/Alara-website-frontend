@@ -1,8 +1,9 @@
 "use client"
 
-import Image from "next/image"
+import { useEffect, useState } from "react"
+import { platformAPI } from "@/lib/api"
 
-const schoolPartners = [
+const fallbackPartners = [
   { id: 1, name: "House Of Faith Int'l School", logo: "/logos/House-of-faith.png" },
   { id: 2, name: "Great Vision Int'l School", logo: "/logos/Great vision int'l.png" },
   { id: 3, name: "Olivia Academy", logo: "/logos/Olivia-Academy.png" },
@@ -11,6 +12,17 @@ const schoolPartners = [
 ]
 
 export function PartnersSection() {
+  const [schoolPartners, setSchoolPartners] = useState(fallbackPartners)
+
+  useEffect(() => {
+    platformAPI.publicTrustedSchools()
+      .then((response) => {
+        const schools = response.data?.schools
+        if (Array.isArray(schools) && schools.length > 0) setSchoolPartners(schools)
+      })
+      .catch((error) => console.error("Failed to load trusted schools", error))
+  }, [])
+
   return (
     <section className="py-16 md:py-24 bg-background border-b border-border/50">
       <div className="container mx-auto px-4 md:px-6 max-w-7xl">
@@ -45,11 +57,10 @@ export function PartnersSection() {
                 className="flex-shrink-0 flex items-center justify-center h-24 md:h-32 lg:h-40"
               >
                 <div className="relative w-20 h-20 md:w-28 md:h-28 lg:w-36 lg:h-36">
-                  <Image
+                  <img
                     src={partner.logo}
                     alt={partner.name}
-                    fill
-                    className="object-contain opacity-80 hover:opacity-100 transition-all duration-300"
+                    className="absolute inset-0 h-full w-full object-contain opacity-80 transition-all duration-300 hover:opacity-100"
                   />
                 </div>
               </div>
@@ -62,11 +73,10 @@ export function PartnersSection() {
                 className="flex-shrink-0 flex items-center justify-center h-24 md:h-32 lg:h-40"
               >
                 <div className="relative w-20 h-20 md:w-28 md:h-28 lg:w-36 lg:h-36">
-                  <Image
+                  <img
                     src={partner.logo}
                     alt={partner.name}
-                    fill
-                    className="object-contain opacity-80 hover:opacity-100 transition-all duration-300"
+                    className="absolute inset-0 h-full w-full object-contain opacity-80 transition-all duration-300 hover:opacity-100"
                   />
                 </div>
               </div>

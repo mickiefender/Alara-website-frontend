@@ -330,7 +330,7 @@ function ExaminationContent() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Examination</h1>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Examination</h1>
           <p className="text-muted-foreground text-lg mt-2">
             Enter end-of-term exam scores. Continuous assessment entered by teachers is shown for reference.
           </p>

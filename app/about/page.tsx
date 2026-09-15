@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
+import { PricingSection } from '@/components/landing/pricing-section'
 import { Target, Lightbulb, Heart, Shield, Users, Sparkles, CheckCircle2 } from 'lucide-react'
 
 export const metadata = {
@@ -205,6 +206,8 @@ export default function AboutPage() {
             </p>
           </div>
         </section>
+
+        <PricingSection />
 
         {/* CTA Section */}
         <section className="py-20 md:py-32 bg-primary text-white">

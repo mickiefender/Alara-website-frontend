@@ -3,15 +3,14 @@
 import dynamic from 'next/dynamic'
 import { ProtectedRoute } from '@/lib/protected-route'
 import { useState, useEffect } from 'react'
-import { usersAPI, academicsAPI, promotionAPI } from '@/lib/api'
+import { usersAPI, promotionAPI } from '@/lib/api'
 import { DashboardStats } from '@/components/dashboard-stats'
 import { FeesChart } from '@/components/fees-chart'
 import { BestPerformingClass } from '@/components/best-performing-class'
-import Link from 'next/link'
-import { School, BookOpen, Users2 } from 'lucide-react'
-import { LayoutDashboard, Users, DollarSign, CalendarDays } from 'lucide-react'
+import { LayoutDashboard, Users, DollarSign, CalendarDays, KeyRound, ShieldCheck } from 'lucide-react'
+import { SubscriptionBadge } from '@/components/subscription-badge'
 
-// Lazy-load analytics tab so its API calls only fire when user clicks "Analytics"
+// Lazy-load account management panels so their API calls only fire when opened.
 const StudentsManagement = dynamic(
   () => import('@/components/students-management').then(m => m.StudentsManagement),
   { ssr: false }
@@ -45,27 +44,20 @@ export default function SchoolAdminPage() {
     earnings: 0,
     loading: true,
   })
-  const [classesCount, setClassesCount] = useState(0)
-  const [subjectsCount, setSubjectsCount] = useState(0)
   const [currentYear, setCurrentYear] = useState<AcademicYearInfo | null>(null)
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const [studentsRes, teachersRes, parentsRes, classesRes, subjectsRes, yearsRes] = await Promise.all([
+        const [studentsRes, teachersRes, parentsRes, yearsRes] = await Promise.all([
           usersAPI.students(),
           usersAPI.teachers(),
           usersAPI.parents().catch(() => null),
-          academicsAPI.classes(),
-          academicsAPI.subjects(),
           promotionAPI.academicYears().catch(() => null),
         ])
 
         const years = yearsRes?.data?.results || yearsRes?.data || []
         setCurrentYear(years.find((y: AcademicYearInfo) => y.is_current) || null)
-
-        setClassesCount(classesRes.data.results?.length || classesRes.data?.length || 0)
-        setSubjectsCount(subjectsRes.data.results?.length || subjectsRes.data?.length || 0)
 
         setStats({
           students: studentsRes?.data?.results?.length || studentsRes?.data?.length || 0,
@@ -84,20 +76,22 @@ export default function SchoolAdminPage() {
 
   return (
     <ProtectedRoute allowedRoles={["school_admin"]}>
-      <div className="space-y-8 p-4 md:p-6 lg:p-8">
+      <div className="school-admin-dashboard space-y-8 p-4 md:p-6 lg:p-8">
         <div className="animate-glass-in flex flex-col xl:flex-row xl:items-center xl:justify-between gap-6">
           <div>
-            <h1 className="text-3xl lg:text-4xl font-bold tracking-tight text-foreground">
+            <h1 className="text-xl lg:text-2xl font-bold tracking-tight text-foreground">
               School Admin Dashboard
             </h1>
             <p className="text-muted-foreground mt-2 text-base md:text-lg">
-              Live overview of fees and academic performance
               {currentYear && (
                 <span className="inline-flex items-center gap-1.5 ml-3 align-middle px-3 py-1 rounded-full text-sm font-semibold bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
                   <CalendarDays className="w-4 h-4" />
                   Academic Year: {currentYear.name}
                 </span>
               )}
+              <span className="inline-flex items-center ml-3 align-middle">
+                <SubscriptionBadge />
+              </span>
             </p>
           </div>
 
@@ -114,15 +108,15 @@ export default function SchoolAdminPage() {
               Dashboard
             </button>
             <button
-              onClick={() => setActiveTab('analytics')}
+              onClick={() => setActiveTab('password-reset')}
               className={`group flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold transition-all border
-                ${activeTab === 'analytics'
+                ${activeTab === 'password-reset'
                   ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/25 border-primary'
                   : 'glass hover:bg-secondary/10 text-foreground hover:-translate-y-px'
                 }`}
             >
-              <Users className="w-5 h-5" />
-              Analytics
+              <KeyRound className="w-5 h-5" />
+              Password Reset
             </button>
           </div>
         </div>
@@ -130,53 +124,6 @@ export default function SchoolAdminPage() {
         {activeTab === 'dashboard' && (
           <>
             <DashboardStats stats={stats} />
-
-            <div className="stagger grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
-              <Link href="/dashboard/school-admin/classes" className="block">
-                <div className="glass-card glass-hover p-6 cursor-pointer group h-full flex flex-col justify-between min-h-[120px] hover:shadow-blue-500/15">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-12 h-12 bg-blue-500/15 dark:bg-blue-400/15 border border-white/30 dark:border-white/10 rounded-2xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110">
-                      <School className="w-7 h-7 text-blue-600 dark:text-blue-400" />
-                    </div>
-                    <div>
-                      <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Classes</p>
-                      <p className="text-3xl font-bold tracking-tight text-foreground tabular-nums">{classesCount.toLocaleString()}</p>
-                    </div>
-                  </div>
-                  <p className="text-xs text-blue-600 dark:text-blue-400 font-medium group-hover:underline">Manage Classes →</p>
-                </div>
-              </Link>
-
-              <Link href="/dashboard/school-admin/subjects" className="block">
-                <div className="glass-card glass-hover p-6 cursor-pointer group h-full flex flex-col justify-between min-h-[120px] hover:shadow-emerald-500/15">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-12 h-12 bg-emerald-500/15 dark:bg-emerald-400/15 border border-white/30 dark:border-white/10 rounded-2xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110">
-                      <BookOpen className="w-7 h-7 text-emerald-600 dark:text-emerald-400" />
-                    </div>
-                    <div>
-                      <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Subjects</p>
-                      <p className="text-3xl font-bold tracking-tight text-foreground tabular-nums">{subjectsCount.toLocaleString()}</p>
-                    </div>
-                  </div>
-                  <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium group-hover:underline">Manage Subjects →</p>
-                </div>
-              </Link>
-
-              <Link href="/dashboard/school-admin/students" className="block">
-                <div className="glass-card glass-hover p-6 cursor-pointer group h-full flex flex-col justify-between min-h-[120px] hover:shadow-purple-500/15">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-12 h-12 bg-purple-500/15 dark:bg-purple-400/15 border border-white/30 dark:border-white/10 rounded-2xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110">
-                      <Users2 className="w-7 h-7 text-purple-600 dark:text-purple-400" />
-                    </div>
-                    <div>
-                      <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Enrol</p>
-                      <p className="text-2xl font-bold tracking-tight text-foreground">Enroll Students</p>
-                    </div>
-                  </div>
-                  <p className="text-xs text-purple-600 dark:text-purple-400 font-medium group-hover:underline">Student Onboarding →</p>
-                </div>
-              </Link>
-            </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="glass-card p-6">
@@ -194,15 +141,43 @@ export default function SchoolAdminPage() {
           </>
         )}
 
-        {activeTab === 'analytics' && (
-          <div className="stagger grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {activeTab === 'password-reset' && (
+          <div className="space-y-6">
+            <div className="glass-card overflow-hidden">
+              <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-6 md:p-8">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-start gap-4">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/20">
+                      <ShieldCheck className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Account security</p>
+                      <h2 className="mt-1 text-2xl font-bold tracking-tight text-foreground">Password Reset Center</h2>
+                      <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+                        Securely reset passwords for students and teachers. Choose an account below and set a new password immediately.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="hidden rounded-xl border border-primary/15 bg-background/70 px-4 py-3 text-right sm:block">
+                    <KeyRound className="ml-auto h-5 w-5 text-primary" />
+                    <p className="mt-1 text-xs font-medium text-muted-foreground">Minimum length</p>
+                    <p className="text-sm font-bold text-foreground">8 characters</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="stagger grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="glass-card p-6">
-              <h2 className="text-xl font-semibold text-foreground mb-6">Students Overview</h2>
+              <h2 className="text-xl font-semibold text-foreground mb-2">Student Passwords</h2>
+              <p className="mb-6 text-sm text-muted-foreground">Find a student account and reset its login password.</p>
               <StudentsManagement />
             </div>
             <div className="glass-card p-6">
-              <h2 className="text-xl font-semibold text-foreground mb-6">Teachers Overview</h2>
+              <h2 className="text-xl font-semibold text-foreground mb-2">Teacher Passwords</h2>
+              <p className="mb-6 text-sm text-muted-foreground">Find a teacher account and reset its login password.</p>
               <TeachersManagement />
+            </div>
             </div>
           </div>
         )}

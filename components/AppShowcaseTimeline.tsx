@@ -71,9 +71,9 @@ export function AppShowcaseTimeline() {
   }, [])
 
   return (
-    <section className="relative overflow-hidden py-20 md:py-28 bg-[#0b1114]">
+    <section className="relative overflow-hidden bg-[#3a0b12] py-20 md:py-28">
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_40%,rgba(8,152,162,0.32),transparent_40%),radial-gradient(circle_at_80%_60%,rgba(7,102,124,0.28),transparent_45%),linear-gradient(120deg,#0a1013_0%,#0f171b_45%,#0a1215_100%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_40%,rgba(239,68,68,0.3),transparent_40%),radial-gradient(circle_at_80%_60%,rgba(185,28,28,0.3),transparent_45%),linear-gradient(120deg,#3a0b12_0%,#64101b_45%,#3f0b14_100%)]" />
         <div className="absolute inset-0 bg-[url('/placeholder.svg')] opacity-[0.03] mix-blend-screen" />
       </div>
 
@@ -123,8 +123,8 @@ export function AppShowcaseTimeline() {
                       <span
                         className={`absolute -left-[41px] top-[8px] w-4 h-4 rounded-full border-2 transition-all duration-300 ${
                           active
-                            ? 'bg-white border-primary shadow-[0_0_0_4px_rgba(8,152,162,0.35)]'
-                            : 'bg-[#0f171b] border-white/25'
+                            ? 'bg-white border-primary shadow-[0_0_0_4px_rgba(220,38,38,0.35)]'
+                            : 'bg-[#54101a] border-white/25'
                         }`}
                       />
                       <p className={`text-sm font-bold mb-1 ${active ? 'text-white' : 'text-white/35'}`}>

@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Trash2, Plus, Users } from "lucide-react"
+import { Trash2, Plus, Users, Loader2 } from "lucide-react"
 import { academicsAPI, usersAPI } from "@/lib/api"
 import { useAuthContext } from "@/lib/auth-context"
 
@@ -220,6 +220,12 @@ export function AssignTeachersToClass({ classId, className }: { classId: number;
         </div>
       </CardHeader>
       <CardContent>
+        {loading ? (
+          <div className="flex min-h-32 items-center justify-center" role="status" aria-label="Loading class teachers">
+            <Loader2 className="h-7 w-7 animate-spin text-primary" />
+          </div>
+        ) : (
+          <>
         {error && <div className="text-red-500 mb-4">{error}</div>}
         {classTeachers.length === 0 ? (
           <p className="text-muted-foreground text-center py-8">No teachers assigned to this class yet</p>
@@ -261,6 +267,8 @@ export function AssignTeachersToClass({ classId, className }: { classId: number;
               </TableBody>
             </Table>
           </div>
+        )}
+          </>
         )}
       </CardContent>
     </Card>

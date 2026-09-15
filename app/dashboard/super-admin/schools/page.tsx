@@ -41,7 +41,24 @@ import { StatusBadge } from "@/components/super-admin/status-badge"
 import { ConfirmDialog } from "@/components/super-admin/confirm-dialog"
 import { downloadCSV } from "@/components/super-admin/export"
 
-const EMPTY_FORM = { name: "", email: "", phone: "", address: "", status: "active" }
+const EMPTY_FORM = {
+  name: "",
+  email: "",
+  phone: "",
+  address: "",
+  city: "",
+  state: "",
+  country: "",
+  postal_code: "",
+  website: "",
+  primary_color: "#0a0a0a",
+  secondary_color: "#008484",
+  sidebar_color: "#209090",
+  admin_username: "",
+  admin_email: "",
+  admin_password: "",
+  status: "active",
+}
 
 export default function SchoolsPage() {
   const list = useFetch<AnyObj[]>(() => schoolsAPI.list().then((r) => r.data?.results || r.data || []), [])
@@ -268,35 +285,103 @@ export default function SchoolsPage() {
 
       {/* Create */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] max-w-2xl overflow-hidden p-0">
           <DialogHeader>
-            <DialogTitle>Create school</DialogTitle>
-            <DialogDescription>Register a new school tenant on the platform.</DialogDescription>
+            <div className="border-b border-border bg-muted/30 px-6 py-5">
+              <DialogTitle className="text-xl">Create school</DialogTitle>
+              <DialogDescription className="mt-1">
+                Register a new school tenant and configure its contact details.
+              </DialogDescription>
+            </div>
           </DialogHeader>
-          <div className="space-y-3">
-            <Field label="Name"><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></Field>
-            <Field label="Email"><Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></Field>
-            <Field label="Phone"><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></Field>
-            <Field label="Address"><Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></Field>
+          <div className="max-h-[calc(90vh-170px)] space-y-6 overflow-y-auto px-6 py-5">
+            <section className="space-y-4">
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">School information</h3>
+                <p className="mt-1 text-xs text-muted-foreground">Basic contact details for the school tenant.</p>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="School name" required><Input required placeholder="e.g. Alara Academy" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></Field>
+                <Field label="School email" required><Input required type="email" placeholder="office@school.edu" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></Field>
+                <Field label="Phone number" required><Input required placeholder="+233 20 000 0000" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></Field>
+                <Field label="Website"><Input type="url" placeholder="https://school.edu" value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} /></Field>
+              </div>
+              <Field label="Street address" required><Textarea required rows={2} placeholder="Building, street, or landmark" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></Field>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="City" required><Input required placeholder="Accra" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} /></Field>
+                <Field label="State / Region" required><Input required placeholder="Greater Accra" value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} /></Field>
+                <Field label="Country" required><Input required placeholder="Ghana" value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} /></Field>
+                <Field label="Postal code" required><Input required placeholder="GA-123-4567" value={form.postal_code} onChange={(e) => setForm({ ...form, postal_code: e.target.value })} /></Field>
+              </div>
+            </section>
+
+            <section className="space-y-4 border-t border-border pt-5">
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">Brand colors</h3>
+                <p className="mt-1 text-xs text-muted-foreground">Optional colors used to personalize the school experience.</p>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-3">
+                <ColorField label="Primary" value={form.primary_color} onChange={(value) => setForm({ ...form, primary_color: value })} />
+                <ColorField label="Secondary" value={form.secondary_color} onChange={(value) => setForm({ ...form, secondary_color: value })} />
+                <ColorField label="Sidebar" value={form.sidebar_color} onChange={(value) => setForm({ ...form, sidebar_color: value })} />
+              </div>
+            </section>
+
+            <section className="space-y-4 border-t border-border pt-5">
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">School administrator</h3>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  These credentials are used to create the first school admin account. Leave them blank to use the platform defaults.
+                </p>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="Admin username">
+                  <Input
+                    value={form.admin_username}
+                    onChange={(e) => setForm({ ...form, admin_username: e.target.value })}
+                    placeholder="e.g. admin_alara"
+                  />
+                </Field>
+                <Field label="Admin email">
+                  <Input
+                    type="email"
+                    value={form.admin_email}
+                    onChange={(e) => setForm({ ...form, admin_email: e.target.value })}
+                    placeholder="admin@school.edu"
+                  />
+                </Field>
+                <Field label="Admin password">
+                  <Input
+                    type="password"
+                    autoComplete="new-password"
+                    minLength={8}
+                    value={form.admin_password}
+                    onChange={(e) => setForm({ ...form, admin_password: e.target.value })}
+                    placeholder="Minimum 8 characters"
+                  />
+                </Field>
+              </div>
+            </section>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateOpen(false)} disabled={busy}>Cancel</Button>
+            <div className="flex w-full justify-end gap-2 border-t border-border bg-background px-6 py-4">
+              <Button variant="outline" onClick={() => setCreateOpen(false)} disabled={busy}>Cancel</Button>
             <Button
-              disabled={busy || !form.name}
+              type="button"
+              disabled={busy || !form.name || !form.email || !form.phone || !form.address || !form.city || !form.state || !form.country || !form.postal_code}
               onClick={() =>
                 run(
                   () =>
                     schoolsAPI.create({
                       ...form,
-                      address: form.address || undefined,
-                      phone: form.phone || undefined,
                     }),
                   () => setCreateOpen(false),
                 )
               }
             >
-              Create
+              {busy ? "Creating..." : "Create school"}
             </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -431,12 +516,36 @@ export default function SchoolsPage() {
   )
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, required = false, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
-      <Label className="text-xs">{label}</Label>
+      <Label className="text-xs">{label}{required && <span className="ml-1 text-destructive">*</span>}</Label>
       {children}
     </div>
+  )
+}
+
+function ColorField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+  return (
+    <Field label={label}>
+      <div className="flex items-center gap-2">
+        <input
+          type="color"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          className="h-9 w-10 cursor-pointer rounded border border-input bg-background p-1"
+          aria-label={`${label} brand color`}
+        />
+        <Input
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          pattern="^#[0-9A-Fa-f]{6}$"
+          maxLength={7}
+          aria-label={`${label} hex color`}
+          className="font-mono uppercase"
+        />
+      </div>
+    </Field>
   )
 }
 

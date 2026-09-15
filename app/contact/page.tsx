@@ -4,6 +4,7 @@ import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
 import { Mail, MessageCircle } from 'lucide-react'
 import { useState } from 'react'
+import { getErrorMessage, platformAPI } from '@/lib/api'
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -14,17 +15,34 @@ export default function ContactPage() {
     inquiryType: 'sales',
     message: '',
   })
+  const [submitting, setSubmitting] = useState(false)
+  const [formMessage, setFormMessage] = useState('')
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log('Form submitted:', formData)
-    alert('Thank you for your inquiry. We will get back to you soon!')
-    setFormData({ name: '', email: '', school: '', phone: '', inquiryType: 'sales', message: '' })
+    setSubmitting(true)
+    setFormMessage('')
+    try {
+      await platformAPI.submitContactInquiry({
+        name: formData.name,
+        email: formData.email,
+        school: formData.school,
+        phone: formData.phone,
+        inquiry_type: formData.inquiryType,
+        message: formData.message,
+      })
+      setFormMessage('Thank you for your inquiry. We will get back to you soon!')
+      setFormData({ name: '', email: '', school: '', phone: '', inquiryType: 'sales', message: '' })
+    } catch (error) {
+      setFormMessage(getErrorMessage(error, 'We could not send your message. Please try again.'))
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -179,10 +197,12 @@ export default function ContactPage() {
 
                   <button
                     type="submit"
+                    disabled={submitting}
                     className="w-full bg-primary text-white px-6 py-3 rounded-lg hover:bg-primary/90 transition font-semibold"
                   >
-                    Send Message
+                    {submitting ? 'Sending...' : 'Send Message'}
                   </button>
+                  {formMessage && <p className="text-sm text-primary" role="status">{formMessage}</p>}
                 </form>
               </div>
 

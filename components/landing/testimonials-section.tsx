@@ -1,6 +1,5 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
 import Image from "next/image"
 import { Star } from "lucide-react"
 
@@ -42,10 +41,6 @@ const BASE_SIZES: Record<number, { w: string; h: number }> = {
   3: { w: "col-span-1", h: 260 },
 }
 
-const DOMINANT_SCALE = 1.06
-const SHRUNK_SCALE = 0.85
-const CYCLE_MS = 2800
-
 // ─── Avatar (🔥 Updated) ─────────────────────────────────────────────────────
 function Avatar({
   src,
@@ -68,12 +63,12 @@ function Avatar({
 
   return (
     <div
-      className={`${sz} relative rounded-full overflow-hidden border border-[#008484]/40 shadow-md bg-[#008484]/10 flex items-center justify-center flex-shrink-0`}
+      className={`${sz} relative flex flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-red-200 bg-red-50 shadow-sm dark:border-red-900/60 dark:bg-red-950/40`}
     >
       {src ? (
         <Image src={src} alt={name || "User"} fill className="object-cover" />
       ) : (
-        <span className="text-xs font-bold text-[#008484]">{initials}</span>
+        <span className="text-xs font-bold text-red-700 dark:text-red-200">{initials}</span>
       )}
     </div>
   )
@@ -84,25 +79,25 @@ function Stars({ count = 5, label }: { count?: number; label?: string }) {
   return (
     <div className="flex items-center gap-1">
       {Array.from({ length: count }).map((_, i) => (
-        <Star key={i} className="h-3.5 w-3.5 fill-[#008484] text-[#008484]" />
+        <Star key={i} className="h-3.5 w-3.5 fill-red-600 text-red-600" />
       ))}
-      {label && <span className="text-xs text-gray-500 ml-1">{label}</span>}
+      {label && <span className="ml-1 text-xs text-gray-500 dark:text-gray-300">{label}</span>}
     </div>
   )
 }
 
 // ─── Cards ───────────────────────────────────────────────────────────────────
-function RatingTagsCard({ t, dominant }: any) {
+function RatingTagsCard({ t }: any) {
   return (
     <div className="flex flex-col justify-between h-full p-4">
       <div>
         <Stars />
-        <p className={`mt-2 font-semibold ${dominant ? "text-lg" : "text-sm"}`}>
+        <p className="mt-2 text-sm font-semibold text-gray-900 dark:text-white">
           {t.quote}
         </p>
         <div className="flex flex-wrap gap-2 mt-2">
           {t.tags?.map((tag: string) => (
-            <span key={tag} className="text-xs bg-[#008484]/20 px-2 py-1 rounded-full">
+            <span key={tag} className="rounded-full bg-red-50 px-2 py-1 text-xs text-red-700 dark:bg-red-950/60 dark:text-red-200">
               {tag}
             </span>
           ))}
@@ -111,47 +106,47 @@ function RatingTagsCard({ t, dominant }: any) {
         {/* Avatar added */}
         <div className="flex items-center gap-2 mt-3">
           <Avatar src={t.image} name={t.author} />
-          <span className="text-xs text-gray-500">{t.author}</span>
+          <span className="text-xs text-gray-500 dark:text-gray-300">{t.author}</span>
         </div>
       </div>
     </div>
   )
 }
 
-function StandardCard({ t, dominant }: any) {
+function StandardCard({ t }: any) {
   return (
     <div className="p-4 flex flex-col justify-between h-full">
       <div className="flex justify-between">
         <div className="flex gap-2 items-center">
           <Avatar src={t.image} name={t.author} />
           <div>
-            <p className="text-sm font-semibold">{t.author}</p>
-            <p className="text-xs text-gray-500">{t.role}</p>
+            <p className="text-sm font-semibold text-gray-900 dark:text-white">{t.author}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-300">{t.role}</p>
           </div>
         </div>
         <Stars label={t.ratingLabel} />
       </div>
-      <p className={`mt-2 ${dominant ? "text-sm" : "text-xs"}`}>
+      <p className="mt-2 text-sm text-gray-900 dark:text-white">
         {t.quote}
       </p>
     </div>
   )
 }
 
-function FeaturedCard({ t, dominant }: any) {
+function FeaturedCard({ t }: any) {
   return (
     <div className="p-5 flex flex-col justify-between h-full">
       <div className="flex justify-between">
         <div className="flex gap-2 items-center">
           <Avatar size="lg" src={t.image} name={t.author} />
           <div>
-            <p className="font-semibold">{t.author}</p>
-            <p className="text-xs text-gray-500">{t.role}</p>
+            <p className="font-semibold text-gray-900 dark:text-white">{t.author}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-300">{t.role}</p>
           </div>
         </div>
         <Stars />
       </div>
-      <p className={`mt-3 font-bold ${dominant ? "text-2xl" : "text-lg"}`}>
+      <p className="mt-3 text-lg font-bold text-gray-900 dark:text-white">
         {t.quote}
       </p>
     </div>
@@ -160,41 +155,23 @@ function FeaturedCard({ t, dominant }: any) {
 
 // ─── Main ────────────────────────────────────────────────────────────────────
 export function TestimonialsSection() {
-  const [dominantId, setDominantId] = useState(3)
-  const orderRef = useRef<number[]>([])
-
-  useEffect(() => {
-    const ids = testimonials.map((t) => t.id)
-    orderRef.current = [...ids].sort(() => Math.random() - 0.5)
-
-    let idx = 0
-    const interval = setInterval(() => {
-      idx = (idx + 1) % orderRef.current.length
-      setDominantId(orderRef.current[idx])
-    }, CYCLE_MS)
-
-    return () => clearInterval(interval)
-  }, [])
-
   return (
-    <section id="testimonials" className="py-16 bg-background">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto px-4">
+    <section id="testimonials" className="bg-background py-16">
+      <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 px-4 md:grid-cols-3">
         {testimonials.map((t) => {
-          const isDominant = t.id === dominantId
           const base = BASE_SIZES[t.id]
 
           return (
             <div
               key={t.id}
-              className="rounded-2xl border p-2 transition-all duration-700"
+              className="rounded-2xl border border-red-100 bg-white p-2 text-gray-900 shadow-sm dark:border-red-900/50 dark:bg-card dark:text-white"
               style={{
-                minHeight: isDominant ? base.h : base.h * 0.4,
-                transform: `scale(${isDominant ? 1.05 : 0.85})`,
+                minHeight: base.h,
               }}
             >
-              {t.type === "rating-tags" && <RatingTagsCard t={t} dominant={isDominant} />}
-              {t.type === "standard" && <StandardCard t={t} dominant={isDominant} />}
-              {t.type === "featured" && <FeaturedCard t={t} dominant={isDominant} />}
+              {t.type === "rating-tags" && <RatingTagsCard t={t} />}
+              {t.type === "standard" && <StandardCard t={t} />}
+              {t.type === "featured" && <FeaturedCard t={t} />}
             </div>
           )
         })}

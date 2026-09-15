@@ -43,6 +43,7 @@ import {
   Sparkles,
   Megaphone,
   ArrowRightLeft,
+  Smartphone,
 } from "lucide-react"
 
 import { NAV_LINK_PERMISSIONS } from "@/lib/permissions"
@@ -151,6 +152,7 @@ const navSections: Record<string, NavSection[]> = {
         { label: "Announcements", href: "/dashboard/school-admin/announcements", icon: Megaphone },
         { label: "Notices", href: "/dashboard/school-admin/manage-notices", icon: Bell },
         { label: "News", href: "/dashboard/school-admin/news", icon: Newspaper },
+        { label: "SMS Messaging", href: "/dashboard/school-admin/sms", icon: Smartphone },
       ],
     },
     {

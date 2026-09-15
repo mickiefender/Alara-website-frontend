@@ -5,7 +5,7 @@ import type React from "react"
 import { useState, useEffect, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import Link from "next/link"
-import { usersAPI, getErrorMessage } from "@/lib/api"
+import { usersAPI, promotionAPI, getErrorMessage } from "@/lib/api"
 import { DataStateTableRow } from "@/components/data-state"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -34,6 +34,7 @@ import {
   Phone,
   MapPin,
   Lock,
+  CalendarDays,
 } from "lucide-react"
 import { ProfileAvatar } from "@/components/profile-avatar"
 
@@ -87,6 +88,12 @@ const [formData, setFormData] = useState({
 
   const [exportLoading, setExportLoading] = useState(false)
 
+  // Academic placement: new students are enrolled into the school's current
+  // academic year. Shown read-only so the admin knows where the student lands.
+  const [academicYears, setAcademicYears] = useState<any[]>([])
+  const [currentAcademicYear, setCurrentAcademicYear] = useState<any | null>(null)
+  const [academicYearLoading, setAcademicYearLoading] = useState(false)
+
   const itemsPerPage = 10
 
   const fetchStudents = async () => {
@@ -106,6 +113,23 @@ const [formData, setFormData] = useState({
 
   useEffect(() => {
     fetchStudents()
+  }, [])
+
+  useEffect(() => {
+    setAcademicYearLoading(true)
+    promotionAPI
+      .academicYears({ page_size: 200 })
+      .then((res) => {
+        const years = res.data.results || res.data || []
+        const list = Array.isArray(years) ? years : []
+        setAcademicYears(list)
+        setCurrentAcademicYear(list.find((y: any) => y.is_current) || list[0] || null)
+      })
+      .catch(() => {
+        setAcademicYears([])
+        setCurrentAcademicYear(null)
+      })
+      .finally(() => setAcademicYearLoading(false))
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -264,7 +288,7 @@ const [formData, setFormData] = useState({
             <span className="text-foreground font-medium">Students</span>
           </div>
           <h1 className="text-2xl font-bold text-foreground tracking-tight flex items-center gap-2">
-            <GraduationCap className="w-6 h-6 text-secondary" />
+           
             Student Registry
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">
@@ -460,6 +484,37 @@ const [formData, setFormData] = useState({
                     </div>
                   </fieldset>
 
+                  {/* ── Academic Placement ── */}
+                  {!editingStudent && (
+                    <fieldset className="space-y-4">
+                      <legend className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+                        <span className="w-6 h-px bg-border" />
+                        Academic Placement
+                        <span className="flex-1 h-px bg-border" />
+                      </legend>
+                      <div className="flex items-start gap-3 rounded-lg border border-border bg-muted/30 px-4 py-3">
+                        <CalendarDays size={18} className="text-primary flex-shrink-0 mt-0.5" />
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-foreground">
+                            {academicYearLoading
+                              ? "Loading academic year…"
+                              : currentAcademicYear?.name || "No academic year set"}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {currentAcademicYear
+                              ? "This student will be enrolled into the current academic year. You can change it later from the student profile."
+                              : "Set a current academic year under Promotion settings so new students are placed automatically."}
+                          </p>
+                          {!currentAcademicYear && academicYears.length > 0 && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {academicYears.length} year{academicYears.length !== 1 ? "s" : ""} configured — none marked current.
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </fieldset>
+                  )}
+
                   {/* ── Account Security ── */}
                   {!editingStudent && (
                     <fieldset className="space-y-4">
@@ -513,8 +568,8 @@ const [formData, setFormData] = useState({
 
       {/* ── Summary Stats ── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-card border border-border rounded-xl p-5 flex items-center gap-4 shadow-sm">
-          <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+        <div className="bg-red-500/10 dark:bg-red-400/10 border border-red-500/20 rounded-md p-5 flex items-center gap-4 shadow-sm">
+          <div className="w-11 h-11 flex items-center justify-center flex-shrink-0">
             <Users className="w-5 h-5 text-primary" />
           </div>
           <div>
@@ -523,9 +578,9 @@ const [formData, setFormData] = useState({
           </div>
         </div>
 
-        <div className="bg-card border border-border rounded-xl p-5 flex items-center gap-4 shadow-sm">
-          <div className="w-11 h-11 rounded-xl bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
-            <GraduationCap className="w-5 h-5 text-emerald-600" />
+        <div className="bg-blue-500/10 dark:bg-blue-400/10 border border-blue-500/20 rounded-md p-5 flex items-center gap-4 shadow-sm">
+          <div className="w-11 h-11 flex items-center justify-center flex-shrink-0">
+            <GraduationCap className="w-5 h-5 text-primary" />
           </div>
           <div>
             <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Active Students</p>
@@ -533,9 +588,9 @@ const [formData, setFormData] = useState({
           </div>
         </div>
 
-        <div className="bg-card border border-border rounded-xl p-5 flex items-center gap-4 shadow-sm">
-          <div className="w-11 h-11 rounded-xl bg-amber-500/10 flex items-center justify-center flex-shrink-0">
-            <Filter className="w-5 h-5 text-amber-600" />
+        <div className="bg-purple-500/10 dark:bg-purple-400/10 border border-purple-500/20 rounded-md p-5 flex items-center gap-4 shadow-sm">
+          <div className="w-11 h-11 flex items-center justify-center flex-shrink-0">
+            <Filter className="w-5 h-5 text-primary" />
           </div>
           <div>
             <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Search Results</p>

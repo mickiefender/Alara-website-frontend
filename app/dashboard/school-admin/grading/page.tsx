@@ -13,7 +13,7 @@ import Link from "next/link"
 
 import { GradingPolicyManagement } from "@/components/grading-policy-management"
 import { gradesAPI, usersAPI, academicsAPI, getErrorMessage, fetchAllGrades } from "@/lib/api"
-import { Search, ArrowRight, Users, TrendingUp, Award, Plus, GraduationCap } from "lucide-react"
+import { Search, ArrowRight, Users, TrendingUp, Award, Plus } from "lucide-react"
 import { DataStateTableRow } from "@/components/data-state"
 
 interface Grade {
@@ -204,9 +204,9 @@ export default function GradingPage() {
   const sessionAssessmentCount = grades.filter((g) => filterSession === "" || filterSession === "all" || g.academic_session?.toString() === filterSession).length
 
   const stats = [
-    { label: "Students Graded", value: studentsSummary.length, icon: Users, iconClass: "bg-red-50 text-red-600", valueClass: "text-gray-900" },
-    { label: "Total Assessments", value: sessionAssessmentCount, icon: TrendingUp, iconClass: "bg-emerald-50 text-emerald-600", valueClass: "text-gray-900" },
-    { label: "A Grade Students", value: studentsSummary.filter(s => s.overallGrade === "A").length, icon: Award, iconClass: "bg-amber-50 text-amber-600", valueClass: "text-gray-900" },
+    { label: "Students Graded", value: studentsSummary.length, icon: Users, iconClass: "text-secondary", cardClass: "!bg-red-50/70 dark:!bg-red-950/30", valueClass: "text-gray-900" },
+    { label: "Total Assessments", value: sessionAssessmentCount, icon: TrendingUp, iconClass: "text-secondary", cardClass: "!bg-emerald-50/70 dark:!bg-emerald-950/30", valueClass: "text-gray-900" },
+    { label: "A Grade Students", value: studentsSummary.filter(s => s.overallGrade === "A").length, icon: Award, iconClass: "text-secondary", cardClass: "!bg-amber-50/70 dark:!bg-amber-950/30", valueClass: "text-gray-900" },
   ]
 
   return (
@@ -217,12 +217,9 @@ export default function GradingPage() {
         <div className="pointer-events-none absolute -bottom-24 right-40 h-56 w-56 rounded-full bg-secondary/5 blur-3xl" />
         <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-start gap-4">
-            <div className="hidden sm:flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-white shadow-md">
-              <GraduationCap size={28} />
-            </div>
             <div>
               <p className="text-xs font-semibold uppercase tracking-widest text-secondary">Academic Records</p>
-              <h1 className="mt-1 text-2xl md:text-3xl font-bold text-gray-900">Student Grades Overview</h1>
+              <h1 className="mt-1 text-xl md:text-2xl font-bold text-gray-900">Student Grades Overview</h1>
               <p className="mt-1 text-sm text-muted-foreground">
                 View overall student performance and drill down into details
               </p>
@@ -330,8 +327,8 @@ export default function GradingPage() {
       {/* ── Stats Cards ────────────────────────────────────── */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 stagger">
         {stats.map((stat) => (
-          <div key={stat.label} className="glass-card glass-hover p-5 flex items-center gap-4">
-            <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${stat.iconClass}`}>
+          <div key={stat.label} className={`glass-card glass-hover p-4 flex items-center gap-3 ${stat.cardClass}`}>
+            <div className={`flex shrink-0 items-center justify-center ${stat.iconClass}`}>
               <stat.icon size={22} />
             </div>
             <div className="min-w-0">

@@ -1,7 +1,7 @@
 "use client"
 
-import { useMemo, useState } from "react"
-import { KeyRound, MoreHorizontal, ShieldBan, Users } from "lucide-react"
+import { useEffect, useMemo, useState } from "react"
+import { ChevronLeft, ChevronRight, KeyRound, MoreHorizontal, ShieldBan, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
@@ -40,6 +40,12 @@ import { ConfirmDialog } from "@/components/super-admin/confirm-dialog"
 import { downloadCSV } from "@/components/super-admin/export"
 
 const ROLES = ["school_admin", "teacher", "student", "parent"]
+const PAGE_SIZE = 10
+type UserListResponse = { results: AnyObj[]; count: number; next: string | null; previous: string | null }
+type UserStats = {
+  total_users: number
+  users_by_role: Array<{ role: string; count: number }>
+}
 
 export default function UsersPage() {
   const [searchInput, setSearchInput] = useState("")
@@ -48,13 +54,24 @@ export default function UsersPage() {
   const [statusFilter, setStatusFilter] = useState("")
   const [actionError, setActionError] = useState("")
   const [busy, setBusy] = useState(false)
+  const [page, setPage] = useState(1)
 
-  const list = useFetch<AnyObj[]>(
+  const list = useFetch<UserListResponse>(
     () =>
       usersAPI
-        .listGlobal({ role: roleFilter || undefined, search: search || undefined, page_size: 200 })
-        .then((r) => r.data?.results || r.data || []),
-    [search, roleFilter],
+        .listGlobal({
+          role: roleFilter || undefined,
+          search: search || undefined,
+          is_active_user: statusFilter === "active" ? "true" : statusFilter === "inactive" ? "false" : undefined,
+          page,
+          page_size: PAGE_SIZE,
+        })
+        .then((r) => r.data),
+    [search, roleFilter, statusFilter, page],
+  )
+  const stats = useFetch<UserStats>(
+    () => usersAPI.globalStats().then((response) => response.data),
+    [],
   )
 
   const [banTarget, setBanTarget] = useState<AnyObj | null>(null)
@@ -65,22 +82,25 @@ export default function UsersPage() {
   const [sessionsTarget, setSessionsTarget] = useState<AnyObj | null>(null)
 
   const rows = useMemo(() => {
-    let out = [...(list.data || [])]
-    if (statusFilter === "active") out = out.filter((u) => u.is_active)
-    if (statusFilter === "inactive") out = out.filter((u) => !u.is_active)
-    return out
-  }, [list.data, statusFilter])
+    return list.data?.results || []
+  }, [list.data])
+
+  const totalUsers = list.data?.count || 0
+  const pageCount = Math.max(1, Math.ceil(totalUsers / PAGE_SIZE))
+
+  useEffect(() => {
+    if (page > pageCount && !list.loading) setPage(pageCount)
+  }, [page, pageCount, list.loading])
 
   const counts = useMemo(() => {
-    const all = list.data || []
     const byRole: Record<string, number> = { school_admin: 0, teacher: 0, student: 0, parent: 0, other: 0 }
-    for (const u of all) {
-      const r = String(u.role ?? "")
-      if (byRole[r] !== undefined) byRole[r] += 1
-      else byRole.other += 1
+    for (const item of stats.data?.users_by_role || []) {
+      const r = String(item.role ?? "")
+      if (byRole[r] !== undefined) byRole[r] = Number(item.count || 0)
+      else byRole.other += Number(item.count || 0)
     }
-    return { total: all.length, school_admin: byRole.school_admin, teacher: byRole.teacher, student: byRole.student, parent: byRole.parent }
-  }, [list.data])
+    return { total: stats.data?.total_users || 0, school_admin: byRole.school_admin, teacher: byRole.teacher, student: byRole.student, parent: byRole.parent }
+  }, [stats.data])
 
   async function run(fn: () => Promise<unknown>, done?: () => void) {
     setActionError("")
@@ -151,19 +171,28 @@ export default function UsersPage() {
         search={searchInput}
         onSearch={(v) => {
           setSearchInput(v)
-          if (!v) setSearch("")
+          if (!v) {
+            setSearch("")
+            setPage(1)
+          }
         }}
         searchPlaceholder="Search by name, email or username (press Enter)..."
         filters={[
           {
             value: roleFilter,
-            onChange: setRoleFilter,
+            onChange: (value) => {
+              setRoleFilter(value)
+              setPage(1)
+            },
             placeholder: "Role",
             options: ROLES.map((r) => ({ value: r, label: r.replace("_", " ") })),
           },
           {
             value: statusFilter,
-            onChange: setStatusFilter,
+            onChange: (value) => {
+              setStatusFilter(value)
+              setPage(1)
+            },
             placeholder: "Status",
             options: [
               { value: "active", label: "Active" },
@@ -174,7 +203,10 @@ export default function UsersPage() {
       >
         <Button
           variant="secondary"
-          onClick={() => setSearch(searchInput.trim())}
+          onClick={() => {
+            setSearch(searchInput.trim())
+            setPage(1)
+          }}
           disabled={searchInput.trim() === search}
         >
           Search
@@ -250,6 +282,36 @@ export default function UsersPage() {
           </TableBody>
         </Table>
       </div>
+      {!list.loading && totalUsers > 0 && (
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-muted-foreground">
+            Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, totalUsers)} of {totalUsers} users
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((current) => Math.max(1, current - 1))}
+              disabled={page === 1}
+              aria-label="Previous page"
+            >
+              <ChevronLeft className="mr-1 h-4 w-4" /> Previous
+            </Button>
+            <span className="min-w-20 text-center text-sm text-muted-foreground">
+              Page {page} of {pageCount}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((current) => Math.min(pageCount, current + 1))}
+              disabled={page === pageCount}
+              aria-label="Next page"
+            >
+              Next <ChevronRight className="ml-1 h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Ban */}
       <ConfirmDialog

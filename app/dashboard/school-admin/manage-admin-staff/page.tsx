@@ -15,10 +15,10 @@ import { PageLoadingState } from "@/components/page-loading-state"
 
 
 const ADMIN_ROLES = [
-  { id: "academic_admin", label: "Academic Admin", icon: "📚" },
-  { id: "exam_officer", label: "Exam Officer", icon: "📋" },
-  { id: "finance_officer", label: "Finance Officer", icon: "💰" },
-  { id: "ct_admin_support", label: "CT/Admin Support", icon: "🖥️" },
+  { id: "academic_admin", label: "Academic Admin" },
+  { id: "exam_officer", label: "Exam Officer" },
+  { id: "finance_officer", label: "Finance Officer" },
+  { id: "ct_admin_support", label: "CT/Admin Support" },
 ]
 
 
@@ -127,12 +127,12 @@ export default function ManageAdminStaffPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-bold text-gray-900">Admin Staff Management</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Admin Staff Management</h1>
           <p className="text-gray-600 mt-1">Create and manage administrative staff accounts with custom permissions</p>
         </div>
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-blue-600 hover:bg-blue-700 gap-2">
+            <Button className="bg-secondary text-secondary-foreground hover:bg-secondary/90 gap-2">
               <Plus size={20} />
               Create Admin Staff
             </Button>
@@ -206,7 +206,6 @@ export default function ManageAdminStaffPage() {
                           : "border-gray-200 hover:border-gray-300"
                       }`}
                     >
-                      <div className="text-xl mb-2">{role.icon}</div>
                       <p className="font-semibold text-gray-900">{role.label}</p>
                     </button>
                   ))}

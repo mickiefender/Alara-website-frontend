@@ -353,7 +353,7 @@ export default function TemplatesPage() {
     <div className="container mx-auto py-8 px-4 lg:px-8 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Report Templates</h1>
+          <h1 className="text-xl md:text-2xl font-bold tracking-tight">Report Templates</h1>
           <p className="text-muted-foreground text-lg mt-2">Manage customizable terminal report templates</p>
         </div>
   <Button onClick={() => setEditingTemplate({ name: '', structure: [], htmlContent: '' })} size="lg" className="w-full sm:w-auto shadow-lg hover:shadow-xl transition-all bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90">

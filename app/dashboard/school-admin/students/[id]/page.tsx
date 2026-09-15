@@ -2,14 +2,14 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { usersAPI, academicsAPI, attendanceAPI, billingAPI, messagingAPI } from '@/lib/api'
+import { usersAPI, academicsAPI, attendanceAPI, billingAPI, messagingAPI, promotionAPI } from '@/lib/api'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { ChevronLeft, Edit2, AlertCircle, BookOpen, DollarSign, FileText, Camera, Save, X, User, Phone, Mail, MapPin, Calendar, Briefcase, Heart, Users, MessageSquare, Download, Trash2, Plus, Edit3, CheckCircle2 } from 'lucide-react'
+import { ChevronLeft, Edit2, AlertCircle, BookOpen, DollarSign, FileText, Camera, Save, X, User, Phone, Mail, MapPin, Calendar, CalendarDays, Briefcase, Heart, Users, MessageSquare, Download, Trash2, Plus, Edit3, CheckCircle2 } from 'lucide-react'
 import { toast } from 'sonner'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -20,6 +20,11 @@ interface StudentDetail {
   user?: { id: number; first_name: string; last_name: string; email: string; phone?: string; username: string }
   student_id?: string
   level?: { id: number; name: string; section?: string }
+  level_name?: string | null
+  academic_year?: number | null
+  academic_year_name?: string | null
+  academic_year_status?: string | null
+  academic_year_is_current?: boolean
   enrollment_date?: string
   gender?: string
   father_name?: string
@@ -77,6 +82,13 @@ export default function StudentDetailPage() {
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false)
   const [selectedClassId, setSelectedClassId] = useState('')
   const [assigningClass, setAssigningClass] = useState(false)
+
+  // Academic year management
+  const [academicYears, setAcademicYears] = useState<any[]>([])
+  const [academicYearsLoading, setAcademicYearsLoading] = useState(false)
+  const [isEditingAcademicYear, setIsEditingAcademicYear] = useState(false)
+  const [selectedAcademicYearId, setSelectedAcademicYearId] = useState('')
+  const [savingAcademicYear, setSavingAcademicYear] = useState(false)
 
   // Fee management state
   const [studentFees, setStudentFees] = useState<any[]>([])
@@ -242,6 +254,20 @@ export default function StudentDetailPage() {
       } catch { /* skip */ }
       
       try { const n = await academicsAPI.notices(); setNotices((n.data.results || n.data || []).slice(0, 5)) } catch { /* skip */ }
+
+      // Load the school's academic years and seed the picker with the year the
+      // student is currently assigned to.
+      try {
+        setAcademicYearsLoading(true)
+        const yearsRes = await promotionAPI.academicYears({ page_size: 200 })
+        const years = yearsRes.data.results || yearsRes.data || []
+        setAcademicYears(Array.isArray(years) ? years : [])
+      } catch (err) {
+        console.error('Error loading academic years:', err)
+      } finally {
+        setAcademicYearsLoading(false)
+      }
+      setSelectedAcademicYearId(s.academic_year ? String(s.academic_year) : '')
       
       // Load classes and student enrollments
       try {
@@ -308,6 +334,29 @@ export default function StudentDetailPage() {
       setIsEditing(false); loadData()
     } catch (err: any) { setError(err?.response?.data?.detail || 'Failed to save') }
     finally { setSaving(false) }
+  }
+
+  const handleSaveAcademicYear = async () => {
+    if (!student) return
+    setSavingAcademicYear(true)
+    try {
+      const res = await usersAPI.setStudentAcademicYear(
+        student.id,
+        selectedAcademicYearId ? Number(selectedAcademicYearId) : null,
+      )
+      setStudent((prev) => (prev ? { ...prev, ...res.data } : res.data))
+      toast.success('Academic year updated')
+      setIsEditingAcademicYear(false)
+      loadData()
+    } catch (err: any) {
+      toast.error(
+        err?.response?.data?.academic_year ||
+        err?.response?.data?.detail ||
+        'Failed to update academic year',
+      )
+    } finally {
+      setSavingAcademicYear(false)
+    }
   }
 
   const handleAssignClass = async () => {
@@ -657,10 +706,95 @@ export default function StudentDetailPage() {
             ) : (
               <div className="space-y-1">
                 <InfoRow icon={<FileText size={14} />} label="Student ID" value={student.student_id} />
-                <InfoRow icon={<BookOpen size={14} />} label="Class / Level" value={student.level?.name} />
-                <InfoRow icon={<BookOpen size={14} />} label="Section" value={student.level?.section} />
+                <InfoRow icon={<BookOpen size={14} />} label="Class / Level" value={student.level_name || student.level?.name} />
+                <InfoRow icon={<CalendarDays size={14} />} label="Academic Year" value={student.academic_year_name} />
                 <InfoRow icon={<FileText size={14} />} label="Roll Number" value={student.roll_number} />
                 <InfoRow icon={<Calendar size={14} />} label="Admission Date" value={student.enrollment_date ? new Date(student.enrollment_date).toLocaleDateString() : undefined} />
+              </div>
+            )}
+          </div>
+
+          {/* Academic Year */}
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-semibold text-gray-900 flex items-center gap-2">
+                <CalendarDays size={16} className="text-secondary" />Academic Year
+              </h2>
+              {!isEditingAcademicYear && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1"
+                  onClick={() => {
+                    setSelectedAcademicYearId(student.academic_year ? String(student.academic_year) : '')
+                    setIsEditingAcademicYear(true)
+                  }}
+                >
+                  <Edit2 size={14} />
+                  {student.academic_year_name ? 'Change' : 'Add'}
+                </Button>
+              )}
+            </div>
+
+            {isEditingAcademicYear ? (
+              <div className="space-y-3">
+                <Select
+                  value={selectedAcademicYearId}
+                  onValueChange={setSelectedAcademicYearId}
+                  disabled={academicYearsLoading}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={academicYearsLoading ? 'Loading…' : 'Select academic year'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {academicYears.length > 0 ? (
+                      academicYears.map((year: any) => (
+                        <SelectItem key={year.id} value={String(year.id)}>
+                          {year.name}{year.is_current ? ' (current)' : ''}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <div className="px-3 py-2 text-sm text-gray-500">
+                        {academicYearsLoading ? 'Loading…' : 'No academic years configured'}
+                      </div>
+                    )}
+                  </SelectContent>
+                </Select>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    onClick={handleSaveAcademicYear}
+                    disabled={savingAcademicYear || !selectedAcademicYearId}
+                    className="gap-1 flex-1 bg-secondary text-secondary-foreground text-white"
+                  >
+                    <Save size={14} />{savingAcademicYear ? 'Saving...' : 'Save'}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => {
+                      setSelectedAcademicYearId(student.academic_year ? String(student.academic_year) : '')
+                      setIsEditingAcademicYear(false)
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+                <p className="text-xs text-gray-500">
+                  Newly enrolled students are placed in the school's current academic year automatically.
+                </p>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-gray-900">
+                  {student.academic_year_name || 'Not assigned'}
+                </span>
+                {student.academic_year_is_current && (
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    Current year
+                  </span>
+                )}
               </div>
             )}
           </div>

@@ -7,6 +7,8 @@ import { TestimonialsSection } from "@/components/landing/testimonials-section"
 import { CtaSection } from "@/components/landing/cta-section"
 import { Footer } from "@/components/footer"
 import { AppShowcaseTimeline } from "@/components/AppShowcaseTimeline"
+import { FaqSection } from "@/components/landing/faq-section"
+import { FeaturedBlogSection } from "@/components/landing/featured-blog-section"
 
 export default function Home() {
   return (
@@ -17,6 +19,8 @@ export default function Home() {
         <PartnersSection />
         <AppShowcaseTimeline />
         <StatsSection />
+        <FaqSection />
+        <FeaturedBlogSection />
         <TestimonialsSection />
         <CtaSection />
       </main>

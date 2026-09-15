@@ -231,7 +231,7 @@ function ClassesPageContent() {
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-bold text-secondary">Classes Management</h1>
+          <h1 className="text-2xl font-bold text-black">Classes Management</h1>
           <p className="text-gray-600 mt-1">Manage all your school classes, assignments, and settings</p>
         </div>
         <Dialog open={isOpen} onOpenChange={setIsOpen}>

@@ -13,10 +13,11 @@ interface User {
   email: string
   first_name: string
   last_name: string
-  role: "super_admin" | "school_admin" | "teacher" | "student" | "parent" | "academic_admin" | "exam_officer" | "finance_officer" | "ct_admin_support"
+  role: "super_admin" | "platform_staff" | "school_admin" | "teacher" | "student" | "parent" | "academic_admin" | "exam_officer" | "finance_officer" | "ct_admin_support"
   school_id?: number
   student_id?: string
   permissions?: string[]
+  platform_permissions?: string[]
 }
 
 interface School {
@@ -93,7 +94,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const meResponse = await authAPI.me()
       const meData = meResponse.data
       if (process.env.NODE_ENV === 'development') { console.log('[Auth] meResponse:', meData) }
-      const parsedUser: User = { ...JSON.parse(storedUser || '{}'), ...meData, permissions: meData.permissions || meData.role_permission?.permission || [] }
+      const parsedUser: User = {
+        ...JSON.parse(storedUser || '{}'),
+        ...meData,
+        permissions: meData.permissions || meData.role_permission?.permission || [],
+        platform_permissions: meData.platform_permissions || [],
+      }
       if (process.env.NODE_ENV === 'development') { console.log('[Auth] parsedUser school_id:', parsedUser.school_id) }
       sessionStorage.setItem("user", JSON.stringify(parsedUser))
       setUser(parsedUser)
@@ -118,7 +124,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (process.env.NODE_ENV === 'development') { console.warn("Token validation error:", error.response?.status, error.message) }
       }
       sessionStorage.removeItem("authToken")
+      sessionStorage.removeItem("refreshToken")
       sessionStorage.removeItem("user")
+      localStorage.removeItem("authToken")
+      localStorage.removeItem("refreshToken")
       setUser(null)
       setSchool(null)
       setIsAuthenticated(false)
@@ -150,10 +159,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         : { student_id: credential, password }
 
       const response = await authAPI.login(loginData)
-      const { access, user: userData } = response.data
+      const { access, refresh, user: userData } = response.data
 
       const fullUserData = { ...userData, permissions: userData.permissions || userData.role_permission?.permission || [] }
       sessionStorage.setItem("authToken", access)
+      sessionStorage.setItem("refreshToken", refresh)
+      localStorage.setItem("authToken", access)
+      localStorage.setItem("refreshToken", refresh)
       sessionStorage.setItem("user", JSON.stringify(fullUserData))
       setUser(fullUserData)
 
@@ -168,7 +180,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Role-based redirect
       const adminStaffRoles = ['academic_admin', 'exam_officer', 'finance_officer', 'ct_admin_support'] as const
-      if (fullUserData.role && adminStaffRoles.includes(fullUserData.role as any)) {
+      if (fullUserData.role === "platform_staff") {
+        router.push("/dashboard/super-admin")
+        router.refresh()
+      } else if (fullUserData.role && adminStaffRoles.includes(fullUserData.role as any)) {
         router.push("/dashboard/admin-staff")
         router.refresh()
       } else {
@@ -182,8 +197,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const logout = () => {
-    sessionStorage.removeItem("authToken")
-    sessionStorage.removeItem("user")
     authAPI.logout()
     setUser(null)
     setSchool(null)
@@ -199,9 +212,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const register = async (data: any) => {
     try {
       const response = await authAPI.register(data)
-      const { access, user: userData } = response.data
+      const { access, refresh, user: userData } = response.data
 
       sessionStorage.setItem("authToken", access)
+      sessionStorage.setItem("refreshToken", refresh)
+      localStorage.setItem("authToken", access)
+      localStorage.setItem("refreshToken", refresh)
       sessionStorage.setItem("user", JSON.stringify(userData))
       setUser(userData)
 

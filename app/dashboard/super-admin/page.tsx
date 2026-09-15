@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { useState } from "react"
 import {
   Activity,
   Building2,
@@ -20,15 +21,20 @@ import { PageHeader } from "@/components/super-admin/page-header"
 import { StatCard, StatCardGrid } from "@/components/super-admin/stat-card"
 import { SaAreaChart } from "@/components/super-admin/charts"
 import { StatusBadge } from "@/components/super-admin/status-badge"
+import { useAuthContext } from "@/lib/auth-context"
 
 function fmtMoney(value: number) {
   return `GH₵ ${Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
 }
 
 export default function SuperAdminDashboardPage() {
+  const { user } = useAuthContext()
+  const [activityPage, setActivityPage] = useState(1)
+  const can = (permission: string) => user?.role === "super_admin" || Boolean(user?.platform_permissions?.includes(permission))
   const overview = useFetch<AnyObj>(() => platformAPI.overview().then((r) => r.data), [])
   const health = useFetch<AnyObj>(() => platformAPI.health().then((r) => r.data), [])
-  const logs = useFetch<AnyObj[]>(() => platformAPI.auditLogs({ page_size: 8 }).then((r) => r.data?.results || []), [])
+  const logs = useFetch<AnyObj>(() => platformAPI.auditLogs({ page_size: 10, page: activityPage }).then((r) => r.data), [activityPage])
+  const activityRows = (logs.data?.results as AnyObj[]) || []
 
   const o = overview.data
   const loading = overview.loading
@@ -45,15 +51,15 @@ export default function SuperAdminDashboardPage() {
       )}
 
       {/* Schools */}
-      <StatCardGrid>
+      {can("schools.view") && <StatCardGrid>
         <StatCard label="Total Schools" value={o?.schools?.total ?? 0} icon={Building2} sub={`${o?.schools?.active ?? 0} active`} />
         <StatCard label="Active Schools" value={o?.schools?.active ?? 0} icon={Building2} tone="success" />
         <StatCard label="Trial Schools" value={o?.schools?.trial ?? 0} icon={Building2} tone="warning" />
         <StatCard label="Suspended Schools" value={o?.schools?.suspended ?? 0} icon={ShieldAlert} tone="danger" />
-      </StatCardGrid>
+      </StatCardGrid>}
 
       {/* Users */}
-      <StatCardGrid>
+      {can("users.view") && <StatCardGrid>
         <StatCard label="Total Students" value={o?.users?.students ?? 0} icon={GraduationCap} />
         <StatCard label="Total Teachers" value={o?.users?.teachers ?? 0} icon={Users} />
         <StatCard label="Total Parents" value={o?.users?.parents ?? 0} icon={Users} />
@@ -63,10 +69,10 @@ export default function SuperAdminDashboardPage() {
           icon={Activity}
           sub={`${o?.users?.active_today ?? 0} active today · ${o?.users?.active_30d ?? 0} in last 30d`}
         />
-      </StatCardGrid>
+      </StatCardGrid>}
 
       {/* Revenue + subscriptions + storage + ops */}
-      <StatCardGrid>
+      {can("finance.view") && <StatCardGrid>
         <StatCard label="Revenue (all time)" value={fmtMoney(o?.revenue?.total ?? 0)} icon={CircleDollarSign} tone="primary" />
         <StatCard label="Revenue this month" value={fmtMoney(o?.revenue?.this_month ?? 0)} icon={CircleDollarSign} />
         <StatCard
@@ -81,11 +87,11 @@ export default function SuperAdminDashboardPage() {
           icon={Database}
           sub={`${o?.storage?.used_mb ?? 0} MB total`}
         />
-      </StatCardGrid>
+      </StatCardGrid>}
 
       {/* Charts row */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-        <Card className="xl:col-span-2">
+      {(can("platform.analytics") || can("platform.monitoring")) && <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+        {can("platform.analytics") && <Card className="xl:col-span-2">
           <CardHeader>
             <CardTitle className="text-base">Growth — schools & users (last 6 months)</CardTitle>
           </CardHeader>
@@ -103,9 +109,9 @@ export default function SuperAdminDashboardPage() {
               />
             )}
           </CardContent>
-        </Card>
+        </Card>}
 
-        <Card>
+        {can("platform.monitoring") && <Card>
           <CardHeader>
             <CardTitle className="text-base">System health</CardTitle>
           </CardHeader>
@@ -134,11 +140,12 @@ export default function SuperAdminDashboardPage() {
               </Link>
             </div>
           </CardContent>
-        </Card>
+        </Card>}
       </div>
+      }
 
       {/* Recent activity */}
-      <Card>
+      {can("platform.audit") && <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-base">Recent platform activity</CardTitle>
           <Link href="/dashboard/super-admin/audit-logs" className="text-xs text-primary hover:underline">
@@ -152,11 +159,11 @@ export default function SuperAdminDashboardPage() {
                 <Skeleton key={i} className="h-10 w-full" />
               ))}
             </div>
-          ) : !logs.data?.length ? (
+          ) : !activityRows.length ? (
             <p className="text-sm text-muted-foreground">No recent activity recorded.</p>
           ) : (
             <ul className="divide-y divide-border">
-              {logs.data.map((log) => (
+              {activityRows.map((log) => (
                 <li key={log.id} className="py-2.5 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-sm">
                   <span className="font-medium w-44 shrink-0 truncate">{log.actor_name || "System"}</span>
                   <code className="text-xs bg-muted rounded px-1.5 py-0.5 w-fit">{log.action}</code>
@@ -168,8 +175,35 @@ export default function SuperAdminDashboardPage() {
               ))}
             </ul>
           )}
+          {!logs.loading && Number(logs.data?.count || 0) > 10 && (
+            <div className="mt-4 flex items-center justify-between border-t border-border pt-4 text-xs text-muted-foreground">
+              <span>
+                Showing {(activityPage - 1) * 10 + 1}–{Math.min(activityPage * 10, Number(logs.data.count))}
+                {" "}of {logs.data.count}
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={!logs.data.previous}
+                  onClick={() => setActivityPage((page) => Math.max(1, page - 1))}
+                  className="rounded-md border border-border px-3 py-1.5 font-medium text-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Previous
+                </button>
+                <span>Page {activityPage}</span>
+                <button
+                  type="button"
+                  disabled={!logs.data.next}
+                  onClick={() => setActivityPage((page) => page + 1)}
+                  className="rounded-md border border-border px-3 py-1.5 font-medium text-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </CardContent>
-      </Card>
+      </Card>}
     </div>
   )
 }

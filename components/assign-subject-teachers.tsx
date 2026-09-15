@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Trash2, Plus, BookOpen } from "lucide-react"
+import { Trash2, Plus, BookOpen, Loader2 } from "lucide-react"
 import { academicsAPI, usersAPI } from "@/lib/api"
 import { useAuthContext } from "@/lib/auth-context"
 
@@ -230,6 +230,12 @@ export function AssignSubjectTeachers({ classId, className }: { classId: number;
         </div>
       </CardHeader>
       <CardContent>
+        {loading ? (
+          <div className="flex min-h-32 items-center justify-center" role="status" aria-label="Loading subject teachers">
+            <Loader2 className="h-7 w-7 animate-spin text-primary" />
+          </div>
+        ) : (
+          <>
         {error && <div className="text-red-500 mb-4">{error}</div>}
         {subjectTeachers.length === 0 ? (
           <p className="text-muted-foreground text-center py-8">No teachers assigned to subjects yet</p>
@@ -276,6 +282,8 @@ export function AssignSubjectTeachers({ classId, className }: { classId: number;
               </TableBody>
             </Table>
           </div>
+        )}
+          </>
         )}
       </CardContent>
     </Card>

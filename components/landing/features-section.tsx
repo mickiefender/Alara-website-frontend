@@ -10,7 +10,7 @@ const features = [
     description:
       "Track student attendance in real-time with mobile check-in and automated parent notifications.",
     image: "/Featured-section/Attendance-page.png",
-    color: "#6366f1",
+    color: "#dc2626",
   },
   {
     id: 2,
@@ -18,7 +18,7 @@ const features = [
     description:
       "Comprehensive dashboards with actionable insights into student and class performance.",
     image: "/Featured-section/Performance-analytics.png",
-    color: "#ec4899",
+    color: "#ef4444",
   },
   {
     id: 3,
@@ -26,7 +26,7 @@ const features = [
     description:
       "Complete fee assignment, online payments, automated receipts, and balance tracking.",
     image: "/Featured-section/Fees-management.png",
-    color: "#f97316",
+    color: "#f05252",
   },
   {
     id: 4,
@@ -34,7 +34,7 @@ const features = [
     description:
       "Generate practice questions and quizzes in seconds using our AI-powered system. Input a topic or upload a document to get customized questions with instant feedback.",
     image: "/Featured-section/Ai.png",
-    color: "#10b981",
+    color: "#b91c1c",
   },
   {
     id: 5,
@@ -42,7 +42,7 @@ const features = [
     description:
       "Manage student profiles, enrollment, and academic records with ease. Get a full view of each student's academic journey and performance trends.",
     image: "/Featured-section/Student management page.png",
-    color: "#8b5cf6",
+    color: "#991b1b",
   },
 ]
 
@@ -68,13 +68,14 @@ export function FeaturesSection() {
   }, [])
 
   return (
-    <section id="features" className="py-20 md:py-28 bg-background relative w-full">
+    <section id="features" className="relative w-full overflow-hidden bg-[linear-gradient(135deg,#7f111b_0%,#b91c2b_48%,#8f1622_100%)] py-20 text-white md:py-28">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_15%,rgba(255,255,255,0.16),transparent_30%),radial-gradient(circle_at_85%_80%,rgba(255,180,180,0.18),transparent_32%)]" aria-hidden="true" />
       <div className="container mx-auto px-4 md:px-6 max-w-7xl relative z-10">
         {/* Heading */}
         <div className="text-center mb-16">
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground">
+          <h2 className="text-3xl font-bold text-white sm:text-4xl md:text-5xl">
             Upgrade Your{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#6366f1] to-[#ec4899]">
+            <span className="bg-gradient-to-r from-red-700 via-red-500 to-orange-500 bg-clip-text text-transparent">
               School
             </span>{" "}
             With Our Top Features
@@ -112,10 +113,12 @@ export function FeaturesSection() {
               {/* Content */}
               <div className="flex flex-col gap-6 order-1 md:order-2">
                 <div className="space-y-4">
-                  <div className="w-14 h-14 rounded-xl" style={{ backgroundColor: feature.color + "20" }} />
+                  <div className="flex h-14 w-14 items-center justify-center rounded-xl border border-red-200 bg-red-50 shadow-sm">
+                    <span className="h-3 w-3 rounded-full" style={{ backgroundColor: feature.color }} />
+                  </div>
                   <div>
-                    <h3 className="text-2xl md:text-3xl font-bold text-foreground mb-3">{feature.title}</h3>
-                    <p className="text-base md:text-lg text-muted-foreground leading-relaxed">
+                    <h3 className="mb-3 text-2xl font-bold text-white md:text-3xl">{feature.title}</h3>
+                    <p className="text-base leading-relaxed text-red-50/85 md:text-lg">
                       {feature.description}
                     </p>
                   </div>
@@ -125,8 +128,8 @@ export function FeaturesSection() {
                 <div className="space-y-3 pt-4">
                   {["Real-time updates", "Seamless integration", "24/7 Support"].map((highlight) => (
                     <div key={highlight} className="flex items-center gap-3">
-                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: feature.color }} />
-                      <span className="text-sm text-foreground">{highlight}</span>
+                      <div className="h-2 w-2 rounded-full bg-red-600" />
+                      <span className="text-sm text-white/90">{highlight}</span>
                     </div>
                   ))}
                 </div>
