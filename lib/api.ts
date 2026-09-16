@@ -322,6 +322,7 @@ export const schoolsAPI = {
   plans: () => apiClient.get("/schools/plans/"),
   create: (data: any) => apiClient.post("/schools/schools/", data),
   update: (id: number, data: any) => apiClient.put(`/schools/schools/${id}/`, data),
+  deleteSchool: (id: number) => apiClient.delete(`/schools/schools/${id}/`),
   suspend: (id: number) => apiClient.post(`/schools/schools/${id}/suspend/`),
   activate: (id: number) => apiClient.post(`/schools/schools/${id}/activate/`),
   uploadLogo: (formData: FormData) => 
@@ -330,6 +331,34 @@ export const schoolsAPI = {
     }),
   getDashboardStats: () => apiClient.get("/schools/schools/dashboard_stats/"),
   invalidateCache: () => apiClient.post("/schools/schools/invalidate_cache/"),
+}
+
+export const complianceAPI = {
+  status: () => apiClient.get("/compliance/status/"),
+  profile: () => apiClient.get("/compliance/profile/"),
+  updateRequirement: (requirementId: number, information: Record<string, unknown>) =>
+    apiClient.patch("/compliance/profile/", { requirement_id: requirementId, information }),
+  uploadDocument: (requirementId: number, file: File) => {
+    const formData = new FormData()
+    formData.append("requirement_id", String(requirementId))
+    formData.append("file", file)
+    return apiClient.post("/compliance/documents/upload/", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    })
+  },
+  submit: () => apiClient.post("/compliance/profile/"),
+  adminQueue: () => apiClient.get("/compliance/admin/queue/"),
+  adminDocuments: () => apiClient.get("/compliance/admin/documents/"),
+  adminReview: (schoolId: number) => apiClient.get(`/compliance/admin/review/${schoolId}/`),
+  reviewRequirement: (schoolId: number, requirementId: number, decision: "approve" | "reject", notes = "") =>
+    apiClient.post(`/compliance/admin/review/${schoolId}/`, { requirement_id: requirementId, decision, notes }),
+  approveAccount: (schoolId: number) =>
+    apiClient.post(`/compliance/admin/approve-account/${schoolId}/`),
+  agreement: () => apiClient.get("/compliance/agreement/"),
+  saveAgreement: (data: { title: string; summary: string; body: string; version: string }) =>
+    apiClient.put("/compliance/agreement/", data),
+  decideAgreement: (decision: "accept" | "reject") =>
+    apiClient.post("/compliance/agreement/decision/", { decision }),
 }
 
 export const academicsAPI = {

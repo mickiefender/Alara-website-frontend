@@ -2,25 +2,16 @@
 
 import { useAuthContext } from "@/lib/auth-context"
 import { redirect } from "next/navigation"
-import LoadingWrapper from "@/components/loading-wrapper"
+import { resolvePostLoginRoute } from "@/lib/compliance-routing"
 
 export default function DashboardPage() {
-  const { user, loading } = useAuthContext()
+  const { user, school, loading } = useAuthContext()
 
   if (!user) {
     redirect("/auth/login")
   }
 
-  // Redirect to role-specific dashboard
-  const roleRoutes: Record<string, string> = {
-    super_admin: "/dashboard/super-admin",
-    school_admin: "/dashboard/school-admin",
-    teacher: "/dashboard/teacher",
-    student: "/dashboard/student",
-    parent: "/dashboard/parent",
-  }
-
-  const route = roleRoutes[user.role]
+  const route = resolvePostLoginRoute(user, school)
   if (route) {
     redirect(route)
   }

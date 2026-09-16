@@ -30,6 +30,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { bgFetch } from "@/lib/api"
 import { useAuthContext } from "@/lib/auth-context"
+import { hasPlatformPermission } from "@/lib/platform-permissions"
 import { NAV_GROUPS } from "./platform-sidebar"
 
 type HealthTone = { dot: string; label: string }
@@ -53,7 +54,7 @@ function flattenNav(groups = NAV_GROUPS) {
 function pageTitle(pathname: string) {
   const match = flattenNav()
     .filter((i) => i.href !== "/dashboard/super-admin")
-    .find((i) => pathname.startsWith(i.href))
+    .find((i) => pathname === i.href || pathname.startsWith(`${i.href}/`))
   return match?.label ?? "Dashboard"
 }
 
@@ -65,7 +66,7 @@ export function PlatformTopbar() {
     .map((group) => ({
       ...group,
       items: group.items.filter((item) =>
-        user?.role === "super_admin" || !item.permission || Boolean(user?.platform_permissions?.includes(item.permission)),
+        user?.role === "super_admin" || !item.permission || hasPlatformPermission(user?.platform_permissions, item.permission),
       ),
     }))
     .filter((group) => group.items.length > 0)
@@ -170,7 +171,7 @@ export function PlatformTopbar() {
                       const active =
                         item.href === "/dashboard/super-admin"
                           ? pathname === item.href
-                          : pathname.startsWith(item.href)
+                          : pathname === item.href || pathname.startsWith(`${item.href}/`)
                       return (
                         <Link
                           key={item.href}

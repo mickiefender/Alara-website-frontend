@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useAuthContext } from "@/lib/auth-context"
+import { hasPlatformPermission } from "@/lib/platform-permissions"
 import { AlaraLogo } from "@/components/alara-logo"
 import {
   Activity,
@@ -28,6 +29,7 @@ import {
   UserCog,
   Wallet,
   MessageSquare,
+  ClipboardCheck,
 } from "lucide-react"
 
 export const NAV_GROUPS: Array<{
@@ -39,6 +41,8 @@ export const NAV_GROUPS: Array<{
     items: [
       { href: "/dashboard/super-admin", label: "Dashboard", icon: BarChart3 },
       { href: "/dashboard/super-admin/schools", label: "Schools", icon: Building2, permission: "schools.view" },
+      { href: "/dashboard/super-admin/compliance", label: "Compliance", icon: ClipboardCheck, permission: "compliance.view" },
+      { href: "/dashboard/super-admin/compliance-documents", label: "Compliance Documents", icon: FileText, permission: "compliance.view" },
       { href: "/dashboard/super-admin/users", label: "Users", icon: Users, permission: "users.view" },
       { href: "/dashboard/super-admin/roles", label: "Roles & Permissions", icon: UserCog, permission: "platform.roles" },
       { href: "/dashboard/super-admin/admin-staff", label: "Staff Administrators", icon: UserPlus, permission: "platform.staff" },
@@ -84,7 +88,7 @@ export function PlatformSidebar() {
   const pathname = usePathname()
   const { user } = useAuthContext()
   const canSee = (permission?: string) =>
-    user?.role === "super_admin" || !permission || Boolean(user?.platform_permissions?.includes(permission))
+    user?.role === "super_admin" || !permission || hasPlatformPermission(user?.platform_permissions, permission)
   const visibleGroups = NAV_GROUPS
     .map((group) => ({ ...group, items: group.items.filter((item) => canSee(item.permission)) }))
     .filter((group) => group.items.length > 0)
@@ -112,7 +116,7 @@ export function PlatformSidebar() {
                 const active =
                   item.href === "/dashboard/super-admin"
                     ? pathname === item.href
-                    : pathname.startsWith(item.href)
+                    : pathname === item.href || pathname.startsWith(`${item.href}/`)
                 return (
                   <Link
                     key={item.href}

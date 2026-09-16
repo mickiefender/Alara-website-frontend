@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { Building2, MoreHorizontal, Plus, ShieldAlert } from "lucide-react"
+import { Building2, MoreHorizontal, Plus, ShieldAlert, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -75,6 +75,7 @@ export default function SchoolsPage() {
   const [form, setForm] = useState(EMPTY_FORM)
   const [detailSchool, setDetailSchool] = useState<AnyObj | null>(null)
   const [editSchool, setEditSchool] = useState<AnyObj | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<AnyObj | null>(null)
   const [suspendTarget, setSuspendTarget] = useState<AnyObj | null>(null)
   const [impersonateSchool, setImpersonateSchool] = useState<AnyObj | null>(null)
   const [impersonateUserId, setImpersonateUserId] = useState("")
@@ -267,6 +268,12 @@ export default function SchoolsPage() {
                           >
                             {s.status === "suspended" ? "Activate" : "Suspend"}
                           </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="text-red-600 focus:text-red-600"
+                            onClick={() => setDeleteTarget(s)}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" /> Delete
+                          </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
                             onClick={() => { setImpersonateUserId(""); setImpersonateReason(""); setImpersonateSchool(s) }}
@@ -282,6 +289,16 @@ export default function SchoolsPage() {
           </TableBody>
         </Table>
       </div>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title={`Delete school "${deleteTarget?.name || "this school"}"?`}
+        description="This action permanently removes the school record. This cannot be undone."
+        confirmLabel="Delete school"
+        destructive
+        onConfirm={() => deleteTarget && run(() => schoolsAPI.deleteSchool(deleteTarget.id), () => setDeleteTarget(null))}
+      />
 
       {/* Create */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>

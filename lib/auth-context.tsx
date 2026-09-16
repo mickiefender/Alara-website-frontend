@@ -5,6 +5,7 @@ import type React from "react"
 import { createContext, useContext, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { authAPI, schoolsAPI, authLoading } from "./api"
+import { resolvePostLoginRoute } from "./compliance-routing"
 
 interface User {
   teacher_id: any
@@ -15,6 +16,8 @@ interface User {
   last_name: string
   role: "super_admin" | "platform_staff" | "school_admin" | "teacher" | "student" | "parent" | "academic_admin" | "exam_officer" | "finance_officer" | "ct_admin_support"
   school_id?: number
+  school_status?: string | null
+  compliance_status?: string | null
   student_id?: string
   permissions?: string[]
   platform_permissions?: string[]
@@ -34,6 +37,7 @@ interface School {
   logo_url_computed: string | null
   website: string
   status: string
+  compliance_status?: string | null
   plan?: { name: string }
 }
 
@@ -61,7 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!schoolId) {
       if (process.env.NODE_ENV === 'development') { console.warn('[Auth] No schoolId provided, skipping school fetch') }
       setSchool(null)
-      return
+      return null
     }
     try {
       // Use list and filter since get is not available on schoolsAPI
@@ -70,16 +74,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const schoolData = Array.isArray(schools) ? schools.find((s: any) => s.id === schoolId) : null
       if (process.env.NODE_ENV === 'development') { console.log('[Auth] Fetched schools, found for id', schoolId, ':', schoolData) }
       setSchool(schoolData)
+      setUser((currentUser) => currentUser ? {
+        ...currentUser,
+        school_status: schoolData?.status ?? currentUser.school_status ?? null,
+        compliance_status: schoolData?.compliance_status ?? currentUser.compliance_status ?? null,
+      } : currentUser)
+      return schoolData
     } catch (error: any) {
       const status = error.response?.status
       if (status === 401) {
         if (process.env.NODE_ENV === 'development') { console.warn('[Auth] 401 on school fetch - likely public page or token issue') }
         // Don't trigger global authError, just set null
         setSchool(null)
-        return
+        return null
       }
       if (process.env.NODE_ENV === 'development') { console.error("[Auth] Failed to fetch school data:", status, error.message) }
       setSchool(null)
+      return null
     }
   }
 
@@ -97,6 +108,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const parsedUser: User = {
         ...JSON.parse(storedUser || '{}'),
         ...meData,
+        school_status: meData.school_status ?? meData.school?.status ?? null,
+        compliance_status: meData.compliance_status ?? null,
         permissions: meData.permissions || meData.role_permission?.permission || [],
         platform_permissions: meData.platform_permissions || [],
       }
@@ -152,6 +165,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       })
   }, [])
 
+  useEffect(() => {
+    if (!isAuthenticated || !user?.school_id) return
+    const interval = window.setInterval(() => {
+      void fetchSchool(user.school_id!)
+    }, 5000)
+    return () => window.clearInterval(interval)
+  }, [isAuthenticated, user?.school_id])
+
   const login = async (credential: string, password: string, loginType: "email" | "student_id" = "email") => {
     try {
       const loginData = loginType === "email"
@@ -161,7 +182,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const response = await authAPI.login(loginData)
       const { access, refresh, user: userData } = response.data
 
-      const fullUserData = { ...userData, permissions: userData.permissions || userData.role_permission?.permission || [] }
+      const fullUserData = {
+        ...userData,
+        school_status: userData.school_status ?? userData.school?.status ?? null,
+        compliance_status: userData.compliance_status ?? null,
+        permissions: userData.permissions || userData.role_permission?.permission || [],
+      }
       sessionStorage.setItem("authToken", access)
       sessionStorage.setItem("refreshToken", refresh)
       localStorage.setItem("authToken", access)
@@ -169,8 +195,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       sessionStorage.setItem("user", JSON.stringify(fullUserData))
       setUser(fullUserData)
 
+      let resolvedSchool = null
       if (fullUserData.school_id) {
-        await fetchSchool(fullUserData.school_id)
+        resolvedSchool = await fetchSchool(fullUserData.school_id)
       }
 
       // Notify auth state change
@@ -178,18 +205,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         window.dispatchEvent(new CustomEvent('authStateChanged'))
       }
 
-      // Role-based redirect
-      const adminStaffRoles = ['academic_admin', 'exam_officer', 'finance_officer', 'ct_admin_support'] as const
-      if (fullUserData.role === "platform_staff") {
-        router.push("/dashboard/super-admin")
-        router.refresh()
-      } else if (fullUserData.role && adminStaffRoles.includes(fullUserData.role as any)) {
-        router.push("/dashboard/admin-staff")
-        router.refresh()
-      } else {
-        router.push("/dashboard")
-        router.refresh()
-      }
+      const route = resolvePostLoginRoute(fullUserData, resolvedSchool ?? school)
+      router.push(route)
+      router.refresh()
 
     } catch (error) {
       throw new Error("Login failed")

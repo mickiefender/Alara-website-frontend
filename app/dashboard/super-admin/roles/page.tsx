@@ -34,11 +34,31 @@ import { StatusBadge } from "@/components/super-admin/status-badge"
 import { ConfirmDialog } from "@/components/super-admin/confirm-dialog"
 
 const PERMISSION_CATALOG: Record<string, string[]> = {
-  Schools: ["schools.view", "schools.create", "schools.edit", "schools.suspend", "schools.delete", "schools.impersonate"],
-  Users: ["users.view", "users.edit", "users.ban", "users.reset_password"],
-  Finance: ["finance.view", "finance.refund", "finance.invoices", "finance.coupons"],
-  Content: ["content.moderate", "content.delete"],
-  Platform: ["platform.settings", "platform.flags", "platform.roles", "platform.audit", "platform.apikeys", "platform.monitoring"],
+  "Sidebar features": [
+    "schools.view",
+    "compliance.view",
+    "users.view",
+    "platform.roles",
+    "platform.staff",
+    "finance.view",
+    "platform.analytics",
+    "platform.audit",
+    "content.moderate",
+    "platform.notifications",
+    "platform.support",
+    "content.contact",
+    "content.manage",
+    "platform.settings",
+    "platform.flags",
+    "platform.storage",
+    "platform.security",
+    "platform.monitoring",
+    "platform.apikeys",
+  ],
+  Schools: ["schools.create", "schools.edit", "schools.suspend", "schools.delete", "schools.impersonate"],
+  Users: ["users.edit", "users.ban", "users.reset_password"],
+  Finance: ["finance.refund", "finance.invoices", "finance.coupons"],
+  Content: ["content.delete"],
 }
 
 const ALL_PERMISSIONS = Object.values(PERMISSION_CATALOG).flat()
