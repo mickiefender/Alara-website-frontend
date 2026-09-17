@@ -49,24 +49,24 @@ export function FeaturedBlogSection() {
           </div>
         </div>
 
-        <div className="grid gap-7 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {posts.map((post) => (
-            <article key={post.id} className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-shadow hover:shadow-md">
+            <article key={post.id} className="mx-auto w-full max-w-xs overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-shadow hover:shadow-md sm:max-w-none">
               <Link href="/blog" className="block">
-                <div className="aspect-[1.55/1] overflow-hidden bg-muted">
+                <div className="aspect-[2/1] overflow-hidden bg-muted">
                   {post.image ? (
                     <img src={resolveImageUrl(post.image)} alt="" className="h-full w-full object-cover transition-transform duration-300 hover:scale-105" />
                   ) : (
                     <div className="h-full w-full bg-primary/15" />
                   )}
                 </div>
-                <div className="p-5 md:p-6">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-primary">{post.category}</p>
-                  <h3 className="mt-2 line-clamp-2 text-xl font-bold leading-snug text-foreground">{post.title}</h3>
-                  <p className="mt-3 line-clamp-3 text-sm leading-6 text-muted-foreground">{post.excerpt}</p>
-                  <div className="mt-6 flex items-center justify-between gap-3 border-t border-border pt-4 text-sm text-muted-foreground">
-                    <span className="flex items-center gap-2"><CalendarDays className="h-4 w-4" />{post.date}</span>
-                    <span className="inline-flex items-center gap-1 font-semibold text-primary">Read more <ArrowRight className="h-4 w-4" /></span>
+                <div className="p-3.5">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-primary">{post.category}</p>
+                  <h3 className="mt-1.5 line-clamp-2 text-sm font-bold leading-snug text-foreground">{post.title}</h3>
+                  <p className="mt-2 line-clamp-2 text-xs leading-5 text-muted-foreground">{post.excerpt}</p>
+                  <div className="mt-3.5 flex items-center justify-between gap-3 border-t border-border pt-3 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1.5"><CalendarDays className="h-3.5 w-3.5" />{post.date}</span>
+                    <span className="inline-flex items-center gap-1 font-semibold text-primary">Read more <ArrowRight className="h-3.5 w-3.5" /></span>
                   </div>
                 </div>
               </Link>

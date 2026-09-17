@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Navbar } from '@/components/landing/navbar'
 import { Footer } from '@/components/footer'
+import { PageHero } from '@/components/landing/page-hero'
 import { ArrowRight, Users, Mail, Phone } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import type { NewTeamApplication } from '@/types/team-application'
@@ -147,27 +148,25 @@ export default function JoinTeamPage() {
       <Navbar />
       <main className="min-h-screen bg-background pt-16">
         {/* Hero */}
-        <section className="bg-gradient-to-b from-primary/10 to-background py-24 md:py-32 relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-secondary/5" />
-          <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-black bg-gradient-to-r from-foreground via-primary to-secondary bg-clip-text text-transparent mb-6 drop-shadow-lg">
-              Join the Alara Team
-            </h1>
-            <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto mb-12 leading-relaxed">
-              Help us build the future of education technology. We're looking for passionate people to join our mission.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center max-w-md mx-auto">
-              <Button
-                size="lg"
-                variant="outline"
-                asChild
-                className="border-2 border-primary px-8 py-6 text-lg font-semibold rounded-xl hover:bg-primary/5 hover:border-primary/80"
-              >
-                <Link href="/careers">Current Openings</Link>
-              </Button>
-            </div>
+        <PageHero
+          pageKey="join-team"
+          title="Join the Alara Team"
+          subtitle="Help us build the future of education technology. We're looking for passionate people to join our mission."
+          className="py-24 md:py-32"
+          titleClassName="mb-6 bg-gradient-to-r from-foreground via-primary to-secondary bg-clip-text text-4xl font-black text-transparent drop-shadow-lg md:text-6xl lg:text-7xl"
+          subtitleClassName="mx-auto mb-12 max-w-3xl text-xl leading-relaxed text-muted-foreground md:text-2xl"
+        >
+          <div className="mt-6 flex flex-col items-center justify-center gap-4 sm:flex-row">
+            <Button
+              size="lg"
+              variant="outline"
+              asChild
+              className="border-2 border-primary px-8 py-6 text-lg font-semibold rounded-xl hover:bg-primary/5 hover:border-primary/80"
+            >
+              <Link href="/careers">Current Openings</Link>
+            </Button>
           </div>
-        </section>
+        </PageHero>
 
         {/* Form Section */}
         <section className="py-24 md:py-32 bg-background">

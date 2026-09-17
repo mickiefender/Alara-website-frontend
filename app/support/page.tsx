@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
+import { PageHero } from '@/components/landing/page-hero'
 import {
   Mail,
   MessageCircle,
@@ -155,18 +156,11 @@ export default function SupportPage() {
       <Header />
       <main>
         {/* Hero Section */}
-        <section className="relative bg-gradient-to-b from-primary/10 to-transparent py-20 md:py-40">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center">
-              <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-6 text-balance">
-                We're Here to Help
-              </h1>
-              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                Find answers, get guidance, and reach a real person whenever you need support with Alara.
-              </p>
-            </div>
-          </div>
-        </section>
+        <PageHero
+          pageKey="support"
+          title="We're Here to Help"
+          subtitle="Find answers, get guidance, and reach a real person whenever you need support with Alara."
+        />
 
         {/* Help Categories */}
         <section className="py-20 md:py-32 bg-background">

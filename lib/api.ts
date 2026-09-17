@@ -958,6 +958,16 @@ export const platformAPI = {
     }),
   deleteTrustedSchoolLogo: (id: number) =>
     apiClient.delete(`/platform/trusted-schools/${id}/`),
+  // Page hero images for the public About, Careers, Join the team, Contact,
+  // and Support pages.
+  publicPageHeroes: () => apiClient.get("/platform/public/page-heroes/", { _trackLoading: false } as any),
+  pageHeroes: () => apiClient.get("/platform/page-heroes/"),
+  uploadPageHero: (data: FormData) =>
+    apiClient.post("/platform/page-heroes/", data, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }),
+  deletePageHero: (pageKey: string) =>
+    apiClient.delete(`/platform/page-heroes/${pageKey}/`),
   // Dashboard
   overview: () => apiClient.get("/platform/overview/"),
   health: () => apiClient.get("/platform/health/"),

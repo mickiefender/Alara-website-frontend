@@ -67,6 +67,7 @@ export const NAV_GROUPS: Array<{
       { href: "/dashboard/super-admin/contact-inquiries", label: "Contact Inquiries", icon: Inbox, permission: "content.contact" },
       { href: "/dashboard/super-admin/faqs", label: "Homepage FAQs", icon: HelpCircle, permission: "content.manage" },
       { href: "/dashboard/super-admin/blog", label: "Blog Posts", icon: BookOpen, permission: "content.manage" },
+      { href: "/dashboard/super-admin/page-heroes", label: "Page Hero Images", icon: ImagePlus, permission: "content.manage" },
       { href: "/dashboard/super-admin/audit-logs", label: "Audit Logs", icon: ScrollText, permission: "platform.audit" },
     ],
   },

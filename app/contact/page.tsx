@@ -2,6 +2,7 @@
 
 import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
+import { PageHero } from '@/components/landing/page-hero'
 import { Mail, MessageCircle } from 'lucide-react'
 import { useState } from 'react'
 import { getErrorMessage, platformAPI } from '@/lib/api'
@@ -50,18 +51,11 @@ export default function ContactPage() {
       <Header />
       <main>
         {/* Hero Section */}
-        <section className="relative bg-gradient-to-b from-primary/10 to-transparent py-20 md:py-40">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center">
-              <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-6 text-balance">
-                Get In Touch
-              </h1>
-              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                Our team is ready to help you find the perfect solution for your school
-              </p>
-            </div>
-          </div>
-        </section>
+        <PageHero
+          pageKey="contact"
+          title="Get In Touch"
+          subtitle="Our team is ready to help you find the perfect solution for your school"
+        />
 
         {/* Contact Information Cards */}
         <section className="py-20 md:py-32 bg-background">

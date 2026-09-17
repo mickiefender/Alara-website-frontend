@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
+import { PageHero } from '@/components/landing/page-hero'
 import { PricingSection } from '@/components/landing/pricing-section'
 import { Target, Lightbulb, Heart, Shield, Users, Sparkles, CheckCircle2 } from 'lucide-react'
 
@@ -15,18 +16,11 @@ export default function AboutPage() {
       <Header />
       <main>
         {/* Hero Section */}
-        <section className="relative bg-gradient-to-b from-primary/10 to-transparent py-20 md:py-40">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center">
-              <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-6 text-balance">
-                About Alara
-              </h1>
-              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                Transforming education through intelligent school management solutions
-              </p>
-            </div>
-          </div>
-        </section>
+        <PageHero
+          pageKey="about"
+          title="About Alara"
+          subtitle="Transforming education through intelligent school management solutions"
+        />
 
         {/* Introduction Section */}
         <section className="py-20 md:py-32 bg-background">
