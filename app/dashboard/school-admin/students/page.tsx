@@ -10,8 +10,20 @@ import { DataStateTableRow } from "@/components/data-state"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Label } from "@/components/ui/label"
 import { useAuthContext } from "@/lib/auth-context"
+import { Toaster } from "@/components/ui/sonner"
+import { toast } from "sonner"
 import {
   ChevronLeft,
   ChevronRight,
@@ -74,6 +86,8 @@ function StudentsPageContent() {
   const [searchTerm, setSearchTerm] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
   const [isOpen, setIsOpen] = useState(false)
+  const [confirmEnrollmentOpen, setConfirmEnrollmentOpen] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [editingStudent, setEditingStudent] = useState<Student | null>(null)
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
 const [formData, setFormData] = useState({
@@ -132,16 +146,34 @@ const [formData, setFormData] = useState({
       .finally(() => setAcademicYearLoading(false))
   }, [])
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+    if (!editingStudent) {
+      if (!user?.school_id) {
+        const message = "No school associated with your account"
+        setError(message)
+        toast.error(message)
+        return
+      }
+      setConfirmEnrollmentOpen(true)
+      return
+    }
+    void saveStudent()
+  }
+
+  const saveStudent = async () => {
+    setIsSubmitting(true)
     try {
       if (editingStudent) {
         await usersAPI.updateStudent(editingStudent.id, formData)
+        toast.success("Student information updated successfully.")
       } else {
         const schoolId = user?.school_id
         if (!schoolId) {
-          setError("No school associated with your account")
+          const message = "No school associated with your account"
+          setError(message)
+          toast.error(message)
           return
         }
         await usersAPI.createStudent({
@@ -149,13 +181,18 @@ const [formData, setFormData] = useState({
           username: formData.username.trim().replace(/\s+/g, ""),
           school_id: schoolId,
         })
+        toast.success("Student enrolled successfully.")
       }
       setIsOpen(false)
       setEditingStudent(null)
       setFormData({ username: "", email: "", first_name: "", last_name: "", password: "", phone: "", address: "" })
-      fetchStudents()
-    } catch (err: any) {
-      setError(getErrorMessage(err, "Failed to save student. Please check the highlighted details and try again."))
+      void fetchStudents()
+    } catch (err: unknown) {
+      const message = getErrorMessage(err, "Failed to save student. Please check the highlighted details and try again.")
+      setError(message)
+      toast.error(message)
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -344,23 +381,16 @@ const [formData, setFormData] = useState({
             </DialogTrigger>
             <DialogContent className="sm:max-w-xl p-0 gap-0 overflow-hidden">
               {/* Header */}
-              <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-b border-border px-6 py-5">
+              <div className="border-b border-border px-6 py-5">
                 <DialogHeader className="space-y-0">
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-primary/15 ring-1 ring-primary/20 flex items-center justify-center flex-shrink-0">
-                      <GraduationCap size={22} className="text-primary" />
-                    </div>
-                    <div className="min-w-0">
-                      <DialogTitle className="text-lg font-bold text-foreground">
-                        {editingStudent ? "Edit Student" : "Enrol New Student"}
-                      </DialogTitle>
-                      <p className="text-sm text-muted-foreground mt-0.5">
-                        {editingStudent
-                          ? "Update the student's information below."
-                          : "Fill in the details below to register a new student. Fields marked * are required."}
-                      </p>
-                    </div>
-                  </div>
+                  <DialogTitle className="text-lg font-bold text-foreground">
+                    {editingStudent ? "Edit Student" : "Enrol New Student"}
+                  </DialogTitle>
+                  <p className="text-sm text-muted-foreground mt-0.5">
+                    {editingStudent
+                      ? "Update the student's information below."
+                      : "Fill in the details below to register a new student. Fields marked * are required."}
+                  </p>
                 </DialogHeader>
               </div>
 
@@ -555,16 +585,35 @@ const [formData, setFormData] = useState({
                   >
                     Cancel
                   </Button>
-                  <Button type="submit" className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground min-w-[150px]">
+                  <Button type="submit" disabled={isSubmitting} className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground min-w-[150px]">
                     <UserPlus size={15} />
-                    {editingStudent ? "Save Changes" : "Enrol Student"}
+                    {isSubmitting ? "Saving..." : editingStudent ? "Save Changes" : "Enrol Student"}
                   </Button>
                 </div>
               </form>
             </DialogContent>
           </Dialog>
+          <AlertDialog open={confirmEnrollmentOpen} onOpenChange={setConfirmEnrollmentOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Confirm student enrollment</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Enrol {formData.first_name} {formData.last_name} as a student at your school?
+                  Their account will be created with the information you entered.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={isSubmitting}>Review details</AlertDialogCancel>
+                <AlertDialogAction disabled={isSubmitting} onClick={() => void saveStudent()}>
+                  Confirm enrollment
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
+
+      <Toaster position="top-right" />
 
       {/* ── Summary Stats ── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

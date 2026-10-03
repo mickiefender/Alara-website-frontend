@@ -8,9 +8,21 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Trash2, Plus, BookOpen, Loader2 } from "lucide-react"
-import { academicsAPI, usersAPI } from "@/lib/api"
+import { Trash2, Plus, BookOpen } from "lucide-react"
+import { academicsAPI, usersAPI, getErrorMessage } from "@/lib/api"
 import { useAuthContext } from "@/lib/auth-context"
+import { Skeleton } from "@/components/ui/skeleton"
+import { toast } from "sonner"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 interface ClassSubjectTeacher {
   id: number
@@ -36,7 +48,7 @@ interface Teacher {
   first_name: string
   last_name: string
   email: string
-  user?: number
+  user?: number | { id: number }
   user_data?: {
     id: number
     email: string
@@ -48,6 +60,11 @@ interface Teacher {
   }
 }
 
+function getTeacherUserId(teacher: Teacher) {
+  return teacher.user_data?.id
+    ?? (typeof teacher.user === "object" ? teacher.user.id : teacher.user)
+}
+
 export function AssignSubjectTeachers({ classId, className }: { classId: number; className: string }) {
   const { user } = useAuthContext()
   const [subjectTeachers, setSubjectTeachers] = useState<ClassSubjectTeacher[]>([])
@@ -57,10 +74,15 @@ export function AssignSubjectTeachers({ classId, className }: { classId: number;
   const [error, setError] = useState<string | null>(null)
   const [isOpen, setIsOpen] = useState(false)
   const [formData, setFormData] = useState({ subject: "", teacher: "" })
+  const [confirmAssignOpen, setConfirmAssignOpen] = useState(false)
+  const [assignmentToRemove, setAssignmentToRemove] = useState<ClassSubjectTeacher | null>(null)
+  const [submitting, setSubmitting] = useState(false)
+  const [removing, setRemoving] = useState(false)
 
   const fetchData = async () => {
     try {
       setLoading(true)
+      setError(null)
 
       // Get class subjects
       const classSubjectsRes = await academicsAPI.classSubjects()
@@ -81,12 +103,11 @@ export function AssignSubjectTeachers({ classId, className }: { classId: number;
       // Get all teachers in the school
       const teachersRes = await usersAPI.teachers()
       const allTeachers = teachersRes.data.results || teachersRes.data || []
-      if (allTeachers.length === 0) {
-        setError("No teachers found. Please create teachers first before assigning.")
-      }
       setTeachers(allTeachers)
     } catch (err: any) {
-      setError(err?.response?.data?.detail || "Failed to load data")
+      const message = getErrorMessage(err, "Failed to load subject assignment data.")
+      setError(message)
+      toast.error(message)
     } finally {
       setLoading(false)
     }
@@ -96,71 +117,74 @@ export function AssignSubjectTeachers({ classId, className }: { classId: number;
     fetchData()
   }, [classId])
 
-  const handleAssignSubjectTeacher = async (e: React.FormEvent) => {
+  const handleAssignSubjectTeacher = (e: React.FormEvent) => {
     e.preventDefault()
     if (!formData.subject || !formData.teacher) return
+    setConfirmAssignOpen(true)
+  }
 
+  const confirmAssignSubjectTeacher = async () => {
     try {
+      setSubmitting(true)
       const subjectId = parseInt(formData.subject, 10)
-      const teacherProfile = teachers.find(t => t.id.toString() === formData.teacher)
+      const teacherUserId = Number(formData.teacher)
       
       if (isNaN(subjectId)) {
-        setError("Invalid subject selected")
+        const message = "Select a valid subject."
+        setError(message)
+        toast.error(message)
         return
       }
 
-      if (!teacherProfile) {
-        setError("Teacher not found")
+      if (!Number.isInteger(teacherUserId) || !availableTeachers.some((teacher) => getTeacherUserId(teacher) === teacherUserId)) {
+        const message = "Select a valid teacher account."
+        setError(message)
+        toast.error(message)
         return
       }
-
-      // Use the actual User ID from user_data, not the Profile ID
-      const userId = teacherProfile.user_data?.id || teacherProfile.user
-      if (!userId) {
-        setError("Invalid teacher data - missing user ID")
-        return
-      }
-
-      console.log("[v0] Assigning subject teacher - Teacher Profile ID:", teacherProfile.id, "User ID:", userId, "Subject ID:", subjectId)
 
       await academicsAPI.createClassSubjectTeacher({
         class_obj: classId,
         subject: subjectId,
-        teacher: userId,
+        teacher: teacherUserId,
       })
       setFormData({ subject: "", teacher: "" })
       setIsOpen(false)
       setError(null)
-      fetchData()
+      setConfirmAssignOpen(false)
+      toast.success("Teacher assigned to subject.")
+      void fetchData()
     } catch (err: any) {
       console.error("[v0] Assign subject teacher error:", err)
-      console.log("[v0] Error response status:", err?.response?.status)
-      console.log("[v0] Error response data:", err?.response?.data)
-      const errorMsg = err?.response?.data?.detail || 
-                      err?.response?.data?.subject?.[0] ||
-                      err?.response?.data?.teacher?.[0] ||
-                      err?.response?.data?.class_obj?.[0] ||
-                      JSON.stringify(err?.response?.data) ||
-                      err?.message ||
-                      "Failed to assign subject teacher"
+      const errorMsg = getErrorMessage(err, "Failed to assign teacher to subject.")
       setError(errorMsg)
+      toast.error(errorMsg)
+    } finally {
+      setSubmitting(false)
     }
   }
 
   // Teachers not yet assigned to any subject in this class
   const assignedTeacherIds = new Set(subjectTeachers.map((st) => st.teacher))
   const availableTeachers = teachers.filter((t) => {
-    const userId = t.user_data?.id || t.user
+    const userId = getTeacherUserId(t)
     return userId ? !assignedTeacherIds.has(userId) : false
   })
 
-  const handleRemove = async (id: number) => {
-    if (!confirm("Are you sure you want to remove this assignment?")) return
+  const handleRemove = async () => {
+    if (!assignmentToRemove) return
     try {
-      await academicsAPI.deleteClassSubjectTeacher(id)
-      fetchData()
+      setRemoving(true)
+      await academicsAPI.deleteClassSubjectTeacher(assignmentToRemove.id)
+      toast.success(`${assignmentToRemove.teacher_name} was removed from ${assignmentToRemove.subject_name}.`)
+      setAssignmentToRemove(null)
+      void fetchData()
     } catch (err: any) {
-      setError(err?.response?.data?.detail || "Failed to remove assignment")
+      const message = getErrorMessage(err, "Failed to remove subject assignment.")
+      setError(message)
+      toast.error(message)
+    } finally {
+      setRemoving(false)
     }
   }
 
@@ -183,7 +207,21 @@ export function AssignSubjectTeachers({ classId, className }: { classId: number;
                 <DialogHeader>
                   <DialogTitle>Assign Teacher to Subject</DialogTitle>
                 </DialogHeader>
+                {error && (
+                  <div role="alert" className="flex items-start gap-3 rounded border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+                    <span className="flex-1">{error}</span>
+                    <Button type="button" size="sm" variant="outline" onClick={() => void fetchData()}>Retry</Button>
+                  </div>
+                )}
+                {loading ? (
+                  <div className="space-y-3"><Skeleton className="h-10 w-full" /><Skeleton className="h-10 w-full" /></div>
+                ) : (
                 <form onSubmit={handleAssignSubjectTeacher} className="space-y-4">
+                  {classSubjects.length === 0 && (
+                    <p className="rounded border border-border bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
+                      No subjects are assigned to this class yet.
+                    </p>
+                  )}
                   <div className="space-y-2">
                     <Label htmlFor="subject">Select Subject</Label>
                     <Select value={formData.subject} onValueChange={(value) => setFormData({ ...formData, subject: value })}>
@@ -211,19 +249,24 @@ export function AssignSubjectTeachers({ classId, className }: { classId: number;
                             No unassigned teachers available
                           </div>
                         ) : (
-                          availableTeachers.map((teacher) => (
-                            <SelectItem key={teacher.id} value={teacher.id.toString()}>
-                              {teacher.first_name} {teacher.last_name} ({teacher.email})
-                            </SelectItem>
-                          ))
+                          availableTeachers.map((teacher) => {
+                            const userId = getTeacherUserId(teacher)
+                            if (!userId) return null
+                            return (
+                              <SelectItem key={teacher.id} value={userId.toString()}>
+                                {teacher.first_name} {teacher.last_name} ({teacher.email})
+                              </SelectItem>
+                            )
+                          })
                         )}
                       </SelectContent>
                     </Select>
                   </div>
-                  <Button type="submit" className="w-full" disabled={availableTeachers.length === 0}>
-                    Assign Teacher
+                  <Button type="submit" className="w-full" disabled={availableTeachers.length === 0 || classSubjects.length === 0 || submitting}>
+                    {submitting ? "Assigning…" : "Assign Teacher"}
                   </Button>
                 </form>
+                )}
               </DialogContent>
             </Dialog>
           )}
@@ -231,14 +274,23 @@ export function AssignSubjectTeachers({ classId, className }: { classId: number;
       </CardHeader>
       <CardContent>
         {loading ? (
-          <div className="flex min-h-32 items-center justify-center" role="status" aria-label="Loading subject teachers">
-            <Loader2 className="h-7 w-7 animate-spin text-primary" />
+          <div className="space-y-3 py-4" role="status" aria-label="Loading subject teachers">
+            {Array.from({ length: 3 }, (_, index) => <Skeleton key={index} className="h-12 w-full" />)}
+          </div>
+        ) : error && subjectTeachers.length === 0 ? (
+          <div role="alert" className="flex flex-col items-center gap-3 py-8 text-center">
+            <p className="text-sm text-destructive">{error}</p>
+            <Button size="sm" variant="outline" onClick={() => void fetchData()}>Try again</Button>
           </div>
         ) : (
           <>
-        {error && <div className="text-red-500 mb-4">{error}</div>}
+        {error && <div role="alert" className="mb-4 flex items-center gap-3 text-sm text-destructive">{error}<Button size="sm" variant="outline" onClick={() => void fetchData()}>Retry</Button></div>}
         {subjectTeachers.length === 0 ? (
-          <p className="text-muted-foreground text-center py-8">No teachers assigned to subjects yet</p>
+          <div className="flex flex-col items-center gap-2 py-8 text-center">
+            <BookOpen className="h-8 w-8 text-muted-foreground/50" />
+            <p className="font-medium">No subject teachers assigned yet</p>
+            <p className="text-sm text-muted-foreground">Use “Assign Teacher to Subject” to add an assignment.</p>
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <Table>
@@ -270,7 +322,7 @@ export function AssignSubjectTeachers({ classId, className }: { classId: number;
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleRemove(st.id)}
+                          onClick={() => setAssignmentToRemove(st)}
                           className="text-red-600 hover:text-red-700"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -286,6 +338,40 @@ export function AssignSubjectTeachers({ classId, className }: { classId: number;
           </>
         )}
       </CardContent>
+      <AlertDialog open={confirmAssignOpen} onOpenChange={(open) => !submitting && setConfirmAssignOpen(open)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm subject teacher assignment</AlertDialogTitle>
+            <AlertDialogDescription>
+              Assign {teachers.find((teacher) => getTeacherUserId(teacher)?.toString() === formData.teacher)?.first_name}{" "}
+              {teachers.find((teacher) => getTeacherUserId(teacher)?.toString() === formData.teacher)?.last_name} to{" "}
+              {classSubjects.find((subject) => subject.subject.toString() === formData.subject)?.subject_name} in {className}?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={submitting}>Review selection</AlertDialogCancel>
+            <AlertDialogAction disabled={submitting} onClick={(event) => { event.preventDefault(); void confirmAssignSubjectTeacher() }}>
+              {submitting ? "Assigning…" : "Confirm assignment"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <AlertDialog open={Boolean(assignmentToRemove)} onOpenChange={(open) => !open && !removing && setAssignmentToRemove(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove subject teacher assignment?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {assignmentToRemove?.teacher_name} will no longer teach {assignmentToRemove?.subject_name} in {className}.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={removing}>Cancel</AlertDialogCancel>
+            <AlertDialogAction disabled={removing} onClick={(event) => { event.preventDefault(); void handleRemove() }}>
+              {removing ? "Removing…" : "Remove assignment"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   )
 }

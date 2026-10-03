@@ -4,11 +4,11 @@ import { useAuthContext } from "@/lib/auth-context"
 import { useNotifications } from "@/lib/notifications-context"
 import { useState, useEffect, useRef } from "react"
 import { academicsAPI, bgFetch, resolveImageUrl } from "@/lib/api"
-import { ThemeToggle } from "@/components/theme-toggle"
 import { Bell, Menu } from "lucide-react"
 import Link from "next/link"
 import { ProfileAvatar } from "@/components/profile-avatar"
 import { AuthBoundary } from "@/components/auth-boundary"
+import { SubscriptionBadge } from "@/components/subscription-badge"
 
 interface TopBarProps {
   onToggle?: () => void
@@ -130,9 +130,7 @@ function TopBarContent({ onToggle }: TopBarProps) {
 
         {/* RIGHT */}
         <div className="flex items-center gap-4 md:gap-6">
-
-          {/* Theme */}
-          <ThemeToggle />
+          {user.role === "school_admin" && <SubscriptionBadge />}
 
           {/* Notifications */}
           <div className="relative" ref={notifRef}>

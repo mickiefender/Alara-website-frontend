@@ -7,8 +7,20 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Trash2, Plus, UserCheck, Users, Search, X, AlertCircle, GraduationCap, Mail } from "lucide-react"
-import { academicsAPI, usersAPI } from "@/lib/api"
+import { academicsAPI, usersAPI, getErrorMessage } from "@/lib/api"
 import { useAuthContext } from "@/lib/auth-context"
+import { Skeleton } from "@/components/ui/skeleton"
+import { toast } from "sonner"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 interface StudentClass {
   id: number
@@ -57,6 +69,9 @@ export function EnrollStudentsInClass({ classId, className }: { classId: number;
   const [error, setError] = useState<string | null>(null)
   const [isOpen, setIsOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [confirmEnrollOpen, setConfirmEnrollOpen] = useState(false)
+  const [enrollmentToRemove, setEnrollmentToRemove] = useState<StudentClass | null>(null)
+  const [removing, setRemoving] = useState(false)
   const [formData, setFormData] = useState({ student: "" })
   const [searchTerm, setSearchTerm] = useState("")
 
@@ -75,15 +90,13 @@ export function EnrollStudentsInClass({ classId, className }: { classId: number;
       )
 
       const allStudents = studentsRes.data.results || studentsRes.data || []
-      if (allStudents.length === 0) {
-        setError("No students found. Please create students first before enrolling.")
-      }
-
       setEnrollments(filteredEnrollments)
       setStudents(allStudents)
     } catch (err: any) {
       console.error("[v0] Error fetching data:", err)
-      setError("Failed to load data. Please refresh.")
+      const message = getErrorMessage(err, "Failed to load enrollment data.")
+      setError(message)
+      toast.error(message)
     } finally {
       setLoading(false)
     }
@@ -93,10 +106,13 @@ export function EnrollStudentsInClass({ classId, className }: { classId: number;
     fetchData()
   }, [classId])
 
-  const handleEnrollStudent = async (e: React.FormEvent) => {
+  const handleEnrollStudent = (e: React.FormEvent) => {
     e.preventDefault()
     if (!formData.student) return
+    setConfirmEnrollOpen(true)
+  }
 
+  const confirmEnrollStudent = async () => {
     try {
       setSubmitting(true)
       await academicsAPI.createStudentClass({
@@ -106,28 +122,33 @@ export function EnrollStudentsInClass({ classId, className }: { classId: number;
       setFormData({ student: "" })
       setIsOpen(false)
       setError(null)
-      fetchData()
+      setConfirmEnrollOpen(false)
+      toast.success("Student enrolled in class.")
+      void fetchData()
     } catch (err: any) {
       console.error("[v0] Enrollment error:", err)
-      const errorMsg = err?.response?.data?.detail ||
-                      err?.response?.data?.student?.[0] ||
-                      err?.response?.data?.class_obj?.[0] ||
-                      JSON.stringify(err?.response?.data) ||
-                      err?.message ||
-                      "Failed to enroll student"
+      const errorMsg = getErrorMessage(err, "Failed to enroll student.")
       setError(errorMsg)
+      toast.error(errorMsg)
     } finally {
       setSubmitting(false)
     }
   }
 
-  const handleRemoveStudent = async (id: number) => {
-    if (!confirm("Are you sure you want to remove this student from the class?")) return
+  const handleRemoveStudent = async () => {
+    if (!enrollmentToRemove) return
     try {
-      await academicsAPI.deleteStudentClass(id)
-      fetchData()
+      setRemoving(true)
+      await academicsAPI.deleteStudentClass(enrollmentToRemove.id)
+      toast.success(`${enrollmentToRemove.student_name} was removed from ${className}.`)
+      setEnrollmentToRemove(null)
+      void fetchData()
     } catch (err: any) {
-      setError(err?.response?.data?.detail || "Failed to remove student")
+      const message = getErrorMessage(err, "Failed to remove student from class.")
+      setError(message)
+      toast.error(message)
+    } finally {
+      setRemoving(false)
     }
   }
 
@@ -204,7 +225,17 @@ export function EnrollStudentsInClass({ classId, className }: { classId: number;
                     </div>
                   )}
 
-                  {availableStudents.length === 0 ? (
+                  {loading ? (
+                    <div className="space-y-3">
+                      <Skeleton className="h-10 w-full" />
+                      <Skeleton className="h-4 w-48" />
+                    </div>
+                  ) : error ? (
+                    <div role="alert" className="flex flex-col gap-3 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+                      <span>{error}</span>
+                      <Button type="button" variant="outline" size="sm" className="w-fit" onClick={() => void fetchData()}>Try again</Button>
+                    </div>
+                  ) : availableStudents.length === 0 ? (
                     <div className="flex items-start gap-3 bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3.5 rounded-lg">
                       <GraduationCap size={18} className="mt-0.5 flex-shrink-0 text-blue-500" />
                       <div>
@@ -265,10 +296,11 @@ export function EnrollStudentsInClass({ classId, className }: { classId: number;
       </div>
 
       {/* Error banner (list-level) */}
-      {error && !isOpen && (
+      {error && !isOpen && enrollments.length > 0 && (
         <div className="flex items-start gap-2 bg-destructive/10 text-destructive border border-destructive/20 px-3.5 py-3 rounded-lg text-sm">
           <AlertCircle size={15} className="mt-0.5 flex-shrink-0" />
-          {error}
+          <span className="flex-1">{error}</span>
+          <Button variant="outline" size="sm" onClick={() => void fetchData()}>Try again</Button>
         </div>
       )}
 
@@ -296,12 +328,24 @@ export function EnrollStudentsInClass({ classId, className }: { classId: number;
 
       {/* Enrolled list */}
       {loading ? (
-        <div className="flex justify-center py-10">
-          <div
-            className="h-8 w-8 animate-spin rounded-full border-4 border-black/10 border-t-secondary"
-            role="status"
-            aria-label="Loading"
-          />
+        <div className="space-y-3 py-4" role="status" aria-label="Loading student enrollments">
+          {Array.from({ length: 4 }, (_, index) => (
+            <div key={index} className="flex items-center gap-4 rounded-lg border border-border p-4">
+              <Skeleton className="h-9 w-9 rounded-full" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-4 w-40" />
+                <Skeleton className="h-3 w-56" />
+              </div>
+              <Skeleton className="h-8 w-20" />
+            </div>
+          ))}
+        </div>
+      ) : error && enrollments.length === 0 ? (
+        <div className="flex flex-col items-center gap-3 rounded-xl border border-destructive/30 bg-destructive/5 px-6 py-10 text-center" role="alert">
+          <AlertCircle className="h-8 w-8 text-destructive" />
+          <p className="font-medium text-foreground">Unable to load class enrollments</p>
+          <p className="max-w-lg text-sm text-muted-foreground">{error}</p>
+          <Button variant="outline" size="sm" onClick={() => void fetchData()}>Try again</Button>
         </div>
       ) : enrollments.length === 0 ? (
         <div className="text-center py-12 border border-dashed border-border rounded-xl">
@@ -368,7 +412,7 @@ export function EnrollStudentsInClass({ classId, className }: { classId: number;
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleRemoveStudent(enrollment.id)}
+                        onClick={() => setEnrollmentToRemove(enrollment)}
                         className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
                         title="Remove from class"
                       >
@@ -376,12 +420,47 @@ export function EnrollStudentsInClass({ classId, className }: { classId: number;
                       </Button>
                     </TableCell>
                   )}
+
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         </div>
       )}
+
+      <AlertDialog open={confirmEnrollOpen} onOpenChange={(open) => !submitting && setConfirmEnrollOpen(open)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm student enrollment</AlertDialogTitle>
+            <AlertDialogDescription>
+              Enroll {students.find((student) => String(student.user_data?.id ?? student.user) === formData.student)?.first_name || "this student"} in {className}?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={submitting}>Review selection</AlertDialogCancel>
+            <AlertDialogAction disabled={submitting} onClick={(event) => { event.preventDefault(); void confirmEnrollStudent() }}>
+              {submitting ? "Enrolling…" : "Confirm enrollment"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={Boolean(enrollmentToRemove)} onOpenChange={(open) => !open && !removing && setEnrollmentToRemove(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove student from class?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {enrollmentToRemove?.student_name} will be removed from {className}. This does not delete the student account.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={removing}>Cancel</AlertDialogCancel>
+            <AlertDialogAction disabled={removing} onClick={(event) => { event.preventDefault(); void handleRemoveStudent() }}>
+              {removing ? "Removing…" : "Remove student"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

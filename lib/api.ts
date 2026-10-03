@@ -1,5 +1,12 @@
 import axios from "axios"
+import type { AxiosAdapter, AxiosResponse } from "axios"
 import { loadingManager } from "./loading-manager"
+
+declare module "axios" {
+  interface AxiosRequestConfig {
+    apiCache?: boolean
+  }
+}
 
 const ACCESS_TOKEN_KEY = "authToken"
 const REFRESH_TOKEN_KEY = "refreshToken"
@@ -7,10 +14,28 @@ const REFRESH_LOCK_KEY = "alara:token-refresh-lock"
 const REFRESHED_ACCESS_TOKEN_KEY = "alara:refreshed-access-token"
 const REFRESH_LOCK_TIMEOUT = 15_000
 const REFRESH_WAIT_TIMEOUT = 20_000
+const API_GET_CACHE_TTL = 30_000
+const API_GET_CACHE_LIMIT = 200
+const apiGetCache = new Map<string, { response: AxiosResponse; expiresAt: number }>()
+const apiGetRequests = new Map<string, Promise<AxiosResponse>>()
+let apiCacheGeneration = 0
 const refreshOwner = typeof window !== "undefined"
   ? `${Date.now()}-${Math.random().toString(36).slice(2)}`
   : "server"
 let refreshPromise: Promise<string> | null = null
+
+function logApiCacheEvent(event: string, url?: string) {
+  if (process.env.NODE_ENV === "development") {
+    console.debug(`[API Cache] ${event}`, url || "")
+  }
+}
+
+export function invalidateApiCache() {
+  apiCacheGeneration += 1
+  apiGetCache.clear()
+  apiGetRequests.clear()
+  logApiCacheEvent("INVALIDATION")
+}
 
 function getAccessToken(): string | null {
   if (typeof window === "undefined") return null
@@ -35,6 +60,7 @@ function storeTokens(access: string, refresh?: string) {
 
 function clearStoredAuth() {
   if (typeof window === "undefined") return
+  invalidateApiCache()
   sessionStorage.removeItem(ACCESS_TOKEN_KEY)
   sessionStorage.removeItem(REFRESH_TOKEN_KEY)
   sessionStorage.removeItem("user")
@@ -219,6 +245,79 @@ export const apiClient = axios.create({
   },
 })
 
+const defaultApiAdapter = axios.getAdapter(apiClient.defaults.adapter)
+
+// Cache only anonymous GETs. Authenticated reads are deduplicated in flight but never retained.
+const cachedApiAdapter: AxiosAdapter = async (config) => {
+  if (
+    typeof window === "undefined" ||
+    config.method !== "get" ||
+    config.apiCache === false ||
+    (config.responseType && config.responseType !== "json") ||
+    config.url?.includes("/auth/")
+  ) {
+    return defaultApiAdapter(config)
+  }
+
+  const authorization = config.headers.get("Authorization") || "anonymous"
+  const key = `${authorization}:${apiClient.getUri(config)}`
+  const cacheResponse = authorization === "anonymous"
+  const cached = cacheResponse ? apiGetCache.get(key) : undefined
+  if (cached && cached.expiresAt > Date.now()) {
+    logApiCacheEvent("HIT", config.url)
+    return {
+      ...cached.response,
+      config,
+      data: structuredClone(cached.response.data),
+    }
+  }
+  if (cached) apiGetCache.delete(key)
+
+  const pendingRequest = apiGetRequests.get(key)
+  if (pendingRequest) {
+    logApiCacheEvent("COALESCED", config.url)
+    const response = await pendingRequest
+    return {
+      ...response,
+      config,
+      data: structuredClone(response.data),
+    }
+  }
+
+  const requestGeneration = apiCacheGeneration
+  if (cacheResponse) logApiCacheEvent("MISS", config.url)
+  let request: Promise<AxiosResponse>
+  request = defaultApiAdapter(config)
+    .then((response) => {
+      const cacheControl = String(response.headers["cache-control"] || "").toLowerCase()
+      if (
+        cacheResponse &&
+        requestGeneration === apiCacheGeneration &&
+        response.status >= 200 &&
+        response.status < 300 &&
+        !cacheControl.includes("no-store") &&
+        !cacheControl.includes("no-cache")
+      ) {
+        while (apiGetCache.size >= API_GET_CACHE_LIMIT) {
+          const oldestKey = apiGetCache.keys().next().value
+          if (!oldestKey) break
+          apiGetCache.delete(oldestKey)
+        }
+        apiGetCache.set(key, {
+          response: { ...response, data: structuredClone(response.data) },
+          expiresAt: Date.now() + API_GET_CACHE_TTL,
+        })
+        logApiCacheEvent("SET", config.url)
+      }
+      return response
+    })
+    .finally(() => {
+      if (apiGetRequests.get(key) === request) apiGetRequests.delete(key)
+    })
+  apiGetRequests.set(key, request)
+  return request
+}
+
 /**
  * Background fetch — GET that does NOT block the global page loader.
  * Use for secondary/child-component fetches (profile pictures, charts, etc.)
@@ -257,12 +356,18 @@ apiClient.interceptors.request.use((config) => {
   return config
 })
 
+apiClient.interceptors.request.use((config) => {
+  config.adapter = cachedApiAdapter
+  return config
+})
+
 apiClient.interceptors.response.use(
   (response) => {
     // Every tracked request must be released exactly once, success or failure.
     if (typeof window !== "undefined" && response.config.method === "get" && (response.config as any)._trackLoading !== false) {
       loadingManager.endRequest()
     }
+    if (response.config.method !== "get") invalidateApiCache()
     return response
   },
   (error) => {
@@ -703,7 +808,7 @@ export const usersAPI = {
   assignGlobalRole: (id: number, role: string) => apiClient.post(`/users/users/${id}/assign_global_role/`, { role }),
   globalStats: () => apiClient.get("/users/users/global_stats/"),
   getById: (id: number) => apiClient.get(`/users/users/${id}/`),
-  teachers: () => apiClient.get("/users/teachers/"),
+  teachers: (params?: { page?: number; page_size?: number }) => apiClient.get("/users/teachers/", { params }),
   getTeacherById: (id: number) => apiClient.get(`/users/teachers/${id}/`),
   students: (params?: any) => apiClient.get("/users/students/", { params }),
   getStudentById: (id: number) => apiClient.get(`/users/students/${id}/`),

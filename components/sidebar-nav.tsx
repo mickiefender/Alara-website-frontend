@@ -11,6 +11,7 @@ import { academicsAPI, bgFetch } from "@/lib/api"
 import {
   ChevronLeft,
   LayoutDashboard,
+  KeyRound,
   Settings,
   Users,
   User,
@@ -44,6 +45,7 @@ import {
   Megaphone,
   ArrowRightLeft,
   Smartphone,
+  BookMarked,
 } from "lucide-react"
 
 import { NAV_LINK_PERMISSIONS } from "@/lib/permissions"
@@ -95,6 +97,7 @@ const navSections: Record<string, NavSection[]> = {
       icon: Settings,
       items: [
         { label: "Admin Staff Management", href: "/dashboard/school-admin/manage-admin-staff", icon: Users },
+        { label: "Password Reset", href: "/dashboard/school-admin/password-reset", icon: KeyRound },
         { label: "Students", href: "/dashboard/school-admin/students", icon: Users },
         { label: "Teachers", href: "/dashboard/school-admin/teachers", icon: User },
         { label: "Student Assignment", href: "/dashboard/school-admin/student-assignment", icon: ClipboardCheck },
@@ -162,6 +165,15 @@ const navSections: Record<string, NavSection[]> = {
         { label: "Books", href: "/dashboard/school-admin/library/books", icon: Book },
         { label: "Issued Books", href: "/dashboard/school-admin/library/issued-books", icon: BookUser },
         { label: "Categories", href: "/dashboard/school-admin/library/categories", icon: BookOpen },
+      ],
+    },
+    {
+      label: "Knowledge Base",
+      icon: BookMarked,
+      items: [
+        { label: "All Knowledge", href: "/dashboard/school-admin/knowledge", icon: FileText },
+        { label: "Add Knowledge", href: "/dashboard/school-admin/knowledge/add", icon: FilePen },
+        { label: "Categories", href: "/dashboard/school-admin/knowledge/categories", icon: BookOpen },
       ],
     },
   ],

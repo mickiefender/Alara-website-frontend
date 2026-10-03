@@ -9,9 +9,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Trash2, Plus, Users, Loader2 } from "lucide-react"
-import { academicsAPI, usersAPI } from "@/lib/api"
+import { Trash2, Plus, Users } from "lucide-react"
+import { academicsAPI, usersAPI, getErrorMessage } from "@/lib/api"
 import { useAuthContext } from "@/lib/auth-context"
+import { Skeleton } from "@/components/ui/skeleton"
+import { toast } from "sonner"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 interface ClassTeacher {
   id: number
@@ -48,6 +60,10 @@ export function AssignTeachersToClass({ classId, className }: { classId: number;
   const [error, setError] = useState<string | null>(null)
   const [isOpen, setIsOpen] = useState(false)
   const [formData, setFormData] = useState({ teacher: "", is_form_tutor: false })
+  const [confirmAssignOpen, setConfirmAssignOpen] = useState(false)
+  const [teacherToRemove, setTeacherToRemove] = useState<ClassTeacher | null>(null)
+  const [submitting, setSubmitting] = useState(false)
+  const [removing, setRemoving] = useState(false)
 
   const fetchData = async () => {
     try {
@@ -58,26 +74,19 @@ export function AssignTeachersToClass({ classId, className }: { classId: number;
         usersAPI.teachers(),
       ])
 
-      console.log("[v0] Teachers response:", teachersRes.data)
-      console.log("[v0] Class teachers response:", classTeachersRes.data)
-
       const allClassTeachers = classTeachersRes.data.results || classTeachersRes.data || []
       const filteredTeachers = allClassTeachers.filter(
         (ct: ClassTeacher) => ct.class_obj === classId
       )
       const allTeachers = teachersRes.data.results || teachersRes.data || []
       
-      console.log("[v0] All teachers count:", allTeachers.length)
-      
-      if (allTeachers.length === 0) {
-        setError("No teachers found. Please create teachers first before assigning.")
-      }
-      
       setClassTeachers(filteredTeachers)
       setTeachers(allTeachers)
     } catch (err: any) {
       console.error("[v0] Error fetching data:", err)
-      setError("Failed to load data. Please refresh.")
+      const message = getErrorMessage(err, "Failed to load teacher assignments.")
+      setError(message)
+      toast.error(message)
     } finally {
       setLoading(false)
     }
@@ -87,25 +96,31 @@ export function AssignTeachersToClass({ classId, className }: { classId: number;
     fetchData()
   }, [classId])
 
-  const handleAssignTeacher = async (e: React.FormEvent) => {
+  const handleAssignTeacher = (e: React.FormEvent) => {
     e.preventDefault()
     if (!formData.teacher) return
+    setConfirmAssignOpen(true)
+  }
 
+  const confirmAssignTeacher = async () => {
     try {
+      setSubmitting(true)
       const teacherProfile = teachers.find(t => t.id.toString() === formData.teacher)
       if (!teacherProfile) {
-        setError("Teacher not found")
+        const message = "The selected teacher could not be found. Please select a teacher again."
+        setError(message)
+        toast.error(message)
         return
       }
 
       // Use the actual User ID from user_data, not the Profile ID
       const userId = teacherProfile.user_data?.id || teacherProfile.user
       if (!userId) {
-        setError("Invalid teacher data - missing user ID")
+        const message = "The selected teacher does not have a valid user account."
+        setError(message)
+        toast.error(message)
         return
       }
-
-      console.log("[v0] Assigning teacher - Profile ID:", teacherProfile.id, "User ID:", userId)
 
       await academicsAPI.createClassTeacher({
         class_obj: classId,
@@ -115,35 +130,40 @@ export function AssignTeachersToClass({ classId, className }: { classId: number;
       setFormData({ teacher: "", is_form_tutor: false })
       setIsOpen(false)
       setError(null)
-      fetchData()
+      setConfirmAssignOpen(false)
+      toast.success(`${teacherProfile.first_name} ${teacherProfile.last_name} assigned to ${className}.`)
+      void fetchData()
     } catch (err: any) {
       console.error("[v0] Assign teacher error:", err)
-      console.log("[v0] Error response status:", err?.response?.status)
-      console.log("[v0] Error response data:", err?.response?.data)
-      const errorMsg = err?.response?.data?.detail || 
-                      err?.response?.data?.teacher?.[0] ||
-                      err?.response?.data?.class_obj?.[0] ||
-                      JSON.stringify(err?.response?.data) ||
-                      err?.message ||
-                      "Failed to assign teacher"
+      const errorMsg = getErrorMessage(err, "Failed to assign teacher to class.")
       setError(errorMsg)
+      toast.error(errorMsg)
+    } finally {
+      setSubmitting(false)
     }
   }
 
-  const handleRemoveTeacher = async (id: number) => {
-    if (!confirm("Are you sure you want to remove this teacher from the class?")) return
+  const handleRemoveTeacher = async () => {
+    if (!teacherToRemove) return
     try {
-      await academicsAPI.deleteClassTeacher(id)
-      fetchData()
+      setRemoving(true)
+      await academicsAPI.deleteClassTeacher(teacherToRemove.id)
+      toast.success(`${teacherToRemove.teacher_name} was removed from ${className}.`)
+      setTeacherToRemove(null)
+      void fetchData()
     } catch (err: any) {
-      setError(err?.response?.data?.detail || "Failed to remove teacher")
+      const message = getErrorMessage(err, "Failed to remove teacher from class.")
+      setError(message)
+      toast.error(message)
+    } finally {
+      setRemoving(false)
     }
   }
 
   const assignedTeacherIds = new Set(classTeachers.map((ct) => ct.teacher))
   const availableTeachers = teachers.filter((t) => {
     const userId = t.user_data?.id || t.user
-    return !assignedTeacherIds.has(userId)
+    return Boolean(userId) && !assignedTeacherIds.has(userId)
   })
 
   return (
@@ -166,19 +186,29 @@ export function AssignTeachersToClass({ classId, className }: { classId: number;
                   <DialogTitle>Assign Teacher to Class</DialogTitle>
                 </DialogHeader>
                 {error && (
-                  <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded mb-4">
-                    <p className="font-semibold">Error</p>
-                    <p className="text-sm">{error}</p>
+                  <div role="alert" className="mb-4 flex items-start gap-2 rounded border border-destructive/30 bg-destructive/5 px-4 py-3 text-destructive">
+                    <span className="flex-1 text-sm">{error}</span>
+                    <Button type="button" variant="outline" size="sm" onClick={() => void fetchData()}>Retry</Button>
                   </div>
                 )}
                 <form onSubmit={handleAssignTeacher} className="space-y-4">
-                  {availableTeachers.length === 0 ? (
-                    <div className="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded">
+                  {loading ? (
+                    <div className="space-y-3">
+                      <Skeleton className="h-10 w-full" />
+                      <Skeleton className="h-4 w-48" />
+                    </div>
+                  ) : error ? (
+                    <div role="alert" className="rounded border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+                      {error}
+                      <Button type="button" variant="outline" size="sm" className="ml-3" onClick={() => void fetchData()}>Try again</Button>
+                    </div>
+                  ) : availableTeachers.length === 0 ? (
+                    <div className="rounded border border-border bg-muted/30 px-4 py-3">
                       <p className="font-semibold">No teachers available</p>
-                      <p className="text-sm">
-                        {teachers.length === 0 
-                          ? "No teachers found in the system. Create teachers first in the Users management section."
-                          : "All existing teachers are already assigned to this class."}
+                      <p className="text-sm text-muted-foreground">
+                        {teachers.length === 0
+                          ? "No teachers are available in your school yet. Add a teacher before assigning one."
+                          : "All teachers are already assigned to this class."}
                       </p>
                     </div>
                   ) : (
@@ -210,8 +240,8 @@ export function AssignTeachersToClass({ classId, className }: { classId: number;
                       </div>
                     </>
                   )}
-                  <Button type="submit" className="w-full" disabled={availableTeachers.length === 0}>
-                    Assign Teacher
+                  <Button type="submit" className="w-full" disabled={availableTeachers.length === 0 || submitting || loading}>
+                    {submitting ? "Assigning…" : "Assign Teacher"}
                   </Button>
                 </form>
               </DialogContent>
@@ -221,14 +251,29 @@ export function AssignTeachersToClass({ classId, className }: { classId: number;
       </CardHeader>
       <CardContent>
         {loading ? (
-          <div className="flex min-h-32 items-center justify-center" role="status" aria-label="Loading class teachers">
-            <Loader2 className="h-7 w-7 animate-spin text-primary" />
+          <div className="space-y-3 py-4" role="status" aria-label="Loading class teachers">
+            {Array.from({ length: 3 }, (_, index) => (
+              <div key={index} className="flex items-center gap-4 border-b border-border py-3">
+                <Skeleton className="h-4 w-40" />
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-6 w-24" />
+              </div>
+            ))}
+          </div>
+        ) : error && classTeachers.length === 0 ? (
+          <div role="alert" className="flex flex-col items-center gap-3 py-8 text-center">
+            <p className="text-sm text-destructive">{error}</p>
+            <Button size="sm" variant="outline" onClick={() => void fetchData()}>Try again</Button>
           </div>
         ) : (
           <>
-        {error && <div className="text-red-500 mb-4">{error}</div>}
+        {error && <div role="alert" className="mb-4 flex items-center gap-3 text-sm text-destructive">{error}<Button size="sm" variant="outline" onClick={() => void fetchData()}>Retry</Button></div>}
         {classTeachers.length === 0 ? (
-          <p className="text-muted-foreground text-center py-8">No teachers assigned to this class yet</p>
+          <div className="flex flex-col items-center gap-2 py-8 text-center">
+            <Users className="h-8 w-8 text-muted-foreground/50" />
+            <p className="font-medium">No teachers assigned to this class yet</p>
+            <p className="text-sm text-muted-foreground">Use “Assign Teacher” to add the first teacher.</p>
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <Table>
@@ -255,7 +300,7 @@ export function AssignTeachersToClass({ classId, className }: { classId: number;
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleRemoveTeacher(classTeacher.id)}
+                          onClick={() => setTeacherToRemove(classTeacher)}
                           className="text-red-600 hover:text-red-700"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -271,6 +316,40 @@ export function AssignTeachersToClass({ classId, className }: { classId: number;
           </>
         )}
       </CardContent>
+      <AlertDialog open={confirmAssignOpen} onOpenChange={(open) => !submitting && setConfirmAssignOpen(open)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm teacher assignment</AlertDialogTitle>
+            <AlertDialogDescription>
+              Assign {teachers.find((teacher) => teacher.id.toString() === formData.teacher)?.first_name}{" "}
+              {teachers.find((teacher) => teacher.id.toString() === formData.teacher)?.last_name} to {className}
+              {formData.is_form_tutor ? " as the form tutor" : ""}?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={submitting}>Review selection</AlertDialogCancel>
+            <AlertDialogAction disabled={submitting} onClick={(event) => { event.preventDefault(); void confirmAssignTeacher() }}>
+              {submitting ? "Assigning…" : "Confirm assignment"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <AlertDialog open={Boolean(teacherToRemove)} onOpenChange={(open) => !open && !removing && setTeacherToRemove(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove teacher from class?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {teacherToRemove?.teacher_name} will no longer be assigned to {className}.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={removing}>Cancel</AlertDialogCancel>
+            <AlertDialogAction disabled={removing} onClick={(event) => { event.preventDefault(); void handleRemoveTeacher() }}>
+              {removing ? "Removing…" : "Remove teacher"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   )
 }

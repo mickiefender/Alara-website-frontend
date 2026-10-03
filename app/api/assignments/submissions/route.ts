@@ -12,31 +12,37 @@ export async function GET(request: NextRequest) {
     // Parse search params from request
     const url = new URL(request.url)
     const searchParams = Object.fromEntries(url.searchParams.entries())
+    const backendRequestUrl = new URL(backendUrl)
+    Object.entries(searchParams).forEach(([key, value]) => backendRequestUrl.searchParams.set(key, value))
     
-    const backendResponse = await fetch(backendUrl, {
+    const backendResponse = await fetch(backendRequestUrl, {
       method: 'GET',
+      cache: 'no-store',
       headers: {
         'Content-Type': 'application/json',
         ...(token && { Authorization: `Bearer ${token}` }),
         ...Object.fromEntries(request.headers.entries())
       },
-      ...(Object.keys(searchParams).length > 0 && { searchParams })
     })
 
     if (!backendResponse.ok) {
       if (process.env.NODE_ENV === 'development') { console.error('[Proxy] Backend error:', backendResponse.status, backendResponse.statusText) }
       const errorData = await backendResponse.json().catch(() => ({}))
-      return NextResponse.json(errorData, { status: backendResponse.status })
+      return NextResponse.json(errorData, {
+        status: backendResponse.status,
+        headers: { 'Cache-Control': 'private, no-store' },
+      })
     }
 
     const data = await backendResponse.json()
-    return NextResponse.json(data)
+    return NextResponse.json(data, {
+      headers: { 'Cache-Control': 'private, no-store' },
+    })
   } catch (error) {
     if (process.env.NODE_ENV === 'development') { console.error('[Proxy] Fetch error:', error) }
     return NextResponse.json(
       { detail: 'Proxy error', error: (error as Error).message },
-      { status: 500 }
+      { status: 500, headers: { 'Cache-Control': 'private, no-store' } }
     )
   }
 }
-

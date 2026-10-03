@@ -13,9 +13,10 @@ export function ClientProviders({ children }: ClientProvidersProps) {
   return (
     <ThemeProvider
       attribute="class"
-      defaultTheme="system"
-      enableSystem
-      themes={['light', 'dark', 'system']}
+      defaultTheme="light"
+      forcedTheme="light"
+      enableSystem={false}
+      themes={["light"]}
       disableTransitionOnChange={false}
       storageKey="school-management-theme"
     >

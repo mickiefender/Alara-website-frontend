@@ -78,10 +78,7 @@ export function generateViewport() {
   return {
     width: 'device-width',
     initialScale: 1,
-    themeColor: [
-      { media: '(prefers-color-scheme: light)', color: '#EC4899' },
-      { media: '(prefers-color-scheme: dark)', color: '#A855F7' },
-    ],
+    themeColor: '#EC4899',
   }
 }
 

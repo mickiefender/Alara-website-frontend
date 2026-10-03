@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import { ChevronLeft, ChevronRight, Trash2, Edit2, Search, Plus, Users, BookOpen, Users2, UserCheck, School } from "lucide-react"
+import { ChevronLeft, ChevronRight, Trash2, Edit2, Search, Plus, Users, BookOpen, Users2, UserCheck, School, X } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Suspense } from "react"
 import { ClassSubjectsManagement } from "@/components/class-subjects-management"
@@ -209,7 +209,8 @@ function ClassesPageContent() {
 
   const filteredClasses = classes.filter(
     (c) =>
-      c.name.toLowerCase().includes(searchTerm.toLowerCase()))
+      c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      c.code.toLowerCase().includes(searchTerm.toLowerCase()))
       
 
   const totalPages = Math.ceil(filteredClasses.length / itemsPerPage)
@@ -298,15 +299,37 @@ function ClassesPageContent() {
         </div>
       )}
 
-      {/* Search Bar */}
-      <div className="relative">
-        <Search className="absolute left-3 top-3.5 text-gray-400" size={20} />
-        <Input
-          placeholder="Search classes by name or code..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10 h-11 border-gray-300"
-        />
+      {/* Search */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative w-full sm:max-w-md">
+          <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            aria-label="Search classes"
+            placeholder="Search classes by name or code"
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value)
+              setCurrentPage(1)
+            }}
+            className="h-10 rounded-xl border-border bg-background pl-10 pr-10 shadow-sm transition-shadow placeholder:text-muted-foreground/70 focus-visible:shadow-md focus-visible:ring-primary/30"
+          />
+          {searchTerm && (
+            <button
+              type="button"
+              aria-label="Clear class search"
+              onClick={() => {
+                setSearchTerm("")
+                setCurrentPage(1)
+              }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+        <p className="text-sm text-muted-foreground">
+          {filteredClasses.length} {filteredClasses.length === 1 ? "class" : "classes"}
+        </p>
       </div>
 
       {/* Classes Table with Teacher Information */}

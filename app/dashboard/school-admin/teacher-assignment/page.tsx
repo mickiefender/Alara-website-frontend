@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState, useEffect, useMemo } from "react"
-import { academicsAPI } from "@/lib/api"
+import { academicsAPI, getErrorMessage } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -26,7 +26,9 @@ import { Search, Users, UserCheck, BookOpen, ArrowRight, AlertCircle, School, Cl
 import { AssignTeachersToClass } from "@/components/assign-teachers-to-class"
 import { AssignSubjectTeachers } from "@/components/assign-subject-teachers"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { PageLoadingState } from "@/components/page-loading-state"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Toaster } from "@/components/ui/sonner"
+import { toast } from "sonner"
 
 interface Class {
   id: number
@@ -70,6 +72,7 @@ export default function TeacherAssignmentsPage() {
   const [subjectTeachers, setSubjectTeachers] = useState<SubjectTeacherRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [statsError, setStatsError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedClassId, setSelectedClassId] = useState<number | null>(null)
   const [selectedClassName, setSelectedClassName] = useState<string>("")
@@ -88,7 +91,9 @@ export default function TeacherAssignmentsPage() {
       setClasses(response.data.results || response.data || [])
     } catch (err: any) {
       console.error("[v0] Error fetching classes:", err)
-      setError("Failed to load classes")
+      const message = getErrorMessage(err, "Failed to load classes.")
+      setError(message)
+      toast.error(message)
     } finally {
       setLoading(false)
     }
@@ -96,6 +101,7 @@ export default function TeacherAssignmentsPage() {
 
   const fetchStats = async () => {
     try {
+      setStatsError(null)
       const [classTeachersRes, subjectTeachersRes] = await Promise.all([
         academicsAPI.classTeachers(),
         academicsAPI.classSubjectTeachers(),
@@ -103,8 +109,10 @@ export default function TeacherAssignmentsPage() {
       setClassTeachers(classTeachersRes.data.results || classTeachersRes.data || [])
       setSubjectTeachers(subjectTeachersRes.data.results || subjectTeachersRes.data || [])
     } catch (err) {
-      // Stats are non-critical; the class list still renders.
       console.error("[v0] Error fetching teacher assignment stats:", err)
+      const message = getErrorMessage(err, "Failed to load teacher assignment statistics.")
+      setStatsError(message)
+      toast.error(message)
     }
   }
 
@@ -146,13 +154,25 @@ export default function TeacherAssignmentsPage() {
   if (loading) {
     return (
       <div className="space-y-6 pb-8">
-        <PageLoadingState message="Loading classes..." />
+        <Toaster position="top-right" />
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-56" />
+          <Skeleton className="h-4 w-72" />
+        </div>
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          {Array.from({ length: 4 }, (_, index) => <Skeleton key={index} className="h-20 w-full rounded-lg" />)}
+        </div>
+        <Skeleton className="h-11 w-full" />
+        <div className="space-y-3 rounded-lg border p-5">
+          {Array.from({ length: 5 }, (_, index) => <Skeleton key={index} className="h-12 w-full" />)}
+        </div>
       </div>
     )
   }
 
   return (
     <div className="space-y-6 pb-8">
+      <Toaster position="top-right" />
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
@@ -163,12 +183,19 @@ export default function TeacherAssignmentsPage() {
 
       {/* Error Banner */}
       {error && (
-        <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded flex items-start gap-3">
+        <div role="alert" className="bg-red-50 border-l-4 border-red-500 p-4 rounded flex items-start gap-3">
           <AlertCircle className="text-red-600 mt-0.5 flex-shrink-0" size={20} />
-          <div>
+          <div className="flex-1">
             <p className="text-red-800 font-medium">Error</p>
             <p className="text-red-700 text-sm">{error}</p>
           </div>
+          <Button type="button" size="sm" variant="outline" onClick={() => void fetchClasses()}>Retry</Button>
+        </div>
+      )}
+      {statsError && (
+        <div role="alert" className="flex items-center gap-3 rounded border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+          <span className="flex-1">{statsError}</span>
+          <Button type="button" size="sm" variant="outline" onClick={() => void fetchStats()}>Retry statistics</Button>
         </div>
       )}
 
@@ -181,7 +208,7 @@ export default function TeacherAssignmentsPage() {
               <CardContent className="p-3 flex items-center gap-3">
                 <Icon className={`w-4 h-4 shrink-0 ${stat.iconColor}`} />
                 <div className="min-w-0">
-                  <p className="text-xl font-bold text-slate-900 leading-tight">{stat.value.toLocaleString()}</p>
+                  <p className="text-xl font-bold text-slate-900 leading-tight">{statsError ? "—" : stat.value.toLocaleString()}</p>
                   <p className="text-xs text-slate-500 truncate">{stat.label}</p>
                 </div>
               </CardContent>
@@ -204,7 +231,14 @@ export default function TeacherAssignmentsPage() {
       {/* Classes List */}
       <Card className="border-0 shadow-sm overflow-hidden">
         <CardContent className="p-0">
-          {filteredClasses.length === 0 ? (
+          {error ? (
+            <div role="alert" className="flex flex-col items-center gap-3 p-12 text-center">
+              <AlertCircle className="h-8 w-8 text-destructive" />
+              <p className="font-medium text-slate-700">Classes could not be loaded</p>
+              <p className="text-sm text-slate-500">{error}</p>
+              <Button variant="outline" onClick={() => void fetchClasses()}>Try again</Button>
+            </div>
+          ) : filteredClasses.length === 0 ? (
             <div className="p-12 text-center">
               <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
                 <School className="h-8 w-8 text-slate-300" />

@@ -12,6 +12,7 @@ async function fetchBackendPayments(url: string, headers: HeadersInit, params: R
 
   const response = await fetch(fullUrl, {
     headers,
+    cache: "no-store",
   });
 
   console.log(`[PAYMENTS] Response status: ${response.status} ${response.statusText}`);
@@ -67,7 +68,10 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get("search") || "";
 
     if (!schoolId) {
-      return NextResponse.json({ error: "school_id is required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "school_id is required" },
+        { status: 400, headers: { "Cache-Control": "private, no-store" } },
+      );
     }
 
     // Forward auth header to backend
@@ -112,12 +116,12 @@ export async function GET(request: NextRequest) {
       status: true,
       payments,
       total: payments.length,
-    });
+    }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error: any) {
     console.error("Payment history error:", error);
     return NextResponse.json(
       { error: error.message || "Failed to fetch payment history from backend" },
-      { status: 500 }
+      { status: 500, headers: { "Cache-Control": "private, no-store" } }
     );
   }
 }
@@ -154,6 +158,7 @@ export async function addPaymentRecord(paymentData: any, authHeader?: string) {
       method: "POST",
       headers,
       body: JSON.stringify(paymentData),
+      cache: "no-store",
     });
 
     if (!response.ok) {
@@ -167,4 +172,3 @@ export async function addPaymentRecord(paymentData: any, authHeader?: string) {
     throw error;
   }
 }
-

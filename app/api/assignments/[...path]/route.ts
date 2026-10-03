@@ -25,15 +25,22 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     if (!backendResponse.ok) {
       return NextResponse.json(
         await backendResponse.json(),
-        { status: backendResponse.status }
+        {
+          status: backendResponse.status,
+          headers: { 'Cache-Control': 'private, no-store' },
+        }
       )
     }
 
     const data = await backendResponse.json()
-    return NextResponse.json(data)
+    return NextResponse.json(data, {
+      headers: { 'Cache-Control': 'private, no-store' },
+    })
   } catch (error) {
     if (process.env.NODE_ENV === 'development') { console.error('[Proxy Error]:', error) }
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500, headers: { 'Cache-Control': 'private, no-store' } },
+    )
   }
 }
-

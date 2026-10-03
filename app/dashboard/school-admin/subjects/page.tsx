@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import { ChevronLeft, ChevronRight, Trash2, Edit2, Search } from "lucide-react"
+import { ChevronLeft, ChevronRight, Trash2, Edit2, Search, X } from "lucide-react"
 import { TableLoadingState } from "@/components/page-loading-state"
 import { Suspense } from "react"
 
@@ -217,15 +217,37 @@ function SubjectsPageContent() {
         </Dialog>
       </div>
 
-      <div className="flex-1 relative">
-        <Search className="absolute left-3 top-3 text-gray-400" size={20} />
-        <Input
-          placeholder="Search subjects..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10"
-          autoComplete="off"
-        />
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative w-full sm:max-w-md">
+          <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            aria-label="Search subjects"
+            placeholder="Search subjects by name or code"
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value)
+              setCurrentPage(1)
+            }}
+            className="h-10 rounded-xl border-border bg-background pl-10 pr-10 shadow-sm transition-shadow placeholder:text-muted-foreground/70 focus-visible:shadow-md focus-visible:ring-primary/30"
+            autoComplete="off"
+          />
+          {searchTerm && (
+            <button
+              type="button"
+              aria-label="Clear subject search"
+              onClick={() => {
+                setSearchTerm("")
+                setCurrentPage(1)
+              }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+        <p className="text-sm text-muted-foreground">
+          {filteredSubjects.length} {filteredSubjects.length === 1 ? "subject" : "subjects"}
+        </p>
       </div>
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
