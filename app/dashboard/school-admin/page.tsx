@@ -6,7 +6,7 @@ import { usersAPI, promotionAPI } from '@/lib/api'
 import { DashboardStats } from '@/components/dashboard-stats'
 import { FeesChart } from '@/components/fees-chart'
 import { BestPerformingClass } from '@/components/best-performing-class'
-import { DollarSign, CalendarDays } from 'lucide-react'
+import { CalendarDays } from 'lucide-react'
 
 interface StatsType {
   students: number
@@ -64,28 +64,20 @@ export default function SchoolAdminPage() {
   return (
     <ProtectedRoute allowedRoles={["school_admin"]}>
       <div className="school-admin-dashboard space-y-8 p-4 md:p-6 lg:p-8">
-        <div className="animate-glass-in flex flex-col xl:flex-row xl:items-center xl:justify-between gap-6">
-          <div>
-            <h1 className="text-xl lg:text-2xl font-bold tracking-tight text-foreground">
-              School Admin Dashboard
-            </h1>
-            {currentYear && (
-              <p className="text-muted-foreground mt-2 text-base md:text-lg">
-                <span className="inline-flex items-center gap-1.5 ml-3 align-middle px-3 py-1 rounded-full text-sm font-semibold bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
-                  <CalendarDays className="w-4 h-4" />
-                  Academic Year: {currentYear.name}
-                </span>
-              </p>
-            )}
+        {currentYear && (
+          <div className="animate-glass-in">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/15 px-3 py-1 text-sm font-semibold text-emerald-700 dark:text-emerald-400">
+              <CalendarDays className="h-4 w-4" />
+              Academic Year: {currentYear.name}
+            </span>
           </div>
-        </div>
+        )}
 
         <DashboardStats stats={stats} />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="glass-card p-6">
-            <h2 className="text-xl font-semibold text-foreground mb-6 flex items-center gap-2">
-              <DollarSign className="w-6 h-6 text-primary" />
+            <h2 className="text-xl font-semibold text-foreground mb-6">
               Fee Collection Overview
             </h2>
             <FeesChart />

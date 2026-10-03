@@ -9,6 +9,7 @@ import Link from "next/link"
 import { ProfileAvatar } from "@/components/profile-avatar"
 import { AuthBoundary } from "@/components/auth-boundary"
 import { SubscriptionBadge } from "@/components/subscription-badge"
+import { usePathname } from "next/navigation"
 
 interface TopBarProps {
   onToggle?: () => void
@@ -39,10 +40,12 @@ export function TopBar({ onToggle }: TopBarProps) {
 function TopBarContent({ onToggle }: TopBarProps) {
   const { user, logout, school } = useAuthContext()
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications()
+  const pathname = usePathname()
 
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
   const [profilePic, setProfilePic] = useState("")
+  const [topPerformingClass, setTopPerformingClass] = useState("")
 
   const notifRef = useRef<HTMLDivElement>(null)
   const profileRef = useRef<HTMLDivElement>(null)
@@ -75,6 +78,34 @@ function TopBarContent({ onToggle }: TopBarProps) {
   }, [user?.id, user?.school_id])
 
   useEffect(() => {
+    if (user?.role !== "school_admin" || pathname !== "/dashboard/school-admin") {
+      setTopPerformingClass("")
+      return
+    }
+
+    let cancelled = false
+    bgFetch.get("/academics/classes/performance/")
+      .then((response) => {
+        const classes = response.data?.results || []
+        const bestClass = [...classes].sort(
+          (a: { performanceScore?: number }, b: { performanceScore?: number }) =>
+            (b.performanceScore || 0) - (a.performanceScore || 0),
+        )[0]
+        if (!cancelled) setTopPerformingClass(bestClass?.className || "")
+      })
+      .catch((error) => {
+        if (process.env.NODE_ENV === "development") {
+          console.error("Failed to load top performing class for header:", error)
+        }
+        if (!cancelled) setTopPerformingClass("")
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [pathname, user?.role, user?.school_id])
+
+  useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
         setShowNotifications(false)
@@ -96,6 +127,9 @@ function TopBarContent({ onToggle }: TopBarProps) {
     teacher: "Teacher",
     student: "Student",
   }
+  const dashboardGreeting = user.role === "school_admin"
+    ? `Good ${new Date().getHours() < 12 ? "morning" : new Date().getHours() < 18 ? "afternoon" : "evening"}${user.first_name?.trim() ? `, ${user.first_name.trim()}` : ""}`
+    : null
 
   const formatTimeAgo = (dateStr: string) => {
     const now = new Date()
@@ -119,13 +153,23 @@ function TopBarContent({ onToggle }: TopBarProps) {
       <div className="h-16 flex items-center justify-between px-4 md:px-6">
 
         {/* LEFT */}
-        <div className="flex items-center gap-3">
+        <div className="flex min-w-0 items-center gap-3">
           <button
             onClick={onToggle}
             className="p-2 rounded-lg transition-all duration-200 text-muted-foreground hover:text-foreground hover:bg-accent"
           >
             <Menu size={20} />
           </button>
+          {user.role === "school_admin" && (
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold leading-tight text-foreground sm:text-base">
+                {dashboardGreeting}
+              </p>
+              <p className="truncate text-xs leading-tight text-muted-foreground">
+                School Admin Dashboard{topPerformingClass ? ` · Top performing: ${topPerformingClass}` : ""}
+              </p>
+            </div>
+          )}
         </div>
 
         {/* RIGHT */}

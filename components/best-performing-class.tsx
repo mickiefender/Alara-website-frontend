@@ -12,7 +12,7 @@ import {
   ResponsiveContainer,
   
 } from "recharts"
-import { BookOpen, Users, TrendingUp, Award, BarChart3, Sparkles } from "lucide-react"
+import { BookOpen, Users, TrendingUp } from "lucide-react"
 
 interface ClassPerformanceData {
   classId: number
@@ -185,30 +185,14 @@ export function BestPerformingClass() {
     <div>
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <div
-            className="p-2.5 rounded-xl"
-            style={{ background: `linear-gradient(135deg, ${config.gradientFrom}20, ${config.gradientTo}40)` }}
-          >
-            <BarChart3 className="h-5 w-5" style={{ color: config.color }} />
-          </div>
-          <div>
-            <h3 className="font-bold text-slate-900 dark:text-white text-base">
-              Class Performance
-            </h3>
-            <p className="text-xs text-slate-400 dark:text-slate-500">
-              Performance metrics across all classes
-            </p>
-          </div>
+        <div>
+          <h3 className="font-bold text-slate-900 dark:text-white text-base">
+            Class Performance
+          </h3>
+          <p className="text-xs text-slate-400 dark:text-slate-500">
+            Performance metrics across all classes
+          </p>
         </div>
-        {bestClass && (
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border border-amber-200/50 dark:border-amber-800/30 rounded-xl">
-            <Sparkles className="h-3.5 w-3.5 text-amber-500" />
-            <span className="text-xs font-semibold text-amber-700 dark:text-amber-400">
-              {bestClass.className}
-            </span>
-          </div>
-        )}
       </div>
 
       {/* Error Banner */}
