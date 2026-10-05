@@ -66,7 +66,7 @@ export default function SchoolAdminPage() {
       <div className="school-admin-dashboard space-y-8 p-4 md:p-6 lg:p-8">
         {currentYear && (
           <div className="animate-glass-in">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/15 px-3 py-1 text-sm font-semibold text-emerald-700 dark:text-emerald-400">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 text-sm font-semibold text-black dark:text-black">
               <CalendarDays className="h-4 w-4" />
               Academic Year: {currentYear.name}
             </span>

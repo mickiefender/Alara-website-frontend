@@ -63,7 +63,7 @@ export const NAV_GROUPS: Array<{
       { href: "/dashboard/super-admin/moderation", label: "Content Moderation", icon: ShieldCheck, permission: "content.moderate" },
       { href: "/dashboard/super-admin/notifications", label: "Notifications", icon: Bell, permission: "platform.notifications" },
       { href: "/dashboard/super-admin/sms", label: "SMS Messaging", icon: MessageSquare, permission: "platform.notifications" },
-      { href: "/dashboard/super-admin/support", label: "Support Center", icon: LifeBuoy, permission: "platform.support" },
+      { href: "/dashboard/super-admin/support", label: "Alara Help", icon: LifeBuoy, permission: "platform.support" },
       { href: "/dashboard/super-admin/contact-inquiries", label: "Contact Inquiries", icon: Inbox, permission: "content.contact" },
       { href: "/dashboard/super-admin/faqs", label: "Homepage FAQs", icon: HelpCircle, permission: "content.manage" },
       { href: "/dashboard/super-admin/blog", label: "Blog Posts", icon: BookOpen, permission: "content.manage" },

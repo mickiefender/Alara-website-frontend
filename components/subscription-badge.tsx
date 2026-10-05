@@ -58,10 +58,10 @@ export function SubscriptionBadge() {
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm font-semibold ${
+      className={`inline-flex items-center gap-1.5 px-3 py-1 text-sm font-semibold ${
         isWarning || isExpired || isNoSubscription
-          ? "border-red-500/40 bg-red-500/10 text-red-700 dark:text-red-300"
-          : "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+          ? "rounded-full border border-red-500/40 bg-red-500/10 text-red-700 dark:text-red-300"
+          : "text-black dark:text-black"
       } ${isWarning ? "animate-pulse" : ""}`}
       title={
         subscription?.end_date

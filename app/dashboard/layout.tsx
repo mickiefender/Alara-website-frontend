@@ -10,6 +10,7 @@ import { useAuthContext } from "@/lib/auth-context"
 import { useState, useEffect } from "react"
 import { usePathname } from "next/navigation"
 import { Menu } from "lucide-react"
+import { ChatwootSupport } from "@/components/chatwoot/chatwoot-support"
 
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
@@ -93,6 +94,9 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             <main className="flex-1 overflow-auto">
               {children}
             </main>
+
+            {/* Chatwoot "Alara Help" support launcher (authenticated School Admins only) */}
+            <ChatwootSupport />
 
           </div>
         </div>

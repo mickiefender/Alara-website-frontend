@@ -45,7 +45,6 @@ import {
   Megaphone,
   ArrowRightLeft,
   Smartphone,
-  BookMarked,
 } from "lucide-react"
 
 import { NAV_LINK_PERMISSIONS } from "@/lib/permissions"
@@ -165,15 +164,6 @@ const navSections: Record<string, NavSection[]> = {
         { label: "Books", href: "/dashboard/school-admin/library/books", icon: Book },
         { label: "Issued Books", href: "/dashboard/school-admin/library/issued-books", icon: BookUser },
         { label: "Categories", href: "/dashboard/school-admin/library/categories", icon: BookOpen },
-      ],
-    },
-    {
-      label: "Knowledge Base",
-      icon: BookMarked,
-      items: [
-        { label: "All Knowledge", href: "/dashboard/school-admin/knowledge", icon: FileText },
-        { label: "Add Knowledge", href: "/dashboard/school-admin/knowledge/add", icon: FilePen },
-        { label: "Categories", href: "/dashboard/school-admin/knowledge/categories", icon: BookOpen },
       ],
     },
   ],

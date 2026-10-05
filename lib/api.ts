@@ -405,7 +405,14 @@ apiClient.interceptors.response.use(
         return apiClient.request(requestConfig)
       })
     } else if (status >= 500) {
-      console.error('[API Error]', { status, url, details })
+      const message = getErrorMessage(
+        error,
+        `The API request failed${status ? ` with status ${status}` : ""}.`,
+      )
+      const serializedDetails = details === undefined ? "" : ` details=${JSON.stringify(details)}`
+      console.error(
+        `[API Error] status=${status ?? "unknown"} url=${url ?? error.config?.baseURL ?? "unknown"} message=${message}${serializedDetails}`,
+      )
     }
     
     return Promise.reject(error)
@@ -674,6 +681,13 @@ export const attendanceAPI = {
     if (startDate) params.append('start_date', startDate)
     if (endDate) params.append('end_date', endDate)
     return apiClient.get(`/attendance/class_report/?${params.toString()}`)
+  },
+  studentSummary: (classId?: number, startDate?: string, endDate?: string) => {
+    const params = new URLSearchParams()
+    if (classId) params.append('class_id', classId.toString())
+    if (startDate) params.append('start_date', startDate)
+    if (endDate) params.append('end_date', endDate)
+    return apiClient.get(`/attendance/student_summary/?${params.toString()}`)
   },
   overallReport: (startDate?: string, endDate?: string) => {
     const params = new URLSearchParams()
@@ -1096,6 +1110,14 @@ export const platformAPI = {
   stopImpersonation: () => apiClient.delete("/platform/impersonate/"),
 
   // Support center
+  chatwootConversations: (params?: { page?: number; status?: string }) =>
+    apiClient.get("/platform/chatwoot/conversations/", { params }),
+  chatwootMessages: (conversationId: number) =>
+    apiClient.get(`/platform/chatwoot/conversations/${conversationId}/messages/`),
+  replyToChatwootConversation: (conversationId: number, content: string) =>
+    apiClient.post(`/platform/chatwoot/conversations/${conversationId}/messages/`, { content }),
+  updateChatwootConversationStatus: (conversationId: number, status: "open" | "resolved") =>
+    apiClient.post(`/platform/chatwoot/conversations/${conversationId}/status/`, { status }),
   tickets: (params?: any) => apiClient.get("/platform/tickets/", { params }),
   ticketDetail: (id: number) => apiClient.get(`/platform/tickets/${id}/`),
   createTicket: (data: any) => apiClient.post("/platform/tickets/", data),

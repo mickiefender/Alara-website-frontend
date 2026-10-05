@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { bgFetch } from "@/lib/api"
+import { academicsAPI, getErrorMessage } from "@/lib/api"
 import {
   AreaChart,
   Area,
@@ -23,9 +23,16 @@ interface ClassPerformanceData {
   studentCount?: number
 }
 
+interface ClassChartData {
+  name: string
+  performanceScore: number
+  averageScore: number
+  attendancePercentage: number
+}
+
 const METRIC_CONFIG = {
   performance: {
-    key: "Performance Score",
+    dataKey: "performanceScore",
     color: "#6366f1",
     gradientFrom: "#6366f1",
     gradientTo: "#a5b4fc",
@@ -34,7 +41,7 @@ const METRIC_CONFIG = {
     gradientId: "performanceGradient",
   },
   grades: {
-    key: "Grades",
+    dataKey: "averageScore",
     color: "#22c55e",
     gradientFrom: "#22c55e",
     gradientTo: "#86efac",
@@ -43,7 +50,7 @@ const METRIC_CONFIG = {
     gradientId: "gradesGradient",
   },
   attendance: {
-    key: "Attendance",
+    dataKey: "attendancePercentage",
     color: "#f59e0b",
     gradientFrom: "#f59e0b",
     gradientTo: "#fcd34d",
@@ -51,7 +58,7 @@ const METRIC_CONFIG = {
     icon: Users,
     gradientId: "attendanceGradient",
   },
-}
+} as const
 
 export function BestPerformingClass() {
   const [classData, setClassData] = useState<ClassPerformanceData[]>([])
@@ -61,44 +68,56 @@ export function BestPerformingClass() {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
 
   useEffect(() => {
+    let cancelled = false
+
     const fetchClassData = async () => {
       try {
         setLoading(true)
-        const response = await bgFetch.get("/academics/classes/performance/")
-        const classes = response.data.results || []
+        const response = await academicsAPI.classPerformanceWithAttendance()
+        const classes = response.data?.results
+        if (!Array.isArray(classes)) {
+          throw new Error("The class performance response was invalid.")
+        }
 
-        const processedData = [...classes].sort(
-          (a, b) => (b.performanceScore || 0) - (a.performanceScore || 0)
+        const processedData: ClassPerformanceData[] = classes.map((item: Record<string, unknown>) => ({
+          classId: Number(item.classId),
+          className: String(item.className ?? "Unnamed class"),
+          averageScore: Number(item.averageScore) || 0,
+          attendancePercentage: Number(item.attendancePercentage) || 0,
+          performanceScore: Number(item.performanceScore) || 0,
+          studentCount: Number(item.studentCount) || 0,
+        })).sort(
+          (a, b) => b.performanceScore - a.performanceScore
         )
 
-        setClassData(processedData)
-        setError(null)
+        if (!cancelled) {
+          setClassData(processedData)
+          setError(null)
+        }
       } catch (err) {
-        console.error("Error fetching class data:", err)
-        setError("Failed to load class performance data")
-        setClassData([
-          { classId: 1, className: "Grade 10-A", averageScore: 85, attendancePercentage: 92, performanceScore: 88.5, studentCount: 45 },
-          { classId: 2, className: "Grade 9-B", averageScore: 78, attendancePercentage: 85, performanceScore: 81.5, studentCount: 42 },
-          { classId: 3, className: "Grade 11-A", averageScore: 92, attendancePercentage: 95, performanceScore: 93.5, studentCount: 38 },
-          { classId: 4, className: "Grade 8-A", averageScore: 81, attendancePercentage: 88, performanceScore: 84.5, studentCount: 50 },
-          { classId: 5, className: "Grade 10-B", averageScore: 88, attendancePercentage: 90, performanceScore: 89, studentCount: 40 },
-        ])
+        if (!cancelled) {
+          setError(getErrorMessage(err, "Failed to load class performance data."))
+          setClassData([])
+        }
       } finally {
-        setLoading(false)
+        if (!cancelled) setLoading(false)
       }
     }
 
-    fetchClassData()
+    void fetchClassData()
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   const bestClass = classData.length > 0 ? classData[0] : null
   const config = METRIC_CONFIG[activeMetric]
 
-  const chartData = classData.map((cls) => ({
+  const chartData: ClassChartData[] = classData.map((cls) => ({
     name: cls.className,
-    "Performance Score": cls.performanceScore || 0,
-    Grades: cls.averageScore || 0,
-    Attendance: cls.attendancePercentage || 0,
+    performanceScore: cls.performanceScore,
+    averageScore: cls.averageScore,
+    attendancePercentage: cls.attendancePercentage,
   }))
 
   const CustomTooltip = ({
@@ -190,15 +209,16 @@ export function BestPerformingClass() {
             Class Performance
           </h3>
           <p className="text-xs text-slate-400 dark:text-slate-500">
-            Performance metrics across all classes
+            {activeMetric === "grades"
+              ? "Average of recorded exam results by class"
+              : "Performance metrics across all classes"}
           </p>
         </div>
       </div>
 
-      {/* Error Banner */}
       {error && (
         <div className="mb-4 p-2.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-xl">
-          <p className="text-xs text-amber-600 dark:text-amber-400">{error} — showing demo data</p>
+          <p className="text-xs text-amber-600 dark:text-amber-400">{error}</p>
         </div>
       )}
 
@@ -230,76 +250,86 @@ export function BestPerformingClass() {
 
       {/* Chart */}
       <div className="h-[260px] -mx-1">
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart
-            data={chartData}
-            margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-            onMouseMove={(e) => {
-              if (e.activeTooltipIndex !== undefined) {
-                setHoveredIndex(e.activeTooltipIndex)
-              }
-            }}
-            onMouseLeave={() => setHoveredIndex(null)}
-          >
-            <defs>
-              <linearGradient id={config.gradientId} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={config.gradientFrom} stopOpacity={0.3} />
-                <stop offset="100%" stopColor={config.gradientTo} stopOpacity={0.02} />
-              </linearGradient>
-            </defs>
-
-            <CartesianGrid
-              strokeDasharray="3 3"
-              stroke="#e2e8f0"
-              vertical={false}
-              strokeOpacity={0.6}
-            />
-            <XAxis
-              dataKey="name"
-              tick={{ fontSize: 11, fill: "#94a3b8", fontWeight: 500 }}
-              angle={-20}
-              textAnchor="end"
-              height={55}
-              interval={0}
-              tickLine={false}
-              axisLine={false}
-            />
-            <YAxis
-              domain={[0, 100]}
-              tick={{ fontSize: 11, fill: "#94a3b8" }}
-              tickLine={false}
-              axisLine={false}
-              tickFormatter={(v) => `${v}%`}
-            />
-            <Tooltip
-              content={<CustomTooltip />}
-              cursor={{
-                stroke: config.color,
-                strokeWidth: 1.5,
-                strokeDasharray: "4 4",
-                strokeOpacity: 0.5,
-              }}
-            />
-            <Area
+        {loading ? (
+          <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+            Loading class performance…
+          </div>
+        ) : chartData.length === 0 ? (
+          <div className="flex h-full items-center justify-center px-4 text-center text-sm text-muted-foreground">
+            No class performance data is available yet. Record exam grades to see class results here.
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart
               key={activeMetric}
-              type="monotone"
-              dataKey={config.key}
-              stroke={config.color}
-              strokeWidth={2.5}
-              fill={`url(#${config.gradientId})`}
-              dot={<CustomDot />}
-              activeDot={{ r: 7, fill: config.color, stroke: "white", strokeWidth: 2.5 }}
-              animationDuration={600}
-              animationEasing="ease-out"
-            />
-          </AreaChart>
-        </ResponsiveContainer>
+              data={chartData}
+              margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+              onMouseMove={(e) => {
+                if (e.activeTooltipIndex !== undefined) {
+                  setHoveredIndex(e.activeTooltipIndex)
+                }
+              }}
+              onMouseLeave={() => setHoveredIndex(null)}
+            >
+              <defs>
+                <linearGradient id={config.gradientId} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={config.gradientFrom} stopOpacity={0.3} />
+                  <stop offset="100%" stopColor={config.gradientTo} stopOpacity={0.02} />
+                </linearGradient>
+              </defs>
+
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="#e2e8f0"
+                vertical={false}
+                strokeOpacity={0.6}
+              />
+              <XAxis
+                dataKey="name"
+                tick={{ fontSize: 11, fill: "#94a3b8", fontWeight: 500 }}
+                angle={-20}
+                textAnchor="end"
+                height={55}
+                interval={0}
+                tickLine={false}
+                axisLine={false}
+              />
+              <YAxis
+                domain={[0, 100]}
+                tick={{ fontSize: 11, fill: "#94a3b8" }}
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={(v) => `${v}%`}
+              />
+              <Tooltip
+                content={<CustomTooltip />}
+                cursor={{
+                  stroke: config.color,
+                  strokeWidth: 1.5,
+                  strokeDasharray: "4 4",
+                  strokeOpacity: 0.5,
+                }}
+              />
+              <Area
+                type="monotone"
+                dataKey={config.dataKey}
+                stroke={config.color}
+                strokeWidth={2.5}
+                fill={`url(#${config.gradientId})`}
+                dot={<CustomDot />}
+                activeDot={{ r: 7, fill: config.color, stroke: "white", strokeWidth: 2.5 }}
+                animationDuration={600}
+                animationEasing="ease-out"
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        )}
       </div>
 
       {/* Summary Stats */}
-      <div className="grid grid-cols-3 gap-3 mt-4 mb-5">
-        {chartData.length > 0 && (() => {
-          const values = chartData.map((d) => d[config.key as keyof typeof d] as number)
+      {chartData.length > 0 && <div className="grid grid-cols-3 gap-3 mt-4 mb-5">
+        {(() => {
+          const values = chartData.map((row) => row[config.dataKey])
           const avg = values.reduce((a, b) => a + b, 0) / values.length
           const max = Math.max(...values)
           const min = Math.min(...values)
@@ -325,7 +355,7 @@ export function BestPerformingClass() {
             </>
           )
         })()}
-      </div>
+      </div>}
 
     </div>  
   )

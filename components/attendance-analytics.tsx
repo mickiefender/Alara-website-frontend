@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -23,7 +24,7 @@ import {
   Pie,
   Cell,
 } from "recharts"
-import { Calendar as CalendarIcon, Download, Filter, TrendingUp, TrendingDown, Users, BookOpen, Clock, CheckCircle, XCircle, AlertCircle, Loader2 } from "lucide-react"
+import { Calendar as CalendarIcon, Filter, Search, TrendingUp, TrendingDown, Users, BookOpen, Clock, CheckCircle, XCircle, AlertCircle, Loader2 } from "lucide-react"
 import { format, subDays } from "date-fns"
 
 interface OverallReport {
@@ -66,6 +67,19 @@ interface SubjectReport {
   attendance_percentage: number
 }
 
+interface StudentAttendanceSummary {
+  student_id: number
+  student_name: string
+  class_id: number
+  class_name: string
+  total_days: number
+  present_days: number
+  absent_days: number
+  late_days: number
+  excused_days: number
+  attendance_percentage: number
+}
+
 const COLORS = ["#22c55e", "#ef4444", "#eab308", "#6b7280"]
 
 export function AttendanceAnalytics() {
@@ -84,6 +98,8 @@ export function AttendanceAnalytics() {
   const [overallReport, setOverallReport] = useState<OverallReport | null>(null)
   const [classReport, setClassReport] = useState<ClassReport[]>([])
   const [subjectReport, setSubjectReport] = useState<SubjectReport[]>([])
+  const [studentSummary, setStudentSummary] = useState<StudentAttendanceSummary[]>([])
+  const [studentSearch, setStudentSearch] = useState("")
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -111,17 +127,16 @@ export function AttendanceAnalytics() {
       const endDate = dateRange.to ? format(dateRange.to, "yyyy-MM-dd") : undefined
       const classId = selectedClass !== "all" ? parseInt(selectedClass) : undefined
 
-      // Fetch overall report
-      const overallRes = await attendanceAPI.overallReport(startDate, endDate)
+      const [overallRes, classRes, subjectRes, studentRes] = await Promise.all([
+        attendanceAPI.overallReport(startDate, endDate),
+        attendanceAPI.classReport(classId, startDate, endDate),
+        attendanceAPI.subjectReport(classId, startDate, endDate),
+        attendanceAPI.studentSummary(classId, startDate, endDate),
+      ])
       setOverallReport(overallRes.data)
-
-      // Fetch class report
-      const classRes = await attendanceAPI.classReport(classId, startDate, endDate)
       setClassReport(classRes.data.results || [])
-
-      // Fetch subject report
-      const subjectRes = await attendanceAPI.subjectReport(classId, startDate, endDate)
       setSubjectReport(subjectRes.data.results || [])
+      setStudentSummary(studentRes.data.results || [])
     } catch (err: any) {
       console.error("Failed to fetch attendance reports:", err)
       setError(err?.response?.data?.detail || "Failed to load attendance data")
@@ -138,6 +153,19 @@ export function AttendanceAnalytics() {
         { name: "Excused", value: overallReport.excused },
       ].filter((d) => d.value > 0)
     : []
+
+  const filteredStudentSummary = studentSummary
+    .filter((student) =>
+      `${student.student_name} ${student.class_name}`.toLowerCase().includes(studentSearch.trim().toLowerCase()),
+    )
+    .sort((a, b) => a.attendance_percentage - b.attendance_percentage || a.student_name.localeCompare(b.student_name))
+
+  const studentCount = new Set(studentSummary.map((student) => student.student_id)).size
+  const studentsNeedingAttention = new Set(
+    studentSummary
+      .filter((student) => student.attendance_percentage < 75)
+      .map((student) => student.student_id),
+  ).size
 
   const formatDate = (dateStr: string) => {
     try {
@@ -324,10 +352,11 @@ export function AttendanceAnalytics() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-2 gap-1 sm:grid-cols-4">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="classes">By Class</TabsTrigger>
           <TabsTrigger value="subjects">By Subject</TabsTrigger>
+          <TabsTrigger value="students">Students</TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
@@ -459,6 +488,125 @@ export function AttendanceAnalytics() {
               </CardContent>
             </Card>
           )}
+        </TabsContent>
+
+        <TabsContent value="students" className="space-y-6">
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Card>
+              <CardContent className="flex items-center justify-between pt-6">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Students with records</p>
+                  <p className="mt-1 text-2xl font-semibold">{studentCount}</p>
+                </div>
+                <div className="rounded-xl bg-blue-50 p-3 text-blue-700">
+                  <Users className="h-5 w-5" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="flex items-center justify-between pt-6">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Attendance records</p>
+                  <p className="mt-1 text-2xl font-semibold">
+                    {studentSummary.reduce((total, student) => total + student.total_days, 0)}
+                  </p>
+                </div>
+                <div className="rounded-xl bg-emerald-50 p-3 text-emerald-700">
+                  <CheckCircle className="h-5 w-5" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="flex items-center justify-between pt-6">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Below 75% attendance</p>
+                  <p className="mt-1 text-2xl font-semibold">{studentsNeedingAttention}</p>
+                </div>
+                <div className="rounded-xl bg-amber-50 p-3 text-amber-700">
+                  <AlertCircle className="h-5 w-5" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card>
+            <CardHeader className="gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <CardTitle>Student attendance summary</CardTitle>
+                <CardDescription>
+                  Attendance totals for each student in the selected class and date range.
+                </CardDescription>
+              </div>
+              <div className="relative w-full sm:max-w-xs">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={studentSearch}
+                  onChange={(event) => setStudentSearch(event.target.value)}
+                  placeholder="Search students or classes"
+                  aria-label="Search students or classes"
+                  className="pl-9"
+                />
+              </div>
+            </CardHeader>
+            <CardContent>
+              {filteredStudentSummary.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[760px]">
+                    <thead>
+                      <tr className="border-b text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        <th className="px-3 py-3">Student</th>
+                        <th className="px-3 py-3">Class</th>
+                        <th className="px-3 py-3 text-right">Records</th>
+                        <th className="px-3 py-3 text-right">Present</th>
+                        <th className="px-3 py-3 text-right">Absent</th>
+                        <th className="px-3 py-3 text-right">Late</th>
+                        <th className="px-3 py-3 text-right">Excused</th>
+                        <th className="px-3 py-3 text-right">Attendance</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredStudentSummary.map((student) => (
+                        <tr key={`${student.student_id}-${student.class_id}`} className="border-b last:border-0 hover:bg-muted/30">
+                          <td className="px-3 py-3 font-medium text-foreground">{student.student_name}</td>
+                          <td className="px-3 py-3 text-muted-foreground">{student.class_name}</td>
+                          <td className="px-3 py-3 text-right tabular-nums">{student.total_days}</td>
+                          <td className="px-3 py-3 text-right font-medium tabular-nums text-emerald-700">{student.present_days}</td>
+                          <td className="px-3 py-3 text-right font-medium tabular-nums text-rose-700">{student.absent_days}</td>
+                          <td className="px-3 py-3 text-right tabular-nums text-amber-700">{student.late_days}</td>
+                          <td className="px-3 py-3 text-right tabular-nums text-muted-foreground">{student.excused_days}</td>
+                          <td className="px-3 py-3 text-right">
+                            <span className={`inline-flex min-w-16 justify-center rounded-full px-2.5 py-1 text-xs font-semibold ${
+                              student.attendance_percentage >= 90
+                                ? "bg-emerald-50 text-emerald-700"
+                                : student.attendance_percentage >= 75
+                                  ? "bg-blue-50 text-blue-700"
+                                  : "bg-amber-50 text-amber-700"
+                            }`}>
+                              {student.attendance_percentage.toFixed(1)}%
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-14 text-center">
+                  <div className="mb-4 rounded-2xl bg-muted p-4 text-muted-foreground">
+                    {studentSummary.length ? <Search className="h-6 w-6" /> : <Users className="h-6 w-6" />}
+                  </div>
+                  <p className="font-medium">
+                    {studentSummary.length ? "No students match your search" : "No student attendance records found"}
+                  </p>
+                  <p className="mt-1 max-w-md text-sm text-muted-foreground">
+                    {studentSummary.length
+                      ? "Try another student or class name."
+                      : "Try a different class or date range to view recorded attendance."}
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* By Class Tab */}
