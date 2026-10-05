@@ -274,12 +274,22 @@ function Compose({ config, templates, onComplete }: { config: SmsConfig; templat
         message,
       })
       setConfirmSendOpen(false)
-      await onComplete(`SMS queued successfully for ${response.data.recipient_count} recipient${response.data.recipient_count === 1 ? "" : "s"}.`)
+      if (response.data.status === "failed") {
+        await onComplete("SMS delivery failed. Review the delivery history for recipient errors.")
+        setError("The SMS provider could not send this message. Your credits for failed recipients were refunded.")
+        return
+      }
+
+      const sentCount = response.data.recipient_count
+      const completionMessage = response.data.status === "partially_failed"
+        ? `SMS sent with some recipient failures. Review the delivery history for details.`
+        : `SMS submitted to the provider for ${sentCount} recipient${sentCount === 1 ? "" : "s"}. Delivery status will update in history.`
+      await onComplete(completionMessage)
       setMessage("")
       setTemplateId("")
       setPhones("")
     } catch (err) {
-      setError(getError(err, "Unable to queue SMS."))
+      setError(getError(err, "Unable to send SMS."))
       setConfirmSendOpen(false)
     } finally {
       setSending(false)
@@ -316,7 +326,7 @@ function Compose({ config, templates, onComplete }: { config: SmsConfig; templat
         <AlertDialogFooter>
           <AlertDialogCancel disabled={sending}>Review message</AlertDialogCancel>
           <AlertDialogAction disabled={sending} onClick={confirmSend}>
-            {sending ? <><RefreshCw className="mr-2 h-4 w-4 animate-spin" />Queueing…</> : "Send SMS"}
+            {sending ? <><RefreshCw className="mr-2 h-4 w-4 animate-spin" />Sending…</> : "Send SMS"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

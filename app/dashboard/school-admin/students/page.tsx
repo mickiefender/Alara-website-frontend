@@ -114,7 +114,7 @@ const [formData, setFormData] = useState({
     try {
       setLoading(true)
       setError(null)
-      const response = await usersAPI.students()
+      const response = await usersAPI.students(undefined, { apiCache: true })
       const data = response.data.results || response.data || []
       setStudents(Array.isArray(data) ? data : [])
     } catch (err: any) {

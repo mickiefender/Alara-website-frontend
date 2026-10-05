@@ -43,6 +43,9 @@ import {
   UserPlus,
   Users,
   X,
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
 } from "lucide-react"
 import { ProfileAvatar } from "@/components/profile-avatar"
 import {
@@ -70,7 +73,11 @@ interface Teacher {
   experience?: number
   is_active?: boolean
   profile_picture_url?: string | null
+  created_at?: string | null
 }
+
+type TeacherSortField = "index" | "name" | "registered"
+type SortDirection = "asc" | "desc"
 
 const emptyForm = {
   username: "",
@@ -101,6 +108,8 @@ function TeachersPageContent() {
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
   const [formData, setFormData] = useState(emptyForm)
   const [exportLoading, setExportLoading] = useState(false)
+  const [sortField, setSortField] = useState<TeacherSortField>("index")
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc")
 
   const itemsPerPage = 10
 
@@ -234,6 +243,31 @@ function TeachersPageContent() {
       || getTeacherEmail(teacher).toLowerCase().includes(term)
       || (teacher.employee_id || "").toLowerCase().includes(term)
       || (teacher.qualification || "").toLowerCase().includes(term)
+  }).sort((a, b) => {
+    let comparison: number
+    if (sortField === "index") {
+      comparison = a.id - b.id
+    } else if (sortField === "name") {
+      comparison = getTeacherName(a).localeCompare(getTeacherName(b), undefined, {
+        sensitivity: "base",
+        numeric: true,
+      })
+    } else {
+      const parsedA = a.created_at ? new Date(a.created_at).getTime() : Number.NaN
+      const parsedB = b.created_at ? new Date(b.created_at).getTime() : Number.NaN
+      const aDate = Number.isNaN(parsedA) ? null : parsedA
+      const bDate = Number.isNaN(parsedB) ? null : parsedB
+      if (aDate === null && bDate !== null) return 1
+      if (bDate === null && aDate !== null) return -1
+      if (aDate === null && bDate === null) {
+        comparison = a.id - b.id
+        return sortDirection === "asc" ? comparison : -comparison
+      }
+      comparison = (aDate ?? 0) - (bDate ?? 0)
+    }
+
+    if (comparison === 0) comparison = a.id - b.id
+    return sortDirection === "asc" ? comparison : -comparison
   })
 
   const totalPages = Math.ceil(filteredTeachers.length / itemsPerPage)
@@ -241,6 +275,31 @@ function TeachersPageContent() {
   const paginatedTeachers = filteredTeachers.slice(startIndex, startIndex + itemsPerPage)
   const isAllSelected = paginatedTeachers.length > 0 && paginatedTeachers.every((teacher) => selectedIds.has(teacher.id))
   const activeCount = teachers.filter((teacher) => teacher.is_active !== false).length
+  const handleSort = (field: TeacherSortField) => {
+    setCurrentPage(1)
+    if (sortField === field) {
+      setSortDirection((direction) => direction === "asc" ? "desc" : "asc")
+    } else {
+      setSortField(field)
+      setSortDirection("asc")
+    }
+  }
+  const setSortFieldFromControl = (field: TeacherSortField) => {
+    setSortField(field)
+    setSortDirection("asc")
+    setCurrentPage(1)
+  }
+  const sortIcon = (field: TeacherSortField) => {
+    if (sortField !== field) return <ArrowUpDown size={13} aria-hidden="true" />
+    return sortDirection === "asc"
+      ? <ArrowUp size={13} aria-hidden="true" />
+      : <ArrowDown size={13} aria-hidden="true" />
+  }
+  const formatRegistrationDate = (value?: string | null) => {
+    if (!value) return "—"
+    const date = new Date(value)
+    return Number.isNaN(date.getTime()) ? "—" : date.toLocaleDateString()
+  }
 
   const toggleSelectAll = () => {
     setSelectedIds((previous) => {
@@ -511,6 +570,31 @@ function TeachersPageContent() {
             </button>
           )}
         </div>
+        <div className="flex flex-shrink-0 items-center gap-2">
+          <label htmlFor="teacher-sort-field" className="text-sm text-muted-foreground">Sort by</label>
+          <select
+            id="teacher-sort-field"
+            value={sortField}
+            onChange={(event) => setSortFieldFromControl(event.target.value as TeacherSortField)}
+            className="h-9 rounded-md border border-input bg-background px-3 text-sm text-foreground"
+          >
+            <option value="index">Index number</option>
+            <option value="name">Teacher name</option>
+            <option value="registered">Date registered</option>
+          </select>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            aria-label={`Sort ${sortDirection === "asc" ? "descending" : "ascending"}`}
+            onClick={() => setSortDirection((direction) => direction === "asc" ? "desc" : "asc")}
+            className="min-w-24 gap-1.5"
+          >
+            {sortDirection === "asc"
+              ? <><ArrowUp size={14} /> Ascending</>
+              : <><ArrowDown size={14} /> Descending</>}
+          </Button>
+        </div>
         {selectedIds.size > 0 && (
           <div className="flex flex-shrink-0 items-center gap-2 rounded-lg border border-primary/20 bg-primary/10 px-3 py-2 text-sm font-medium text-primary">
             <CheckSquare size={15} />
@@ -531,20 +615,31 @@ function TeachersPageContent() {
                     {isAllSelected ? <CheckSquare size={16} className="text-primary" /> : <Square size={16} />}
                   </button>
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Teacher</th>
+                <th aria-sort={sortField === "name" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}
+                  className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  <button type="button" onClick={() => handleSort("name")} className="inline-flex items-center gap-1.5 hover:text-foreground">
+                    Teacher {sortIcon("name")}
+                  </button>
+                </th>
                 <th className="hidden px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground md:table-cell">Employee ID</th>
-                <th className="hidden px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground lg:table-cell">Qualification</th>
+                <th className="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Qualification</th>
                 <th className="hidden px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground xl:table-cell">Contact</th>
+                <th aria-sort={sortField === "registered" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}
+                  className="hidden px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground lg:table-cell">
+                  <button type="button" onClick={() => handleSort("registered")} className="inline-flex items-center gap-1.5 hover:text-foreground">
+                    Date Registered {sortIcon("registered")}
+                  </button>
+                </th>
                 <th className="hidden px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground sm:table-cell">Status</th>
                 <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {loading && paginatedTeachers.length === 0 ? (
-                <DataStateTableRow colSpan={7} loading={loading} emptyMessage="Loading teachers…" />
+                <DataStateTableRow colSpan={8} loading={loading} emptyMessage="Loading teachers…" />
               ) : error && teachers.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center">
+                  <td colSpan={8} className="px-6 py-12 text-center">
                     <div className="flex flex-col items-center gap-3 text-muted-foreground">
                       <AlertCircle size={24} className="text-destructive" />
                       <p className="font-medium text-foreground">Unable to load teachers</p>
@@ -555,7 +650,7 @@ function TeachersPageContent() {
                 </tr>
               ) : paginatedTeachers.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-16 text-center">
+                  <td colSpan={8} className="px-6 py-16 text-center">
                     <div className="flex flex-col items-center gap-3 text-muted-foreground">
                       <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted/60"><GraduationCap size={24} className="opacity-50" /></div>
                       <div>
@@ -600,6 +695,7 @@ function TeachersPageContent() {
                     </td>
                     <td className="hidden px-4 py-3.5 text-sm text-muted-foreground lg:table-cell">{teacher.qualification || "—"}</td>
                     <td className="hidden px-4 py-3.5 text-sm text-muted-foreground xl:table-cell">{teacher.phone || "—"}</td>
+                    <td className="whitespace-nowrap px-4 py-3.5 text-sm text-muted-foreground">{formatRegistrationDate(teacher.created_at)}</td>
                     <td className="hidden px-4 py-3.5 text-center sm:table-cell">
                       <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold ${isActive ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-border bg-muted text-muted-foreground"}`}>
                         <span className={`h-1.5 w-1.5 rounded-full ${isActive ? "bg-emerald-500" : "bg-gray-400"}`} />

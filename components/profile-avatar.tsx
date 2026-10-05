@@ -53,7 +53,7 @@ export function ProfileAvatar({ src, userId, alt, size = "md", className = "", s
       className={`
         ${sizeClasses[size]} 
         relative rounded-full overflow-hidden flex-shrink-0
-        ${hasImage ? "bg-transparent" : "bg-gradient-to-br from-purple-400 to-blue-500"}
+        ${hasImage ? "bg-transparent" : "bg-red-600"}
         ${className}
       `}
     >
@@ -83,4 +83,3 @@ export function ProfileAvatar({ src, userId, alt, size = "md", className = "", s
     </div>
   )
 }
-

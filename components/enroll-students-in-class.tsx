@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Trash2, Plus, UserCheck, Users, Search, X, AlertCircle, GraduationCap, Mail } from "lucide-react"
-import { academicsAPI, usersAPI, getErrorMessage } from "@/lib/api"
+import { academicsAPI, usersAPI, getErrorMessage, SCHOOL_ADMIN_PAGE_CACHE } from "@/lib/api"
 import { useAuthContext } from "@/lib/auth-context"
 import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "sonner"
@@ -81,7 +81,7 @@ export function EnrollStudentsInClass({ classId, className }: { classId: number;
       setError(null)
       const [enrollmentsRes, studentsRes] = await Promise.all([
         academicsAPI.studentClasses(),
-        usersAPI.students(),
+        usersAPI.students(undefined, SCHOOL_ADMIN_PAGE_CACHE),
       ])
 
       const enrollmentsList = enrollmentsRes.data.results || enrollmentsRes.data || []

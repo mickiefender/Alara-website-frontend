@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState, useEffect, useMemo } from "react"
-import { academicsAPI, usersAPI, getErrorMessage } from "@/lib/api"
+import { academicsAPI, usersAPI, getErrorMessage, SCHOOL_ADMIN_PAGE_CACHE } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -115,7 +115,7 @@ export default function StudentAssignmentsPage() {
       setStatsError(null)
       const [enrollmentsRes, studentsRes] = await Promise.all([
         academicsAPI.studentClasses(),
-        usersAPI.students(),
+        usersAPI.students(undefined, SCHOOL_ADMIN_PAGE_CACHE),
       ])
       setEnrollments(enrollmentsRes.data.results || enrollmentsRes.data || [])
       setStudents(studentsRes.data.results || studentsRes.data || [])

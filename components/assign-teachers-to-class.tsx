@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Trash2, Plus, Users } from "lucide-react"
-import { academicsAPI, usersAPI, getErrorMessage } from "@/lib/api"
+import { academicsAPI, usersAPI, getErrorMessage, SCHOOL_ADMIN_PAGE_CACHE } from "@/lib/api"
 import { useAuthContext } from "@/lib/auth-context"
 import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "sonner"
@@ -71,7 +71,7 @@ export function AssignTeachersToClass({ classId, className }: { classId: number;
       setError(null)
       const [classTeachersRes, teachersRes] = await Promise.all([
         academicsAPI.classTeachers(),
-        usersAPI.teachers(),
+        usersAPI.teachers(undefined, SCHOOL_ADMIN_PAGE_CACHE),
       ])
 
       const allClassTeachers = classTeachersRes.data.results || classTeachersRes.data || []

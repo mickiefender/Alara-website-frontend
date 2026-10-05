@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 
 import { GradingPolicyManagement } from "@/components/grading-policy-management"
+import { ProfileAvatar } from "@/components/profile-avatar"
 import { gradesAPI, usersAPI, academicsAPI, getErrorMessage, fetchAllGrades } from "@/lib/api"
 import { Search, ArrowRight, Users, TrendingUp, Award, Plus } from "lucide-react"
 import { DataStateTableRow } from "@/components/data-state"
@@ -38,14 +39,6 @@ interface StudentSummary {
   avgPercentage: number
   overallGrade: string
 }
-
-const getInitials = (name: string) =>
-  name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("") || "?"
 
 const gradeTone = (grade: string) => {
   switch (grade) {
@@ -169,6 +162,16 @@ export default function GradingPage() {
     const fullName = `${firstName} ${lastName}`.trim()
 
     return fullName || student.student_name || student.name || `Student ${studentId}`
+  }
+
+  const getStudentProfilePicture = (studentId: number) => {
+    const student = students.find((s) =>
+      [s.user?.id, s.user_data?.id, s.id].some((id) => id === studentId),
+    )
+    return student?.profile_picture_url
+      || student?.user?.profile_picture_url
+      || student?.user_data?.profile_picture_url
+      || null
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -407,9 +410,12 @@ export default function GradingPage() {
                     <tr key={summary.studentId} className="hover:bg-muted/40 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-3">
-                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground text-xs font-bold">
-                            {getInitials(summary.studentName)}
-                          </div>
+                          <ProfileAvatar
+                            src={getStudentProfilePicture(summary.studentId)}
+                            userId={summary.studentId}
+                            alt={summary.studentName}
+                            size="md"
+                          />
                           <span className="font-medium text-gray-900">{summary.studentName}</span>
                         </div>
                       </td>

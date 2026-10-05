@@ -2,7 +2,15 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { usersAPI, academicsAPI, attendanceAPI, billingAPI, messagingAPI, promotionAPI } from '@/lib/api'
+import {
+  usersAPI,
+  academicsAPI,
+  attendanceAPI,
+  billingAPI,
+  messagingAPI,
+  promotionAPI,
+  SCHOOL_ADMIN_PAGE_CACHE,
+} from '@/lib/api'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -139,7 +147,10 @@ export default function StudentDetailPage() {
     // grade pushes existing ones off the screen.
     setExamResultsLoading(true)
     try {
-      const examRes = await academicsAPI.examResults({ student: userIdNum, page_size: 500 })
+      const examRes = await academicsAPI.examResults(
+        { student: userIdNum, page_size: 500 },
+        SCHOOL_ADMIN_PAGE_CACHE,
+      )
       const all = examRes.data.results || examRes.data || []
       // Retain the server's newest-first order; defensive filter keeps the
       // display correct even if a caller ignores the query param.
@@ -157,7 +168,7 @@ export default function StudentDetailPage() {
     // Load Attendance
     setAttendanceLoading(true)
     try {
-      const a = await attendanceAPI.studentReport(userIdNum)
+      const a = await attendanceAPI.studentReport(userIdNum, SCHOOL_ADMIN_PAGE_CACHE)
       console.log("Attendance response for user", userIdNum, ":", a.data)
       setDebugInfo((prev: any) => ({ ...prev, attendanceRaw: a.data }))
       
@@ -180,7 +191,7 @@ export default function StudentDetailPage() {
   const loadData = async () => {
     try {
       setLoading(true)
-      const res = await usersAPI.getStudentById(parseInt(studentId))
+      const res = await usersAPI.getStudentById(parseInt(studentId), SCHOOL_ADMIN_PAGE_CACHE)
       const s: StudentDetail = res.data
       setStudent(s)
       const u = s.user_data || s.user
@@ -194,7 +205,7 @@ export default function StudentDetailPage() {
       })
       if (u?.id) {
         try {
-          const picRes = await academicsAPI.profilePictureByUser(u.id)
+          const picRes = await academicsAPI.profilePictureByUser(u.id, SCHOOL_ADMIN_PAGE_CACHE)
           const pics = picRes.data.results || picRes.data || []
           if (pics.length > 0) { 
             // Get the best available URL - prefer display_url, fall back to picture
@@ -217,7 +228,10 @@ export default function StudentDetailPage() {
         for (const id of uniqueIds) {
           try {
             console.log(`Fetching fees for ID ${id} (type: ${typeof id})`)
-            const feesRes = await billingAPI.studentFeeAssignmentsByStudent(id)
+            const feesRes = await billingAPI.studentFeeAssignmentsByStudent(
+              id,
+              SCHOOL_ADMIN_PAGE_CACHE,
+            )
             const sf = feesRes.data.results || feesRes.data || []
             console.log(`Got ${sf.length} fees for ID ${id}`)
             if (sf.length > 0) {
@@ -233,7 +247,7 @@ export default function StudentDetailPage() {
         
         if (!feesFound) {
           console.log('No fees found for any ID, trying school fees')
-          const schoolFeesRes = await billingAPI.schoolFeeAssignments()
+          const schoolFeesRes = await billingAPI.schoolFeeAssignments(SCHOOL_ADMIN_PAGE_CACHE)
           const schoolFees = schoolFeesRes.data.results || schoolFeesRes.data || []
           console.log('School fees:', schoolFees)
         }
@@ -245,7 +259,7 @@ export default function StudentDetailPage() {
       
       // Also check for school-wide fee assignments
       try {
-        const schoolFeesRes = await billingAPI.schoolFeeAssignments()
+        const schoolFeesRes = await billingAPI.schoolFeeAssignments(SCHOOL_ADMIN_PAGE_CACHE)
         const schoolFees = schoolFeesRes.data.results || schoolFeesRes.data || []
         // School fees apply to all students in the school
         const totalSchoolFees = schoolFees.filter((f: any) => f.status === 'pending' || !f.paid).reduce((s: number, f: any) => s + (parseFloat(f.amount) || 0), 0)
@@ -253,13 +267,19 @@ export default function StudentDetailPage() {
         setDueFees((prev: number) => prev + totalSchoolFees)
       } catch { /* skip */ }
       
-      try { const n = await academicsAPI.notices(); setNotices((n.data.results || n.data || []).slice(0, 5)) } catch { /* skip */ }
+      try {
+        const n = await academicsAPI.notices(undefined, SCHOOL_ADMIN_PAGE_CACHE)
+        setNotices((n.data.results || n.data || []).slice(0, 5))
+      } catch { /* skip */ }
 
       // Load the school's academic years and seed the picker with the year the
       // student is currently assigned to.
       try {
         setAcademicYearsLoading(true)
-        const yearsRes = await promotionAPI.academicYears({ page_size: 200 })
+        const yearsRes = await promotionAPI.academicYears(
+          { page_size: 200 },
+          SCHOOL_ADMIN_PAGE_CACHE,
+        )
         const years = yearsRes.data.results || yearsRes.data || []
         setAcademicYears(Array.isArray(years) ? years : [])
       } catch (err) {

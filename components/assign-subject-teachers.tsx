@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Trash2, Plus, BookOpen } from "lucide-react"
-import { academicsAPI, usersAPI, getErrorMessage } from "@/lib/api"
+import { academicsAPI, usersAPI, getErrorMessage, SCHOOL_ADMIN_PAGE_CACHE } from "@/lib/api"
 import { useAuthContext } from "@/lib/auth-context"
 import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "sonner"
@@ -101,7 +101,7 @@ export function AssignSubjectTeachers({ classId, className }: { classId: number;
       setSubjectTeachers(filtered)
 
       // Get all teachers in the school
-      const teachersRes = await usersAPI.teachers()
+      const teachersRes = await usersAPI.teachers(undefined, SCHOOL_ADMIN_PAGE_CACHE)
       const allTeachers = teachersRes.data.results || teachersRes.data || []
       setTeachers(allTeachers)
     } catch (err: any) {

@@ -96,8 +96,8 @@ export function PasswordResetDirectory({ role }: { role: DirectoryRole }) {
       setError(null)
       try {
         const response = role === "student"
-          ? await usersAPI.students({ page, page_size: PAGE_SIZE })
-          : await usersAPI.teachers({ page, page_size: PAGE_SIZE })
+          ? await usersAPI.students({ page, page_size: PAGE_SIZE }, { apiCache: true })
+          : await usersAPI.teachers({ page, page_size: PAGE_SIZE }, { apiCache: true })
         const data = response.data as Partial<PaginatedResponse<DirectoryUser>>
 
         if (!Array.isArray(data?.results) || typeof data.count !== "number") {

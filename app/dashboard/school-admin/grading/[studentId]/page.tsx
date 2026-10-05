@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, GraduationCap, BookOpen, ClipboardList, Award } from "lucide-react"
 import { academicsAPI, usersAPI, fetchAllGrades } from "@/lib/api"
+import { ProfileAvatar } from "@/components/profile-avatar"
 
 interface Grade {
   id: number
@@ -21,14 +22,6 @@ interface Grade {
   grade: string
   recorded_date: string
 }
-
-const getInitials = (name: string) =>
-  name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("") || "?"
 
 const gradeTone = (grade: string) => {
   switch (grade) {
@@ -60,6 +53,7 @@ export default function StudentGradesDetail() {
 
   const [grades, setGrades] = React.useState<Grade[]>([])
   const [studentName, setStudentName] = React.useState("")
+  const [studentProfilePicture, setStudentProfilePicture] = React.useState<string | null>(null)
   const [subjects, setSubjects] = React.useState<any[]>([])
   const [loading, setLoading] = React.useState(true)
 
@@ -82,15 +76,20 @@ export default function StudentGradesDetail() {
         // over the students-list lookup, which compares against the wrong ID
         // (StudentProfile.id vs the User id used in the URL).
         const embeddedName = studentGrades.find((g) => g.student_name)?.student_name
+        const studentsList = studentsRes.data?.results || studentsRes.data || []
+        const student = studentsList.find((s: any) =>
+          [s.id, s.user?.id, s.user_data?.id].includes(studentId),
+        )
+        setStudentProfilePicture(
+          student?.profile_picture_url
+            || student?.user?.profile_picture_url
+            || student?.user_data?.profile_picture_url
+            || null,
+        )
+
         if (embeddedName) {
           setStudentName(embeddedName)
         } else {
-          const studentsList = studentsRes.data?.results || studentsRes.data || []
-          const student = studentsList.find((s: any) => {
-            const studentIdField = s.id || s.user?.id || s.user_data?.id
-            return studentIdField === studentId
-          })
-
           setStudentName(student
             ? `${student.first_name || student.user_data?.first_name || student.user?.first_name || ""} ${student.last_name || student.user_data?.last_name || student.user?.last_name || ""}`.trim() || `Student ${studentId}`
             : `Student ${studentId}`)
@@ -141,9 +140,13 @@ export default function StudentGradesDetail() {
         <div className="pointer-events-none absolute -bottom-24 right-40 h-56 w-56 rounded-full bg-secondary/5 blur-3xl" />
         <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-center gap-4">
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-secondary text-secondary-foreground text-xl font-bold shadow-md">
-              {getInitials(studentName)}
-            </div>
+            <ProfileAvatar
+              src={studentProfilePicture}
+              userId={studentId}
+              alt={studentName}
+              size="xl"
+              className="rounded-2xl shadow-md"
+            />
             <div>
               <p className="text-xs font-semibold uppercase tracking-widest text-secondary">Student Academic Record</p>
               <h1 className="mt-1 text-2xl md:text-3xl font-bold text-gray-900">{studentName}</h1>

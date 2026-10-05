@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { attendanceAPI, academicsAPI } from "@/lib/api"
+import { ProfileAvatar } from "@/components/profile-avatar"
 import {
   LineChart,
   Line,
@@ -70,6 +71,7 @@ interface SubjectReport {
 interface StudentAttendanceSummary {
   student_id: number
   student_name: string
+  profile_picture_url?: string | null
   class_id: number
   class_name: string
   total_days: number
@@ -567,7 +569,17 @@ export function AttendanceAnalytics() {
                     <tbody>
                       {filteredStudentSummary.map((student) => (
                         <tr key={`${student.student_id}-${student.class_id}`} className="border-b last:border-0 hover:bg-muted/30">
-                          <td className="px-3 py-3 font-medium text-foreground">{student.student_name}</td>
+                          <td className="px-3 py-3">
+                            <div className="flex min-w-44 items-center gap-3">
+                              <ProfileAvatar
+                                src={student.profile_picture_url}
+                                userId={student.student_id}
+                                alt={student.student_name}
+                                size="sm"
+                              />
+                              <span className="font-medium text-foreground">{student.student_name}</span>
+                            </div>
+                          </td>
                           <td className="px-3 py-3 text-muted-foreground">{student.class_name}</td>
                           <td className="px-3 py-3 text-right tabular-nums">{student.total_days}</td>
                           <td className="px-3 py-3 text-right font-medium tabular-nums text-emerald-700">{student.present_days}</td>

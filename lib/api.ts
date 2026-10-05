@@ -5,6 +5,7 @@ import { loadingManager } from "./loading-manager"
 declare module "axios" {
   interface AxiosRequestConfig {
     apiCache?: boolean
+    apiCacheTtl?: number
   }
 }
 
@@ -15,6 +16,11 @@ const REFRESHED_ACCESS_TOKEN_KEY = "alara:refreshed-access-token"
 const REFRESH_LOCK_TIMEOUT = 15_000
 const REFRESH_WAIT_TIMEOUT = 20_000
 const API_GET_CACHE_TTL = 30_000
+const SCHOOL_ADMIN_PAGE_CACHE_TTL = 5 * 60_000
+export const SCHOOL_ADMIN_PAGE_CACHE = {
+  apiCache: true,
+  apiCacheTtl: SCHOOL_ADMIN_PAGE_CACHE_TTL,
+} as const
 const API_GET_CACHE_LIMIT = 200
 const apiGetCache = new Map<string, { response: AxiosResponse; expiresAt: number }>()
 const apiGetRequests = new Map<string, Promise<AxiosResponse>>()
@@ -247,7 +253,7 @@ export const apiClient = axios.create({
 
 const defaultApiAdapter = axios.getAdapter(apiClient.defaults.adapter)
 
-// Cache only anonymous GETs. Authenticated reads are deduplicated in flight but never retained.
+// Authenticated reads are retained only when a caller explicitly opts in.
 const cachedApiAdapter: AxiosAdapter = async (config) => {
   if (
     typeof window === "undefined" ||
@@ -261,7 +267,7 @@ const cachedApiAdapter: AxiosAdapter = async (config) => {
 
   const authorization = config.headers.get("Authorization") || "anonymous"
   const key = `${authorization}:${apiClient.getUri(config)}`
-  const cacheResponse = authorization === "anonymous"
+  const cacheResponse = authorization === "anonymous" || config.apiCache === true
   const cached = cacheResponse ? apiGetCache.get(key) : undefined
   if (cached && cached.expiresAt > Date.now()) {
     logApiCacheEvent("HIT", config.url)
@@ -305,7 +311,7 @@ const cachedApiAdapter: AxiosAdapter = async (config) => {
         }
         apiGetCache.set(key, {
           response: { ...response, data: structuredClone(response.data) },
-          expiresAt: Date.now() + API_GET_CACHE_TTL,
+          expiresAt: Date.now() + (config.apiCacheTtl ?? API_GET_CACHE_TTL),
         })
         logApiCacheEvent("SET", config.url)
       }
@@ -481,30 +487,30 @@ export const academicsAPI = {
 
   faculties: () => apiClient.get("/academics/faculties/"),
   departments: () => apiClient.get("/academics/departments/"),
-  classes: () => apiClient.get("/academics/classes/"),
-  subjects: () => apiClient.get("/academics/subjects/"),
+  classes: () => apiClient.get("/academics/classes/", SCHOOL_ADMIN_PAGE_CACHE),
+  subjects: () => apiClient.get("/academics/subjects/", SCHOOL_ADMIN_PAGE_CACHE),
   enrollments: () => apiClient.get("/academics/enrollments/"),
   timetables: () => apiClient.get("/academics/timetables/"),
   createTimetable: (data: any) => apiClient.post("/academics/timetables/", data),
   updateTimetable: (id: number, data: any) => apiClient.put(`/academics/timetables/${id}/`, data),
   deleteTimetable: (id: number) => apiClient.delete(`/academics/timetables/${id}/`),
   
-  classTeachers: () => apiClient.get("/academics/class-teachers/"),
+  classTeachers: () => apiClient.get("/academics/class-teachers/", SCHOOL_ADMIN_PAGE_CACHE),
   createClassTeacher: (data: any) => apiClient.post("/academics/class-teachers/", data),
   updateClassTeacher: (id: number, data: any) => apiClient.put(`/academics/class-teachers/${id}/`, data),
   deleteClassTeacher: (id: number) => apiClient.delete(`/academics/class-teachers/${id}/`),
   
-  studentClasses: () => apiClient.get("/academics/student-classes/"),
+  studentClasses: () => apiClient.get("/academics/student-classes/", SCHOOL_ADMIN_PAGE_CACHE),
   createStudentClass: (data: any) => apiClient.post("/academics/student-classes/", data),
   updateStudentClass: (id: number, data: any) => apiClient.put(`/academics/student-classes/${id}/`, data),
   deleteStudentClass: (id: number) => apiClient.delete(`/academics/student-classes/${id}/`),
   
-  classSubjectTeachers: () => apiClient.get("/academics/class-subject-teachers/"),
+  classSubjectTeachers: () => apiClient.get("/academics/class-subject-teachers/", SCHOOL_ADMIN_PAGE_CACHE),
   createClassSubjectTeacher: (data: any) => apiClient.post("/academics/class-subject-teachers/", data),
   updateClassSubjectTeacher: (id: number, data: any) => apiClient.put(`/academics/class-subject-teachers/${id}/`, data),
   deleteClassSubjectTeacher: (id: number) => apiClient.delete(`/academics/class-subject-teachers/${id}/`),
   
-  classSubjects: () => apiClient.get("/academics/class-subjects/"),
+  classSubjects: () => apiClient.get("/academics/class-subjects/", SCHOOL_ADMIN_PAGE_CACHE),
   getTeacherClassSubjects: (classId: number) => apiClient.get(`/academics/classes/my_class_subjects/?class_obj=${classId}`),
   createClassSubject: (data: any) => apiClient.post("/academics/class-subjects/", data),
 
@@ -529,7 +535,7 @@ export const academicsAPI = {
   createCalendarEvent: (data: any) => apiClient.post("/academics/calendar-events/", data),
   updateCalendarEvent: (id: number, data: any) => apiClient.put(`/academics/calendar-events/${id}/`, data),
   deleteCalendarEvent: (id: number) => apiClient.delete(`/academics/calendar-events/${id}/`),
-  levels: () => apiClient.get("/academics/levels/"),
+  levels: () => apiClient.get("/academics/levels/", SCHOOL_ADMIN_PAGE_CACHE),
   createLevel: (data: any) => apiClient.post("/academics/levels/", data),
   updateLevel: (id: number, data: any) => apiClient.put(`/academics/levels/${id}/`, data),
   deleteLevel: (id: number) => apiClient.delete(`/academics/levels/${id}/`),
@@ -537,7 +543,8 @@ export const academicsAPI = {
   createExam: (data: any) => apiClient.post("/academics/exams/", data),
   updateExam: (id: number, data: any) => apiClient.put(`/academics/exams/${id}/`, data),
   deleteExam: (id: number) => apiClient.delete(`/academics/exams/${id}/`),
-  examResults: (params?: any) => apiClient.get("/academics/exam-results/", { params }),
+  examResults: (params?: any, options?: { apiCache?: boolean; apiCacheTtl?: number }) =>
+    apiClient.get("/academics/exam-results/", { params, ...options }),
   createExamResult: (data: any) => apiClient.post("/academics/exam-results/", data),
   updateExamResult: (id: number, data: any) => apiClient.put(`/academics/exam-results/${id}/`, data),
   deleteExamResult: (id: number) => apiClient.delete(`/academics/exam-results/${id}/`),
@@ -567,12 +574,14 @@ export const academicsAPI = {
   generateQuestionsFromDocument: (docId: number, settings: any) => apiClient.post(`/academics/documents/${docId}/generate_questions/`, settings),
   generateSummaryFromDocument: (docId: number, settings: any) => apiClient.post(`/academics/documents/${docId}/generate_summary/`, settings),
   generateQuestionsFromTopic: (payload: any) => apiClient.post("/academics/documents/generate_questions_from_topic/", payload),
-  notices: () => apiClient.get("/academics/notices/"),
+  notices: (options?: { apiCache?: boolean; apiCacheTtl?: number }) =>
+    apiClient.get("/academics/notices/", options),
   createNotice: (data: any) => apiClient.post("/academics/notices/", data),
   updateNotice: (id: number, data: any) => apiClient.put(`/academics/notices/${id}/`, data),
   deleteNotice: (id: number) => apiClient.delete(`/academics/notices/${id}/`),
   profilePictures: () => apiClient.get("/academics/profile-pictures/"),
-  profilePictureByUser: (userId: number) => apiClient.get(`/academics/profile-pictures/?user=${userId}`),
+  profilePictureByUser: (userId: number, options?: { apiCache?: boolean; apiCacheTtl?: number }) =>
+    apiClient.get(`/academics/profile-pictures/?user=${userId}`, options),
   createProfilePicture: (data: FormData) => apiClient.post("/academics/profile-pictures/", data, { headers: { "Content-Type": "multipart/form-data" } }),
   updateProfilePicture: (id: number, data: FormData) => apiClient.put(`/academics/profile-pictures/${id}/`, data, { headers: { "Content-Type": "multipart/form-data" } }),
   deleteProfilePicture: (id: number) => apiClient.delete(`/academics/profile-pictures/${id}/`),
@@ -609,7 +618,8 @@ export const academicsAPI = {
 
 export const promotionAPI = {
   // Academic years
-  academicYears: (params?: any) => apiClient.get("/academics/academic-years/", { params }),
+  academicYears: (params?: any, options?: { apiCache?: boolean; apiCacheTtl?: number }) =>
+    apiClient.get("/academics/academic-years/", { params, ...options }),
   createAcademicYear: (data: any) => apiClient.post("/academics/academic-years/", data),
   updateAcademicYear: (id: number, data: any) => apiClient.put(`/academics/academic-years/${id}/`, data),
   deleteAcademicYear: (id: number) => apiClient.delete(`/academics/academic-years/${id}/`),
@@ -672,7 +682,8 @@ export const attendanceAPI = {
   list: () => apiClient.get("/attendance/"),
   create: (data: any) => apiClient.post("/attendance/", data),
   bulkCreate: (data: any) => apiClient.post("/attendance/bulk_mark/", data),
-  studentReport: (studentId: number) => apiClient.get(`/attendance/student_report/?student_id=${studentId}`),
+  studentReport: (studentId: number, options?: { apiCache?: boolean; apiCacheTtl?: number }) =>
+    apiClient.get(`/attendance/student_report/?student_id=${studentId}`, options),
   studentReportByDateRange: (studentId: number, startDate: string, endDate: string) => apiClient.get(`/attendance/student_report/?student_id=${studentId}&start_date=${startDate}&end_date=${endDate}`),
   classAttendance: (classId: number, date: string) => apiClient.get(`/attendance/?class_obj=${classId}&date=${date}`),
   classReport: (classId?: number, startDate?: string, endDate?: string) => {
@@ -822,11 +833,19 @@ export const usersAPI = {
   assignGlobalRole: (id: number, role: string) => apiClient.post(`/users/users/${id}/assign_global_role/`, { role }),
   globalStats: () => apiClient.get("/users/users/global_stats/"),
   getById: (id: number) => apiClient.get(`/users/users/${id}/`),
-  teachers: (params?: { page?: number; page_size?: number }) => apiClient.get("/users/teachers/", { params }),
-  getTeacherById: (id: number) => apiClient.get(`/users/teachers/${id}/`),
-  students: (params?: any) => apiClient.get("/users/students/", { params }),
-  getStudentById: (id: number) => apiClient.get(`/users/students/${id}/`),
-  parents: (params?: any) => apiClient.get("/users/parents/", { params }),
+  teachers: (
+    params?: { page?: number; page_size?: number },
+    options?: { apiCache?: boolean; apiCacheTtl?: number },
+  ) =>
+    apiClient.get("/users/teachers/", { params, ...options }),
+  getTeacherById: (id: number, options?: { apiCache?: boolean; apiCacheTtl?: number }) =>
+    apiClient.get(`/users/teachers/${id}/`, options),
+  students: (params?: any, options?: { apiCache?: boolean; apiCacheTtl?: number }) =>
+    apiClient.get("/users/students/", { params, ...options }),
+  getStudentById: (id: number, options?: { apiCache?: boolean; apiCacheTtl?: number }) =>
+    apiClient.get(`/users/students/${id}/`, options),
+  parents: (params?: any, options?: { apiCache?: boolean }) =>
+    apiClient.get("/users/parents/", { params, ...options }),
   parentDashboard: () => apiClient.get("/users/parents/dashboard/"),
   parentRelationships: () => apiClient.get("/users/parents/relationships/"),
   updateParentRelationshipStatus: (parentId: number, relationshipId: number, status: string) =>
@@ -969,7 +988,8 @@ export const billingAPI = {
   updateFeeType: (id: number, data: any) => apiClient.put(`/billing/fees/${id}/`, data),
   deleteFee: (id: number) => apiClient.delete(`/billing/fees/${id}/`),
   deleteFeeType: (id: number) => apiClient.delete(`/billing/fees/${id}/`),
-  schoolFeeAssignments: () => apiClient.get("/billing/school-fee-assignments/"),
+  schoolFeeAssignments: (options?: { apiCache?: boolean; apiCacheTtl?: number }) =>
+    apiClient.get("/billing/school-fee-assignments/", options),
   createSchoolFeeAssignment: (data: any) => apiClient.post("/billing/school-fee-assignments/", data),
   updateSchoolFeeAssignment: (id: number, data: any) => apiClient.put(`/billing/school-fee-assignments/${id}/`, data),
   deleteSchoolFeeAssignment: (id: number) => apiClient.delete(`/billing/school-fee-assignments/${id}/`),
@@ -980,7 +1000,8 @@ export const billingAPI = {
   deleteClassFeeAssignment: (id: number) => apiClient.delete(`/billing/class-fee-assignments/${id}/`),
   applyClassFeeToStudents: (id: number) => apiClient.post(`/billing/class-fee-assignments/${id}/apply_to_students/`),
   studentFeeAssignments: () => apiClient.get("/billing/student-fee-assignments/"),
-  studentFeeAssignmentsByStudent: (studentId: number) => apiClient.get(`/billing/student-fee-assignments/?student=${studentId}`),
+  studentFeeAssignmentsByStudent: (studentId: number, options?: { apiCache?: boolean; apiCacheTtl?: number }) =>
+    apiClient.get(`/billing/student-fee-assignments/?student=${studentId}`, options),
   createStudentFeeAssignment: (data: any) => apiClient.post("/billing/student-fee-assignments/", data),
   updateStudentFeeAssignment: (id: number, data: any) => apiClient.patch(`/billing/student-fee-assignments/${id}/`, data),
   deleteStudentFeeAssignment: (id: number) => apiClient.delete(`/billing/student-fee-assignments/${id}/`),

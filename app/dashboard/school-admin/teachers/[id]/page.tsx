@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { usersAPI, academicsAPI } from '@/lib/api'
+import { usersAPI, academicsAPI, SCHOOL_ADMIN_PAGE_CACHE } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -91,7 +91,7 @@ export default function TeacherDetailPage() {
   const loadData = async () => {
     try {
       setLoading(true)
-      const res = await usersAPI.getTeacherById(parseInt(teacherId))
+      const res = await usersAPI.getTeacherById(parseInt(teacherId), SCHOOL_ADMIN_PAGE_CACHE)
       const t: TeacherDetail = res.data
       setTeacher(t)
       const u = t.user_data || t.user
@@ -105,7 +105,7 @@ export default function TeacherDetailPage() {
       })
       if (u?.id) {
         try {
-          const picRes = await academicsAPI.profilePictureByUser(u.id)
+          const picRes = await academicsAPI.profilePictureByUser(u.id, SCHOOL_ADMIN_PAGE_CACHE)
           const pics = picRes.data.results || picRes.data || []
           if (pics.length > 0) { 
             // Get the best available URL - prefer display_url, fall back to storage_url, then picture
