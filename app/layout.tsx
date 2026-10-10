@@ -78,7 +78,7 @@ export function generateViewport() {
   return {
     width: 'device-width',
     initialScale: 1,
-    themeColor: '#EC4899',
+    themeColor: '#650d16',
   }
 }
 

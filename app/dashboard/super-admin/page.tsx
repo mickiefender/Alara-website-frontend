@@ -22,16 +22,30 @@ import { StatCard, StatCardGrid } from "@/components/super-admin/stat-card"
 import { SaAreaChart } from "@/components/super-admin/charts"
 import { StatusBadge } from "@/components/super-admin/status-badge"
 import { useAuthContext } from "@/lib/auth-context"
+import { hasPlatformPermission } from "@/lib/platform-permissions"
 
 function fmtMoney(value: number) {
   return `GH₵ ${Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
 }
 
+function formatStorageBytes(bytes: number) {
+  if (bytes >= 1024 ** 3) return `${(bytes / 1024 ** 3).toFixed(2)} GB`
+  if (bytes >= 1024 ** 2) return `${(bytes / 1024 ** 2).toFixed(2)} MB`
+  if (bytes >= 1024) return `${(bytes / 1024).toFixed(2)} KB`
+  return `${bytes} B`
+}
+
 export default function SuperAdminDashboardPage() {
   const { user } = useAuthContext()
   const [activityPage, setActivityPage] = useState(1)
-  const can = (permission: string) => user?.role === "super_admin" || Boolean(user?.platform_permissions?.includes(permission))
+  const can = (permission: string) =>
+    user?.role === "super_admin" || hasPlatformPermission(user?.platform_permissions, permission)
   const overview = useFetch<AnyObj>(() => platformAPI.overview().then((r) => r.data), [])
+  const storage = useFetch<AnyObj>(
+    () => platformAPI.storageUsage().then((r) => r.data),
+    [],
+    can("platform.storage"),
+  )
   const health = useFetch<AnyObj>(() => platformAPI.health().then((r) => r.data), [])
   const logs = useFetch<AnyObj>(() => platformAPI.auditLogs({ page_size: 10, page: activityPage }).then((r) => r.data), [activityPage])
   const activityRows = (logs.data?.results as AnyObj[]) || []
@@ -71,23 +85,42 @@ export default function SuperAdminDashboardPage() {
         />
       </StatCardGrid>}
 
-      {/* Revenue + subscriptions + storage + ops */}
-      {can("finance.view") && <StatCardGrid>
-        <StatCard label="Revenue (all time)" value={fmtMoney(o?.revenue?.total ?? 0)} icon={CircleDollarSign} tone="primary" />
-        <StatCard label="Revenue this month" value={fmtMoney(o?.revenue?.this_month ?? 0)} icon={CircleDollarSign} />
-        <StatCard
-          label="Subscriptions"
-          value={`${o?.subscriptions?.active ?? 0} / ${o?.subscriptions?.cancelled ?? 0}`}
-          icon={CircleDollarSign}
-          sub="active / cancelled"
-        />
-        <StatCard
-          label="Storage used"
-          value={`${((o?.storage?.used_mb ?? 0) / 1024).toFixed(1)} GB`}
-          icon={Database}
-          sub={`${o?.storage?.used_mb ?? 0} MB total`}
-        />
-      </StatCardGrid>}
+      {/* Revenue, subscriptions, and storage */}
+      {(can("finance.view") || can("platform.storage")) && (
+        <>
+          {can("platform.storage") && storage.error && (
+            <div className="glass-red rounded-xl p-3 text-sm text-red-300">{storage.error}</div>
+          )}
+          <StatCardGrid>
+            {can("finance.view") && (
+              <>
+                <StatCard label="Revenue (all time)" value={fmtMoney(o?.revenue?.total ?? 0)} icon={CircleDollarSign} tone="primary" />
+                <StatCard label="Revenue this month" value={fmtMoney(o?.revenue?.this_month ?? 0)} icon={CircleDollarSign} />
+                <StatCard
+                  label="Subscriptions"
+                  value={`${o?.subscriptions?.active ?? 0} / ${o?.subscriptions?.cancelled ?? 0}`}
+                  icon={CircleDollarSign}
+                  sub="active / cancelled"
+                />
+              </>
+            )}
+            {can("platform.storage") && (
+              <StatCard
+                label="Storage used"
+                value={storage.data ? formatStorageBytes(Number(storage.data.used_bytes)) : "—"}
+                icon={Database}
+                sub={
+                  storage.loading
+                    ? "Loading live usage…"
+                    : storage.data
+                      ? `${Number(storage.data.object_count).toLocaleString()} objects across all buckets`
+                      : "Storage usage unavailable"
+                }
+              />
+            )}
+          </StatCardGrid>
+        </>
+      )}
 
       {/* Charts row */}
       {(can("platform.analytics") || can("platform.monitoring")) && <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">

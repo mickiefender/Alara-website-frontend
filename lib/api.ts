@@ -451,6 +451,24 @@ export const schoolsAPI = {
   invalidateCache: () => apiClient.post("/schools/schools/invalidate_cache/"),
 }
 
+export const libraryAPI = {
+  books: () => apiClient.get("/library/books/", { apiCache: false }),
+  createBook: (data: Record<string, unknown>) => apiClient.post("/library/books/", data),
+  updateBook: (id: number, data: Record<string, unknown>) =>
+    apiClient.patch(`/library/books/${id}/`, data),
+  deleteBook: (id: number) => apiClient.delete(`/library/books/${id}/`),
+  issueBook: (id: number, data: { student_id: number; due_date: string }) =>
+    apiClient.post(`/library/books/${id}/issue/`, data),
+  categories: () => apiClient.get("/library/categories/", { apiCache: false }),
+  createCategory: (data: { name: string; description: string }) =>
+    apiClient.post("/library/categories/", data),
+  updateCategory: (id: number, data: { name: string; description: string }) =>
+    apiClient.patch(`/library/categories/${id}/`, data),
+  deleteCategory: (id: number) => apiClient.delete(`/library/categories/${id}/`),
+  loans: () => apiClient.get("/library/loans/", { apiCache: false }),
+  returnBook: (id: number) => apiClient.post(`/library/loans/${id}/return/`),
+}
+
 export const complianceAPI = {
   status: () => apiClient.get("/compliance/status/"),
   profile: () => apiClient.get("/compliance/profile/"),
@@ -1110,6 +1128,7 @@ export const platformAPI = {
     apiClient.delete(`/platform/page-heroes/${pageKey}/`),
   // Dashboard
   overview: () => apiClient.get("/platform/overview/"),
+  storageUsage: () => apiClient.get("/platform/storage/usage/"),
   health: () => apiClient.get("/platform/health/"),
 
   // Roles & permissions (RBAC)

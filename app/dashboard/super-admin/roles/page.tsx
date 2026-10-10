@@ -32,6 +32,7 @@ import { PageHeader } from "@/components/super-admin/page-header"
 import { StatCard, StatCardGrid } from "@/components/super-admin/stat-card"
 import { StatusBadge } from "@/components/super-admin/status-badge"
 import { ConfirmDialog } from "@/components/super-admin/confirm-dialog"
+import { useAuthContext } from "@/lib/auth-context"
 
 const PERMISSION_CATALOG: Record<string, string[]> = {
   "Sidebar features": [
@@ -66,6 +67,8 @@ const ALL_PERMISSIONS = Object.values(PERMISSION_CATALOG).flat()
 const EMPTY_ROLE = { display_name: "", name: "", description: "", permissions: [] as string[] }
 
 export default function RolesPage() {
+  const { user } = useAuthContext()
+  const canManageRoles = user?.role === "super_admin"
   const roles = useFetch<AnyObj[]>(() => platformAPI.roles().then((r) => r.data?.results || r.data || []), [])
   const assignments = useFetch<AnyObj[]>(() => platformAPI.roleAssignments().then((r) => r.data?.results || r.data || []), [])
 
@@ -128,7 +131,7 @@ export default function RolesPage() {
         title="Roles & Permissions"
         description="Configure internal platform roles and their granular permissions."
         actions={
-          <Button onClick={openCreate}><Plus className="h-4 w-4 mr-1" /> New role</Button>
+          canManageRoles && <Button onClick={openCreate}><Plus className="h-4 w-4 mr-1" /> New role</Button>
         }
       />
 
@@ -185,19 +188,21 @@ export default function RolesPage() {
                       <TableCell className="text-right">{(r.permissions || []).length}</TableCell>
                       <TableCell><StatusBadge status={r.is_system ? "system" : "custom"} /></TableCell>
                       <TableCell>
-                        <div className="flex justify-end gap-1">
-                          <Button size="sm" variant="ghost" onClick={() => openEdit(r)}>Edit</Button>
-                          {!r.is_system && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="text-red-400"
-                              onClick={() => setDeleteTarget(r)}
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          )}
-                        </div>
+                        {canManageRoles && (
+                          <div className="flex justify-end gap-1">
+                            <Button size="sm" variant="ghost" onClick={() => openEdit(r)}>Edit</Button>
+                            {!r.is_system && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="text-red-400"
+                                onClick={() => setDeleteTarget(r)}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            )}
+                          </div>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -208,9 +213,11 @@ export default function RolesPage() {
 
         {/* Assignments */}
         <TabsContent value="assignments" className="space-y-3">
-          <Button variant="outline" onClick={() => { setAssignUserId(""); setAssignRoleId(""); setAssignOpen(true) }}>
-            <Plus className="h-4 w-4 mr-1" /> Assign role to user
-          </Button>
+          {canManageRoles && (
+            <Button variant="outline" onClick={() => { setAssignUserId(""); setAssignRoleId(""); setAssignOpen(true) }}>
+              <Plus className="h-4 w-4 mr-1" /> Assign role to user
+            </Button>
+          )}
           <div className="overflow-auto rounded-xl border">
             <Table>
               <TableHeader>
@@ -240,9 +247,11 @@ export default function RolesPage() {
                       <TableCell>{a.role_name}</TableCell>
                       <TableCell className="text-xs text-muted-foreground">{new Date(a.assigned_at).toLocaleString()}</TableCell>
                       <TableCell className="text-right">
-                        <Button size="sm" variant="ghost" className="text-red-400" onClick={() => setUnassignTarget(a)}>
-                          Unassign
-                        </Button>
+                        {canManageRoles && (
+                          <Button size="sm" variant="ghost" className="text-red-400" onClick={() => setUnassignTarget(a)}>
+                            Unassign
+                          </Button>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}

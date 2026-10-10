@@ -6,13 +6,6 @@ import { useEffect, useState } from "react"
 import { ArrowRight, Play } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
-const teamImages = [
-  "/testimonial-img/GodwinSarfo.JPG",
-  "/testimonial-img/nico-black&yellow.JPG",
-  "/placeholder-user.jpg",
-  "/placeholder-user.jpg",
-]
-
 function TypewriterHeading() {
   const fullText = "Simplify School Management."
   const [characterCount, setCharacterCount] = useState(0)
@@ -98,23 +91,6 @@ export function HeroSection() {
               </Button>
             </div>
 
-            <div className="mt-10 flex items-center gap-3">
-              <div className="flex -space-x-3" aria-label="Alara community members">
-                {teamImages.map((image, index) => (
-                  <Image
-                    key={`${image}-${index}`}
-                    src={image}
-                    alt=""
-                    width={38}
-                    height={38}
-                    className="h-9 w-9 rounded-full border-2 border-[#101431] object-cover"
-                  />
-                ))}
-              </div>
-              <p className="text-sm text-red-50/75">
-                Trusted by schools building a better future
-              </p>
-            </div>
           </div>
 
           <div className="hero-person order-1 relative flex min-h-[330px] items-end justify-center self-end md:order-none md:min-h-[560px] md:justify-end">

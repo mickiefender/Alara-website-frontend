@@ -32,18 +32,18 @@ export function StatCard({
   suffix?: string
 }) {
   return (
-    <div className="glass-card glass-hover p-5">
+    <div className="glass-card glass-hover p-4">
       <div className="flex items-start justify-between gap-2">
         <p className="text-xs uppercase tracking-wider font-medium text-muted-foreground">
           {label}
         </p>
         {Icon && (
-          <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-            <Icon className="h-4 w-4 text-primary" />
+          <div className="h-7 w-7 rounded-lg flex items-center justify-center shrink-0">
+            <Icon className="h-3.5 w-3.5 text-primary" />
           </div>
         )}
       </div>
-      <div className={cn("text-2xl font-bold tracking-tight mt-2 tabular-nums", TONES[tone])}>
+      <div className={cn("text-xl font-bold tracking-tight mt-1.5 tabular-nums", TONES[tone])}>
         {typeof value === "number" ? (
           <>
             {prefix}

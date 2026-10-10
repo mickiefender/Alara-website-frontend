@@ -97,11 +97,11 @@ export function PlatformSidebar() {
   return (
     <aside className="hidden lg:flex sticky top-0 h-screen overflow-y-auto w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar">
       {/* Brand */}
-      <div className="flex items-center gap-2.5 px-5 py-5 border-b border-sidebar-border">
+      <div className="flex items-center gap-2.5 border-b border-[#7b1721] bg-[#650d16] px-5 py-5">
         <AlaraLogo width={36} height={36} className="h-9 w-9 object-contain shrink-0" forceVariant="dark" />
         <div>
-          <p className="text-sm font-bold tracking-tight text-foreground">Alara Platform</p>
-          <p className="text-[11px] text-muted-foreground">Super Admin Console</p>
+          <p className="text-sm font-bold tracking-tight text-white">Alara Platform</p>
+          <p className="text-[11px] text-white/75">Super Admin Console</p>
         </div>
       </div>
 

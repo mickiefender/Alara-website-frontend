@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { getErrorMessage, platformAPI } from "@/lib/api"
+import { useAuthContext } from "@/lib/auth-context"
 import type { AnyObj } from "@/components/super-admin/types"
 import { useFetch } from "@/components/super-admin/use-fetch"
 import { PageHeader } from "@/components/super-admin/page-header"
@@ -24,6 +25,8 @@ const EMPTY_FORM = {
 }
 
 export default function SuperAdminStaffPage() {
+  const { user } = useAuthContext()
+  const canManageStaff = user?.role === "super_admin"
   const staff = useFetch<AnyObj[]>(
     () => platformAPI.platformStaff().then((response) => response.data || []),
     [],
@@ -96,7 +99,7 @@ export default function SuperAdminStaffPage() {
       <PageHeader
         title="Staff Administrators"
         description="Create internal platform staff accounts and assign the school-management tasks they can perform."
-        actions={<Button onClick={openCreate}><Plus className="mr-2 h-4 w-4" />Create staff admin</Button>}
+        actions={canManageStaff && <Button onClick={openCreate}><Plus className="mr-2 h-4 w-4" />Create staff admin</Button>}
       />
       {message && <p className="rounded-lg bg-muted p-3 text-sm">{message}</p>}
       <Card>
@@ -111,10 +114,10 @@ export default function SuperAdminStaffPage() {
                 <p className="text-sm text-muted-foreground">{member.email} · {member.platform_roles?.[0]?.display_name || "Unassigned platform role"}</p>
                 <p className="mt-1 text-xs text-muted-foreground">Platform-wide · {(member.platform_permissions || []).length} permissions</p>
               </div>
-              <div className="flex gap-2">
+              {canManageStaff && <div className="flex gap-2">
                   <Button variant="outline" size="sm" onClick={() => openEdit(member)} disabled={busy}>View role</Button>
                 <Button variant="ghost" size="icon" onClick={() => removeStaff(member)} disabled={busy} aria-label={`Delete ${member.username}`}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-              </div>
+              </div>}
             </div>
           ))}
         </CardContent>

@@ -18,7 +18,7 @@ import {
   YAxis,
 } from "recharts"
 
-const PALETTE = ["#f5a623", "#34d399", "#60a5fa", "#f472b6", "#94a3b8", "#a78bfa"]
+const PALETTE = ["#650d16", "#34d399", "#60a5fa", "#f472b6", "#94a3b8", "#a78bfa"]
 
 const AXIS_STYLE = { fontSize: 11, fill: "var(--muted-foreground)" } as const
 

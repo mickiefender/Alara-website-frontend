@@ -46,8 +46,8 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-[#650d16] p-4">
+      <Card className="w-full max-w-md !bg-white supports-[backdrop-filter]:!bg-white !backdrop-blur-none !border-gray-200 !shadow-lg hover:!border-gray-200 hover:!shadow-lg">
         <CardHeader className="flex flex-col items-center text-center space-y-2">
   {/* LOGO */}
   <AlaraLogo width={64} height={64} className="w-16 h-16 object-contain" />

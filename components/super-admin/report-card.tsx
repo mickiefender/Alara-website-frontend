@@ -60,7 +60,7 @@ export function ReportCard({
   return (
     <div className="glass-card glass-hover p-5 flex flex-col gap-3">
       <div className="flex items-start justify-between gap-2">
-        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+        <div className="h-10 w-10 rounded-lg flex items-center justify-center shrink-0">
           <Icon className="h-5 w-5 text-primary" />
         </div>
         <DropdownMenu>
