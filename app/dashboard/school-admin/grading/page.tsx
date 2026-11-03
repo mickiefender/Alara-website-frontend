@@ -14,7 +14,7 @@ import Link from "next/link"
 import { GradingPolicyManagement } from "@/components/grading-policy-management"
 import { ProfileAvatar } from "@/components/profile-avatar"
 import { gradesAPI, usersAPI, academicsAPI, getErrorMessage, fetchAllGrades } from "@/lib/api"
-import { Search, ArrowRight, Users, TrendingUp, Award, Plus } from "lucide-react"
+import { Search, ArrowRight, Plus, Users } from "lucide-react"
 import { DataStateTableRow } from "@/components/data-state"
 
 interface Grade {
@@ -204,14 +204,6 @@ export default function GradingPage() {
     }
   }
 
-  const sessionAssessmentCount = grades.filter((g) => filterSession === "" || filterSession === "all" || g.academic_session?.toString() === filterSession).length
-
-  const stats = [
-    { label: "Students Graded", value: studentsSummary.length, icon: Users, iconClass: "text-secondary", cardClass: "!bg-red-50/70 dark:!bg-red-950/30", valueClass: "text-gray-900" },
-    { label: "Total Assessments", value: sessionAssessmentCount, icon: TrendingUp, iconClass: "text-secondary", cardClass: "!bg-emerald-50/70 dark:!bg-emerald-950/30", valueClass: "text-gray-900" },
-    { label: "A Grade Students", value: studentsSummary.filter(s => s.overallGrade === "A").length, icon: Award, iconClass: "text-secondary", cardClass: "!bg-amber-50/70 dark:!bg-amber-950/30", valueClass: "text-gray-900" },
-  ]
-
   return (
     <div className="space-y-6">
       {/* ── Header ─────────────────────────────────────────── */}
@@ -325,21 +317,6 @@ export default function GradingPage() {
             </DialogContent>
           </Dialog>
         </div>
-      </div>
-
-      {/* ── Stats Cards ────────────────────────────────────── */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 stagger">
-        {stats.map((stat) => (
-          <div key={stat.label} className={`glass-card glass-hover p-4 flex items-center gap-3 ${stat.cardClass}`}>
-            <div className={`flex shrink-0 items-center justify-center ${stat.iconClass}`}>
-              <stat.icon size={22} />
-            </div>
-            <div className="min-w-0">
-              <p className={`text-3xl font-bold leading-none ${stat.valueClass}`}>{stat.value}</p>
-              <p className="mt-1.5 text-sm text-muted-foreground">{stat.label}</p>
-            </div>
-          </div>
-        ))}
       </div>
 
       {/* ── Filters ────────────────────────────────────────── */}

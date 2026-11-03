@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { Building2, MoreHorizontal, Plus, ShieldAlert, Trash2 } from "lucide-react"
+import { AlertTriangle, Building2, MoreHorizontal, Plus, ShieldAlert, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -244,7 +244,19 @@ export default function SchoolsPage() {
                 return (
                   <TableRow key={s.id}>
                     <TableCell>
-                      <p className="font-medium">{s.name}</p>
+                      <p className="flex items-center gap-1.5 font-medium">
+                        {s.name}
+                        {u.subscription_status === "expired" && (
+                          <span
+                            className="inline-flex text-red-600"
+                            role="img"
+                            aria-label="Subscription expired"
+                            title="Subscription has ended and has not been renewed"
+                          >
+                            <AlertTriangle className="h-4 w-4" aria-hidden="true" />
+                          </span>
+                        )}
+                      </p>
                       <p className="text-xs text-muted-foreground">{s.email}</p>
                     </TableCell>
                     <TableCell>{u.plan ? <span className="capitalize">{String(u.plan)}</span> : "—"}</TableCell>

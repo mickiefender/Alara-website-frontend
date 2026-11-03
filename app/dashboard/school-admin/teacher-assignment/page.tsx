@@ -280,13 +280,13 @@ export default function TeacherAssignmentsPage() {
                       </TableCell>
                       <TableCell className="text-slate-600">{classItem.level || "—"}</TableCell>
                       <TableCell>
-                        <Badge variant="secondary" className="gap-1.5">
+                        <Badge variant="outline" className="gap-1.5 border-transparent">
                           <Users className="w-3 h-3" />
                           {classTeacherCount} assigned
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="secondary" className="gap-1.5">
+                        <Badge variant="outline" className="gap-1.5 border-transparent">
                           <BookOpen className="w-3 h-3" />
                           {subjectTeacherCount} assigned
                         </Badge>
@@ -301,7 +301,7 @@ export default function TeacherAssignmentsPage() {
                             <Button
                               size="sm"
                               onClick={() => handleSelectClass(classItem)}
-                              className="bg-secondary hover:bg-blue-700 text-white gap-2 group-hover:shadow-md transition-shadow"
+                              className="bg-red-600 hover:bg-red-700 text-white gap-2 group-hover:shadow-md transition-shadow"
                             >
                               Manage Teachers
                               <ArrowRight size={15} />

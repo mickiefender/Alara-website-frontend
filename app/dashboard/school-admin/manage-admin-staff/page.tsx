@@ -202,7 +202,7 @@ export default function ManageAdminStaffPage() {
                       }}
                       className={`p-4 rounded-lg border-2 transition-all text-left ${
                         selectedRole === role.id
-                          ? "border-blue-600 bg-blue-50"
+                          ? "border-red-600 bg-red-50"
                           : "border-gray-200 hover:border-gray-300"
                       }`}
                     >
@@ -233,7 +233,7 @@ export default function ManageAdminStaffPage() {
                           }}
                         />
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                          <div className="w-8 h-8 bg-red-100 text-red-700 rounded-lg flex items-center justify-center">
                             <span className="text-sm font-semibold">{permission.category[0]}</span>
                           </div>
                           <div>
@@ -254,7 +254,7 @@ export default function ManageAdminStaffPage() {
                 </div>
               )}
 
-              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700">
+              <Button type="submit" className="w-full bg-red-600 text-white hover:bg-red-700">
                 Create Staff Account
               </Button>
             </form>
@@ -315,7 +315,7 @@ export default function ManageAdminStaffPage() {
                       </td>
                       <td className="px-6 py-4 text-gray-700">{member.email}</td>
                       <td className="px-6 py-4">
-                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
                           {ADMIN_ROLES.find((r) => r.id === member.role)?.label}
                         </span>
                       </td>
@@ -324,7 +324,7 @@ export default function ManageAdminStaffPage() {
                           {member.permissions?.map((permId: string) => {
                             const perm = NAV_LINK_PERMISSIONS.find(p => p.id === permId)
                             return perm ? (
-                              <span key={permId} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                              <span key={permId} className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full">
                                 {perm.label}
                               </span>
                             ) : null
@@ -339,7 +339,7 @@ export default function ManageAdminStaffPage() {
                             setSelectedStaff(member)
                             setSelectedPermissions(member.permissions || [])
                           }}
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                         >
                           <Edit2 size={18} />
                         </button>
@@ -394,7 +394,7 @@ export default function ManageAdminStaffPage() {
               <div className="flex gap-3">
                 <Button
                   onClick={() => handleUpdatePermissions(selectedStaff.id)}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700"
+                  className="flex-1 bg-red-600 text-white hover:bg-red-700"
                 >
                   Save Permissions
                 </Button>

@@ -5,12 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { ProtectedRoute } from "@/lib/protected-route"
-import { academicsAPI, getErrorMessage } from "@/lib/api"
+import { GHANA_REPORT_PRESET_HTML, renderTemplateLocally } from "@/components/ReportTemplateEditor"
+import { academicsAPI, getErrorMessage, resolveImageUrl } from "@/lib/api"
 import { useAuthContext } from "@/lib/auth-context"
 import { useToast } from "@/hooks/use-toast"
 import { DataStateLoading } from "@/components/data-state"
-import { Download, FileSpreadsheet, FileText, Loader2, Award, RefreshCcw, Users } from "lucide-react"
+import { Download, Eye, FileSpreadsheet, FileText, Loader2, Award, RefreshCcw, Users, Send } from "lucide-react"
 
 interface TerminalReportRow {
   id: number
@@ -25,18 +27,34 @@ interface TerminalReportRow {
   position?: number
   total_students?: number
   grade: string
+  student_number?: string
+  gender?: string
+  roll_number?: string
+  class_teacher_name?: string
   days_present?: number
   total_days?: number
   attendance_percentage?: number
+  promotion_status?: string
+  best_subject_name?: string
+  best_subject_score?: number
+  school_logo?: string
+  school_phone?: string
+  school_email?: string
+  school_address?: string
   status: string
   subject_scores?: Array<{
     id: number
     subject_name: string
+    ca1_score?: number | null
+    ca2_score?: number | null
+    ca3_score?: number | null
+    exam_score?: number | null
     total_score: number
     percentage: number
     grade: string
-    position?: number | null
-    total_students?: number
+    subject_position?: number | null
+    subject_total_students?: number
+    remarks?: string
   }>
   form_teacher_remarks?: string
   principal_remarks?: string
@@ -73,6 +91,9 @@ function ExportResultsContent() {
 
   const [downloadingId, setDownloadingId] = useState<number | null>(null)
   const [bulkDownloading, setBulkDownloading] = useState(false)
+  const [previewReport, setPreviewReport] = useState<TerminalReportRow | null>(null)
+  const [previewOpen, setPreviewOpen] = useState(false)
+  const [publishingId, setPublishingId] = useState<number | null>(null)
 
   const fetchData = useCallback(async () => {
     try {
@@ -85,7 +106,21 @@ function ExportResultsContent() {
         academicsAPI.terminalReportTemplates(),
       ])
 
-      setReports(reportsRes.data?.results || reportsRes.data || [])
+      const reportRows: TerminalReportRow[] = []
+      let reportPage = 1
+      let responseData = reportsRes.data
+      for (;;) {
+        if (Array.isArray(responseData)) {
+          reportRows.push(...responseData)
+          break
+        }
+        reportRows.push(...(responseData?.results || []))
+        if (!responseData?.next) break
+        reportPage += 1
+        const nextPage = await academicsAPI.terminalReports({ page: reportPage })
+        responseData = nextPage.data
+      }
+      setReports(reportRows)
 
       const sessionList = sessionsRes.data?.results || sessionsRes.data || []
       setSessions(sessionList)
@@ -125,6 +160,21 @@ function ExportResultsContent() {
     templates.find((t) => t.id.toString() === templateId) ||
     templates.find((t) => t.is_default) ||
     templates[0]
+  const selectedTemplateHtml = selectedTemplate?.html_template?.trim() || GHANA_REPORT_PRESET_HTML
+
+  const handleTemplateChange = (value: string) => {
+    setTemplateId(value === "none" ? "" : value)
+    const firstReport = filteredReports[0]
+    if (!firstReport) {
+      toast({
+        title: "Template selected",
+        description: "Generate or load a report to preview it with this template.",
+      })
+      return
+    }
+    setPreviewReport(firstReport)
+    setPreviewOpen(true)
+  }
 
   const getGradeColor = (grade: string) => {
     switch (grade) {
@@ -135,6 +185,32 @@ function ExportResultsContent() {
       case "E": return "bg-amber-100 text-amber-800"
       case "F": return "bg-red-100 text-red-800"
       default: return "bg-gray-100 text-gray-800"
+    }
+  }
+
+  const openPreview = (report: TerminalReportRow) => {
+    setPreviewReport(report)
+    setPreviewOpen(true)
+  }
+
+  const publishReport = async (report: TerminalReportRow) => {
+    setPublishingId(report.id)
+    try {
+      const response = await academicsAPI.publishTerminalReport(report.id)
+      const updatedReport = response.data as TerminalReportRow
+      setReports((current) =>
+        current.map((item) => item.id === report.id ? { ...item, ...updatedReport } : item),
+      )
+      toast({ title: "Report published", description: `${report.student_name}'s report is now published.` })
+    } catch (err) {
+      console.error("Failed to publish terminal report:", err)
+      toast({
+        title: "Could not publish report",
+        description: getErrorMessage(err, `Could not publish ${report.student_name}'s report.`),
+        variant: "destructive",
+      })
+    } finally {
+      setPublishingId(null)
     }
   }
 
@@ -184,30 +260,50 @@ function ExportResultsContent() {
 
   const buildPreviewData = (report: TerminalReportRow) => {
     const subjectScores = report.subject_scores || []
-    // Split each subject total into CA / exam halves for the CLASS SCORE |
-    // EXAM SCORE layout used by Ghanaian terminal reports. The backend
-    // stores one weighted total per subject; a 50/50 presentation split is
-    // applied when the underlying components are not available.
-    const caTotal = subjectScores.reduce((sum, s) => sum + (s.total_score ?? 0) * 0.5, 0)
-    const examTotal = subjectScores.reduce((sum, s) => sum + (s.total_score ?? 0) * 0.5, 0)
+    const getCaScore = (score: NonNullable<TerminalReportRow["subject_scores"]>[number]) => {
+      const caParts = [score.ca1_score, score.ca2_score, score.ca3_score].filter(
+        (part): part is number => typeof part === "number",
+      )
+      return caParts.length ? caParts.reduce((sum, part) => sum + part, 0) : null
+    }
+    const getAverageRemark = (value?: number) => {
+      if (typeof value !== "number" || Number.isNaN(value)) return ""
+      if (value >= 80) return "Highly Proficient"
+      if (value >= 68) return "Proficient"
+      if (value >= 54) return "Approaching Proficiency"
+      if (value >= 40) return "Developing"
+      return "Emerging"
+    }
+    const caTotal = subjectScores.reduce((sum, score) => sum + (getCaScore(score) ?? 0), 0)
     const grandTotal = subjectScores.reduce((sum, s) => sum + (s.total_score ?? 0), 0)
+    const schoolLogo = resolveImageUrl(report.school_logo || school?.logo_url)
+    const schoolMotto = (school as any)?.motto || (school as any)?.tagline || ""
+    const principalName = (school as any)?.principal_name || ""
 
     return {
       student_name: report.student_name,
       name: report.student_name,
+      student_id: report.student_number || String(report.student),
       class: report.class_name,
       class_name: report.class_name,
       school_name: school?.name || "",
+      school_phone: report.school_phone || school?.phone || "",
+      school_email: report.school_email || school?.email || "",
+      school_address: report.school_address || school?.address || "",
+      school_motto: schoolMotto,
+      school_logo: schoolLogo,
       session_name: report.session_name,
       academic_year: report.session_name,
       term: report.session_name,
-      gender: "",
-      roll_number: "",
+      gender: report.gender || "",
+      roll_number: report.roll_number || "",
       position_in_class: report.position ? `${report.position}` : "N/A",
       position: report.position,
       total_students: report.total_students,
-      average_mark: report.average_marks?.toFixed(1),
+      total_marks: report.total_marks,
+      average_mark: report.average_marks?.toFixed(1) ?? "0.0",
       average_marks: report.average_marks,
+      average_remark: getAverageRemark(report.average_marks),
       grade: report.grade,
       overall_grade: report.grade,
       attendance: `${report.attendance_percentage?.toFixed(0) ?? 0}%`,
@@ -217,41 +313,46 @@ function ExportResultsContent() {
       conduct: "",
       attitude: "",
       interest: "",
-      class_teacher_name: "",
+      class_teacher_name: report.class_teacher_name || "",
       class_teacher_remark: report.form_teacher_remarks || "",
-      principal_name: "",
+      principal_name: principalName,
       principal_remark: report.principal_remarks || "",
+      principal_signature: "",
       next_term_begins: "",
       promoted_to: "",
       date: new Date().toLocaleDateString(),
-      best_subject_name: "",
-      best_subject_score: 0,
-      promotion_status: "",
+      best_subject_name: report.best_subject_name || "",
+      best_subject_score: report.best_subject_score ?? 0,
+      promotion_status: report.promotion_status || "",
       ca_total: Number(caTotal.toFixed(1)),
-      exam_total: Number(examTotal.toFixed(1)),
+      exam_total: subjectScores.reduce((sum, score) => sum + (score.exam_score ?? 0), 0),
       grand_total: Number(grandTotal.toFixed(1)),
       max_total: subjectScores.length * 100,
+      bill_items: [],
+      arrears: "",
+      grand_total_bill: Number(grandTotal.toFixed(1)),
       subjects: subjectScores.map((s) => ({
         name: s.subject_name,
         score: s.total_score,
         percentage: s.percentage,
-        ca_score: Number(((s.total_score ?? 0) * 0.5).toFixed(1)),
-        exam_score: Number(((s.total_score ?? 0) * 0.5).toFixed(1)),
+        ca_score: getCaScore(s),
+        exam_score: s.exam_score ?? null,
         total_score: s.total_score,
         grade: s.grade,
-        subject_position: s.position ? `${s.position}` : undefined,
-        subject_total_students: s.total_students,
+        subject_position: s.subject_position,
+        subject_total_students: s.subject_total_students,
       })),
       subject_scores: subjectScores.map((s) => ({
         subject_name: s.subject_name,
         percentage: s.percentage,
         total_score: s.total_score,
-        ca_score: Number(((s.total_score ?? 0) * 0.5).toFixed(1)),
-        exam_score: Number(((s.total_score ?? 0) * 0.5).toFixed(1)),
+        ca_score: getCaScore(s),
+        exam_score: s.exam_score ?? null,
         grade: s.grade,
-        remarks: "",
-        subject_position: s.position,
-        subject_total_students: s.total_students,
+        remark: s.remarks || "",
+        remarks: s.remarks || "",
+        subject_position: s.subject_position,
+        subject_total_students: s.subject_total_students,
       })),
       summary: {
         average: report.average_marks,
@@ -271,17 +372,134 @@ function ExportResultsContent() {
   const downloadReportPdf = async (report: TerminalReportRow) => {
     if (!selectedTemplate) return false
     try {
-      const response = await academicsAPI.templatePdf(selectedTemplate.id, {
-        html_template: selectedTemplate.html_template,
-        preview_data: buildPreviewData(report),
-      })
-      const blob = new Blob([response.data], { type: "application/pdf" })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement("a")
-      a.href = url
-      a.download = `${report.student_name.replace(/\s+/g, "-")}-report.pdf`
-      a.click()
-      URL.revokeObjectURL(url)
+      const html2canvas = (await import("html2canvas")).default
+      const { jsPDF } = await import("jspdf")
+      const reportElement = document.createElement("div")
+      reportElement.innerHTML = renderTemplateLocally(selectedTemplateHtml, buildPreviewData(report))
+      reportElement.style.cssText = [
+        "position:fixed",
+        "left:0",
+        "top:0",
+        "display:block",
+        "box-sizing:border-box",
+        "width:794px",
+        "padding:24px",
+        "overflow:visible",
+        "background:#ffffff",
+        "color:#000000",
+        "font-family:Arial,Helvetica,sans-serif",
+        "z-index:9998",
+      ].join(";")
+
+      const exportOverlay = document.createElement("div")
+      exportOverlay.style.cssText =
+        "position:fixed;inset:0;z-index:9999;background:#fff;display:flex;align-items:center;justify-content:center;color:#111;font:14px Arial,sans-serif;"
+      exportOverlay.textContent = `Preparing ${report.student_name}'s report…`
+      exportOverlay.setAttribute("role", "status")
+      exportOverlay.setAttribute("aria-live", "polite")
+      document.body.append(exportOverlay, reportElement)
+
+      try {
+        await Promise.all(
+          Array.from(reportElement.querySelectorAll("img"), async (image) => {
+            if (image.complete) return
+            try {
+              await image.decode()
+            } catch {
+              image.remove()
+            }
+          }),
+        )
+        await document.fonts?.ready
+        await new Promise<void>((resolve) => {
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+        })
+
+        const { width, height } = reportElement.getBoundingClientRect()
+        if (width === 0 || height === 0 || !reportElement.innerHTML.trim()) {
+          throw new Error("The selected report template rendered no visible content.")
+        }
+
+        const canvas = await html2canvas(reportElement, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: "#ffffff",
+          windowWidth: Math.max(document.documentElement.clientWidth, width),
+          scrollX: 0,
+          scrollY: 0,
+        })
+        if (canvas.width === 0 || canvas.height === 0) {
+          throw new Error("The report could not be rendered for PDF export.")
+        }
+
+        const context = canvas.getContext("2d")
+        const pixelStep = Math.max(1, Math.floor(Math.sqrt((canvas.width * canvas.height) / 10000)))
+        let hasVisibleContent = false
+        if (context) {
+          const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data
+          for (let y = 0; y < canvas.height && !hasVisibleContent; y += pixelStep) {
+            for (let x = 0; x < canvas.width; x += pixelStep) {
+              const pixelIndex = (y * canvas.width + x) * 4
+              if (
+                pixels[pixelIndex + 3] > 0 &&
+                (pixels[pixelIndex] < 245 || pixels[pixelIndex + 1] < 245 || pixels[pixelIndex + 2] < 245)
+              ) {
+                hasVisibleContent = true
+                break
+              }
+            }
+          }
+        }
+        if (!hasVisibleContent) {
+          throw new Error("The rendered report is blank. Check the selected template and report data.")
+        }
+
+        const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" })
+        const margin = 8
+        const printableWidth = pdf.internal.pageSize.getWidth() - margin * 2
+        const printableHeight = pdf.internal.pageSize.getHeight() - margin * 2
+        const pageCanvasHeight = Math.floor((canvas.width * printableHeight) / printableWidth)
+        const pageCanvas = document.createElement("canvas")
+        const pageContext = pageCanvas.getContext("2d")
+        if (!pageContext) throw new Error("Could not prepare report PDF pages.")
+        pageCanvas.width = canvas.width
+
+        let offsetY = 0
+        let pageNumber = 0
+        while (offsetY < canvas.height) {
+          const sliceHeight = Math.min(pageCanvasHeight, canvas.height - offsetY)
+          pageCanvas.height = sliceHeight
+          pageContext.fillStyle = "#ffffff"
+          pageContext.fillRect(0, 0, pageCanvas.width, sliceHeight)
+          pageContext.drawImage(
+            canvas,
+            0,
+            offsetY,
+            canvas.width,
+            sliceHeight,
+            0,
+            0,
+            canvas.width,
+            sliceHeight,
+          )
+          if (pageNumber > 0) pdf.addPage()
+          const pageHeightMm = (sliceHeight * printableWidth) / canvas.width
+          pdf.addImage(
+            pageCanvas.toDataURL("image/png"),
+            "PNG",
+            margin,
+            margin,
+            printableWidth,
+            pageHeightMm,
+          )
+          offsetY += sliceHeight
+          pageNumber++
+        }
+        pdf.save(`${report.student_name.replace(/\s+/g, "-")}-report.pdf`)
+      } finally {
+        reportElement.remove()
+        exportOverlay.remove()
+      }
       return true
     } catch (err) {
       console.error("PDF export failed:", err)
@@ -371,7 +589,7 @@ function ExportResultsContent() {
           </div>
           <div>
             <label className="text-sm font-medium mb-1.5 block">Report Template</label>
-            <Select value={templateId || "none"} onValueChange={(v) => setTemplateId(v === "none" ? "" : v)}>
+            <Select value={templateId || "none"} onValueChange={handleTemplateChange}>
               <SelectTrigger><SelectValue placeholder="Default Template" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">Default Template</SelectItem>
@@ -382,6 +600,9 @@ function ExportResultsContent() {
                 ))}
               </SelectContent>
             </Select>
+            <p className="mt-1.5 text-xs text-muted-foreground">
+              Selecting a template opens a preview using the first result matching your filters.
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -439,7 +660,7 @@ function ExportResultsContent() {
                     <th className="text-left py-2 px-2">Position</th>
                     <th className="text-left py-2 px-2">Grade</th>
                     <th className="text-left py-2 px-2">Status</th>
-                    <th className="text-right py-2 px-2">Export</th>
+                    <th className="text-right py-2 px-2">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -458,23 +679,54 @@ function ExportResultsContent() {
                         </span>
                       </td>
                       <td className="py-2 px-2">
-                        <Badge variant={report.status === "published" ? "default" : "secondary"}>
-                          {report.status}
+                        <Badge
+                          variant={report.status === "published" ? "default" : "secondary"}
+                          className={
+                            report.status === "draft"
+                              ? "bg-amber-100 text-amber-900 hover:bg-amber-100"
+                              : report.status === "archived"
+                                ? "bg-slate-100 text-slate-700 hover:bg-slate-100"
+                                : ""
+                          }
+                        >
+                          {report.status ? report.status.charAt(0).toUpperCase() + report.status.slice(1) : "Unknown"}
                         </Badge>
                       </td>
                       <td className="py-2 px-2 text-right">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleDownloadSingle(report)}
-                          disabled={downloadingId === report.id}
-                        >
-                          {downloadingId === report.id ? (
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          ) : (
-                            <Download className="w-3.5 h-3.5" />
+                        <div className="flex justify-end gap-2">
+                          <Button size="sm" variant="outline" onClick={() => openPreview(report)}>
+                            <Eye className="w-3.5 h-3.5 mr-1" />
+                            Preview
+                          </Button>
+                          {report.status === "draft" && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => publishReport(report)}
+                              disabled={publishingId === report.id}
+                            >
+                              {publishingId === report.id ? (
+                                <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                              ) : (
+                                <Send className="w-3.5 h-3.5 mr-1" />
+                              )}
+                              Publish
+                            </Button>
                           )}
-                        </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleDownloadSingle(report)}
+                            disabled={downloadingId === report.id}
+                          >
+                            {downloadingId === report.id ? (
+                              <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                            ) : (
+                              <Download className="w-3.5 h-3.5 mr-1" />
+                            )}
+                            PDF
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -484,6 +736,36 @@ function ExportResultsContent() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="!flex !flex-col !gap-0 w-[96vw] max-w-[900px] h-[94vh] p-0 overflow-hidden rounded-2xl">
+          <DialogHeader className="px-5 py-4 border-b shrink-0">
+            <DialogTitle className="text-lg font-bold">
+              {previewReport?.student_name || "Report"} — Report Preview
+            </DialogTitle>
+            <p className="text-sm text-muted-foreground">
+              {previewReport?.class_name} · {previewReport?.session_name} · {selectedTemplate?.name || "Standard report layout"}
+            </p>
+          </DialogHeader>
+          <div className="flex-1 min-h-0 overflow-y-auto bg-muted/40 p-4 lg:p-6">
+            {previewReport && (
+              <>
+                {!selectedTemplate?.html_template?.trim() && (
+                  <p className="mx-auto mb-4 max-w-[820px] rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                    The selected template has no saved layout, so the standard report layout is shown.
+                  </p>
+                )}
+                <div
+                  className="mx-auto w-full max-w-[820px] rounded-md bg-white p-5 text-black shadow-xl ring-1 ring-black/10 sm:p-8"
+                  dangerouslySetInnerHTML={{
+                    __html: renderTemplateLocally(selectedTemplateHtml, buildPreviewData(previewReport)),
+                  }}
+                />
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {error && (
         <Card>

@@ -156,14 +156,14 @@ export function PlatformTopbar() {
               <Menu className="h-[18px] w-[18px]" />
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="w-72 p-0 bg-sidebar overflow-y-auto">
-            <SheetHeader className="px-5 py-4 border-b border-sidebar-border">
-              <SheetTitle className="text-sm">Navigation</SheetTitle>
+          <SheetContent side="left" className="sa-sidebar w-72 p-0 overflow-y-auto">
+            <SheetHeader className="px-5 py-4 border-b border-white/10">
+              <SheetTitle className="text-sm text-white">Navigation</SheetTitle>
             </SheetHeader>
             <nav className="px-3 py-4 space-y-5">
               {visibleNav.map((group) => (
                 <div key={group.label}>
-                  <p className="px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                  <p className="px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-white/55">
                     {group.label}
                   </p>
                   <div className="space-y-0.5">

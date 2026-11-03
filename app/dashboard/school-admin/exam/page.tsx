@@ -222,7 +222,7 @@ export default function ExamManagementPage() {
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={openNewExamDialog} className="bg-secondary hover:bg-primary">
+            <Button onClick={openNewExamDialog} className="bg-red-600 text-white hover:bg-red-700">
               <Plus className="w-4 h-4 mr-2" />
               Schedule Exam
             </Button>
@@ -360,7 +360,7 @@ export default function ExamManagementPage() {
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                   Cancel
                 </Button>
-                <Button type="submit" className="bg-secondary">
+                <Button type="submit" className="bg-red-600 text-white hover:bg-red-700">
                   {editingExam ? "Update Exam" : "Schedule Exam"}
                 </Button>
               </div>
@@ -459,7 +459,7 @@ export default function ExamManagementPage() {
             <div className="text-center py-8">
               <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-3" />
               <p className="text-gray-500">No exams found</p>
-              <Button onClick={openNewExamDialog} className="mt-4 bg-blue-600">
+              <Button onClick={openNewExamDialog} className="mt-4 bg-red-600 text-white hover:bg-red-700">
                 Schedule First Exam
               </Button>
             </div>

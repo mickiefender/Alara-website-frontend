@@ -24,23 +24,23 @@ export default function StudentPromotionPage() {
 
       <Tabs defaultValue="promote">
         <TabsList className="flex-wrap h-auto gap-1">
-          <TabsTrigger value="promote" className="gap-1.5">
+          <TabsTrigger value="promote" className="gap-1.5 data-[state=active]:bg-red-600 data-[state=active]:text-white">
             <Users className="h-4 w-4" />
             Promote Students
           </TabsTrigger>
-          <TabsTrigger value="rules" className="gap-1.5">
+          <TabsTrigger value="rules" className="gap-1.5 data-[state=active]:bg-red-600 data-[state=active]:text-white">
             <SplitSquareHorizontal className="h-4 w-4" />
             Class Rules
           </TabsTrigger>
-          <TabsTrigger value="policy" className="gap-1.5">
+          <TabsTrigger value="policy" className="gap-1.5 data-[state=active]:bg-red-600 data-[state=active]:text-white">
             <Settings2 className="h-4 w-4" />
             Policy
           </TabsTrigger>
-          <TabsTrigger value="history" className="gap-1.5">
+          <TabsTrigger value="history" className="gap-1.5 data-[state=active]:bg-red-600 data-[state=active]:text-white">
             <History className="h-4 w-4" />
             Promotion History
           </TabsTrigger>
-          <TabsTrigger value="enrollments" className="gap-1.5">
+          <TabsTrigger value="enrollments" className="gap-1.5 data-[state=active]:bg-red-600 data-[state=active]:text-white">
             <CalendarDays className="h-4 w-4" />
             Enrollment Years
           </TabsTrigger>

@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { BadgeDollarSign, Plus, Ticket } from "lucide-react"
+import { AlertTriangle, BadgeDollarSign, Plus, Ticket } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -161,9 +161,24 @@ export default function SubscriptionsPage() {
 
       <Tabs defaultValue="overview">
         <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="schools">School subscriptions</TabsTrigger>
-          <TabsTrigger value="coupons">Coupons</TabsTrigger>
+          <TabsTrigger
+            value="overview"
+            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+          >
+            Overview
+          </TabsTrigger>
+          <TabsTrigger
+            value="schools"
+            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+          >
+            School subscriptions
+          </TabsTrigger>
+          <TabsTrigger
+            value="coupons"
+            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+          >
+            Coupons
+          </TabsTrigger>
         </TabsList>
 
         {/* Overview */}
@@ -270,7 +285,15 @@ export default function SubscriptionsPage() {
                   subRows.map((r) => (
                     <TableRow key={r.school_id}>
                       <TableCell className="font-medium">{r.school_name}</TableCell>
-                      <TableCell><span className="capitalize">{String(r.plan ?? "—")}</span></TableCell>
+                      <TableCell>
+                        <span className="capitalize">{String(r.plan ?? "—")}</span>
+                        {r.subscription_status === "expired" && (
+                          <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700">
+                            <AlertTriangle className="h-3 w-3" aria-hidden="true" />
+                            Expired
+                          </span>
+                        )}
+                      </TableCell>
                       <TableCell className={r.subscription_status === "expiring_soon" ? "font-semibold text-red-600" : "text-muted-foreground"}>
                         {r.subscription_end
                           ? `${new Date(r.subscription_end).toLocaleDateString()}${r.days_remaining != null ? ` (${r.days_remaining}d)` : ""}`

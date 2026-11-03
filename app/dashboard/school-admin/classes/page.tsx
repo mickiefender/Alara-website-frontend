@@ -209,8 +209,8 @@ function ClassesPageContent() {
 
   const filteredClasses = classes.filter(
     (c) =>
-      c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.code.toLowerCase().includes(searchTerm.toLowerCase()))
+      (c.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (c.code || "").toLowerCase().includes(searchTerm.toLowerCase()))
       
 
   const totalPages = Math.ceil(filteredClasses.length / itemsPerPage)
@@ -237,7 +237,7 @@ function ClassesPageContent() {
         </div>
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-secondary hover:bg-primary text-white gap-2">
+            <Button className="bg-red-600 text-white hover:bg-red-700 gap-2">
               <Plus size={20} />
               Add Class
             </Button>
@@ -366,12 +366,6 @@ function ClassesPageContent() {
                       Class
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                      Date
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                      Time
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       Mobile No
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
@@ -402,12 +396,8 @@ function ClassesPageContent() {
                       </td>
                       <td className="px-4 py-3 text-gray-600">—</td>
                       <td className="px-4 py-3 text-gray-600">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                          {cls.name}
-                        </span>
+                        {cls.name}
                       </td>
-                      <td className="px-4 py-3 text-gray-600">—</td>
-                      <td className="px-4 py-3 text-gray-600">—</td>
                       <td className="px-4 py-3 text-gray-600 font-medium">
                         {cls.form_tutor?.phone || '—'}
                       </td>
@@ -439,7 +429,7 @@ function ClassesPageContent() {
                               setSelectedClassId(cls.id)
                               setSelectedClassName(cls.name)
                             }}
-                            className="ml-1 border-green-200 text-secondary hover:bg-secondary h-8 px-2 text-xs"
+                            className="ml-1 h-8 border-red-600 bg-red-600 px-2 text-xs text-white hover:bg-red-700"
                           >
                             Manage
                           </Button>

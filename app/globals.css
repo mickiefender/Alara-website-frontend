@@ -418,8 +418,8 @@
 /* ============================================================
    SUPER ADMIN PLATFORM THEME ("console")
    Red-accented console look scoped to .sa-theme so it never leaks
-   into school dashboards. Page content is LIGHT; the sidebar keeps a
-   clean white surface via its dedicated sidebar tokens below.
+   into school dashboards. Page content remains light while navigation
+   uses a high-contrast dark surface.
    All shadcn tokens are remapped, so existing components (Card,
    Table, Button...) restyle automatically.
    ============================================================ */
@@ -444,7 +444,7 @@
 
   --school-primary: #650d16;
   --school-secondary: #1c2740;
-  --school-sidebar: #ffffff;
+  --school-sidebar: #111318;
 
   --muted: #f1f3f6;
   --muted-foreground: #5c6675;
@@ -462,16 +462,16 @@
   --chart-4: #db2777;
   --chart-5: #64748b;
 
-  /* Classic white platform navigation */
-  --sidebar: #ffffff;
-  --sidebar-foreground: #344054;
-  --sidebar-primary: #650d16;
+  /* Dark platform navigation */
+  --sidebar: #111318;
+  --sidebar-foreground: #e5e7eb;
+  --sidebar-primary: #fca5a5;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f4f6f8;
-  --sidebar-accent-foreground: #171b23;
-  --sidebar-border: #e7e9ee;
-  --sidebar-ring: #650d16;
-  --sidebar-foreground-computed: #344054;
+  --sidebar-accent: #272b34;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #2b2f38;
+  --sidebar-ring: #fca5a5;
+  --sidebar-foreground-computed: #e5e7eb;
 
   /* Light glass surfaces for content cards */
   --glass-bg: color-mix(in srgb, #ffffff 78%, transparent);
@@ -492,6 +492,11 @@
 
 }
 
+.sa-sidebar {
+  background: #111318;
+  color: #e5e7eb;
+}
+
 /* Console-style sidebar link */
 .sa-nav-link {
   display: flex;
@@ -504,15 +509,22 @@
   color: var(--sidebar-foreground);
   transition: background-color 150ms ease, color 150ms ease;
 }
+.sa-sidebar .sa-nav-link {
+  color: #d1d5db;
+}
+.sa-sidebar .sa-nav-link:focus-visible {
+  outline: 2px solid #fca5a5;
+  outline-offset: 2px;
+}
 .sa-nav-link:hover {
   background: var(--sidebar-accent);
   color: var(--sidebar-accent-foreground);
 }
 .sa-nav-link[data-active='true'] {
-  background: color-mix(in srgb, var(--primary) 14%, transparent);
-  color: var(--sidebar-primary);
+  background: color-mix(in srgb, #a21d2b 34%, transparent);
+  color: #fecaca;
   font-weight: 600;
-  box-shadow: inset 3px 0 0 var(--sidebar-primary);
+  box-shadow: inset 3px 0 0 #f87171;
 }
 
 /* Console-style category rail (light page surface) */

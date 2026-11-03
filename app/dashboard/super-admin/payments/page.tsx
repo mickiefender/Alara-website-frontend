@@ -175,9 +175,24 @@ export default function PaymentsFinancePage() {
 
       <Tabs defaultValue="invoices">
         <TabsList>
-          <TabsTrigger value="invoices">Invoices</TabsTrigger>
-          <TabsTrigger value="refunds">Refunds</TabsTrigger>
-          <TabsTrigger value="overview">Revenue overview</TabsTrigger>
+          <TabsTrigger
+            value="invoices"
+            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+          >
+            Invoices
+          </TabsTrigger>
+          <TabsTrigger
+            value="refunds"
+            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+          >
+            Refunds
+          </TabsTrigger>
+          <TabsTrigger
+            value="overview"
+            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+          >
+            Revenue overview
+          </TabsTrigger>
         </TabsList>
 
         {/* Invoices */}

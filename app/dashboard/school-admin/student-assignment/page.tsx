@@ -332,7 +332,7 @@ export default function StudentAssignmentsPage() {
                           <Button
                             size="sm"
                             onClick={() => handleSelectClass(classItem)}
-                            className="bg-secondary hover:bg-blue-700 text-white gap-2 group-hover:shadow-md transition-shadow"
+                            className="bg-red-600 hover:bg-red-700 text-white gap-2 group-hover:shadow-md transition-shadow"
                           >
                             Manage Students
                             <ArrowRight size={15} />

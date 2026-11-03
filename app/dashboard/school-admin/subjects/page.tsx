@@ -164,7 +164,7 @@ function SubjectsPageContent() {
         <h1 className="text-2xl font-bold text-black">Subject List</h1>
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-secondary hover:bg-primary">+ Add Subject</Button>
+            <Button className="bg-red-600 text-white hover:bg-red-700">+ Add Subject</Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
@@ -209,7 +209,7 @@ function SubjectsPageContent() {
                   autoComplete="off"
                 />
               </div>
-              <Button type="submit" className="w-full bg-secondary">
+              <Button type="submit" className="w-full bg-red-600 text-white hover:bg-red-700">
                 {editingSubject ? "Update" : "Create"}
               </Button>
             </form>

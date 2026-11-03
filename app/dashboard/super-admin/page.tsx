@@ -6,19 +6,19 @@ import {
   Activity,
   Building2,
   CircleDollarSign,
-  Database,
   GraduationCap,
   ShieldAlert,
   Ticket,
   Users,
 } from "lucide-react"
+import type { LucideIcon } from "lucide-react"
+import { CountUp } from "@/components/ui/count-up"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { platformAPI } from "@/lib/api"
 import type { AnyObj } from "@/components/super-admin/types"
 import { useFetch } from "@/components/super-admin/use-fetch"
 import { PageHeader } from "@/components/super-admin/page-header"
-import { StatCard, StatCardGrid } from "@/components/super-admin/stat-card"
 import { SaAreaChart } from "@/components/super-admin/charts"
 import { StatusBadge } from "@/components/super-admin/status-badge"
 import { useAuthContext } from "@/lib/auth-context"
@@ -28,11 +28,45 @@ function fmtMoney(value: number) {
   return `GH₵ ${Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
 }
 
-function formatStorageBytes(bytes: number) {
-  if (bytes >= 1024 ** 3) return `${(bytes / 1024 ** 3).toFixed(2)} GB`
-  if (bytes >= 1024 ** 2) return `${(bytes / 1024 ** 2).toFixed(2)} MB`
-  if (bytes >= 1024) return `${(bytes / 1024).toFixed(2)} KB`
-  return `${bytes} B`
+const METRIC_TONES = {
+  default: { icon: "bg-slate-100 text-slate-600", value: "text-foreground" },
+  primary: { icon: "bg-rose-100 text-rose-700", value: "text-primary" },
+  success: { icon: "bg-emerald-100 text-emerald-700", value: "text-emerald-700" },
+  warning: { icon: "bg-amber-100 text-amber-700", value: "text-amber-700" },
+  danger: { icon: "bg-red-100 text-red-700", value: "text-red-700" },
+} as const
+
+function DashboardMetricCard({
+  label,
+  value,
+  icon: Icon,
+  sub,
+  tone = "default",
+}: {
+  label: string
+  value: number | string
+  icon: LucideIcon
+  sub?: string
+  tone?: keyof typeof METRIC_TONES
+}) {
+  const colors = METRIC_TONES[tone]
+
+  return (
+    <article className="group relative isolate w-full min-w-0 overflow-hidden rounded-xl border border-border/80 bg-card p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/25 hover:shadow-md">
+      <div className="pointer-events-none absolute -right-6 -top-6 -z-10 h-16 w-16 rounded-full bg-primary/[0.035] transition-transform duration-300 group-hover:scale-125" />
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-xs font-medium text-muted-foreground">{label}</p>
+        <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${colors.icon}`}>
+          <Icon className="h-4 w-4" aria-hidden="true" />
+        </div>
+      </div>
+      <p className={`mt-3 text-2xl font-semibold leading-none tracking-tight tabular-nums ${colors.value}`}>
+        {typeof value === "number" ? <CountUp value={value} /> : value}
+      </p>
+      {sub && <p className="mt-1.5 text-xs leading-4 text-muted-foreground">{sub}</p>}
+      <div className="absolute inset-x-0 bottom-0 h-0.5 bg-gradient-to-r from-primary/30 via-primary/10 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
+    </article>
+  )
 }
 
 export default function SuperAdminDashboardPage() {
@@ -41,11 +75,6 @@ export default function SuperAdminDashboardPage() {
   const can = (permission: string) =>
     user?.role === "super_admin" || hasPlatformPermission(user?.platform_permissions, permission)
   const overview = useFetch<AnyObj>(() => platformAPI.overview().then((r) => r.data), [])
-  const storage = useFetch<AnyObj>(
-    () => platformAPI.storageUsage().then((r) => r.data),
-    [],
-    can("platform.storage"),
-  )
   const health = useFetch<AnyObj>(() => platformAPI.health().then((r) => r.data), [])
   const logs = useFetch<AnyObj>(() => platformAPI.auditLogs({ page_size: 10, page: activityPage }).then((r) => r.data), [activityPage])
   const activityRows = (logs.data?.results as AnyObj[]) || []
@@ -64,63 +93,47 @@ export default function SuperAdminDashboardPage() {
         <div className="glass-red rounded-xl p-3 text-sm text-red-300">{overview.error}</div>
       )}
 
-      {/* Schools */}
-      {can("schools.view") && <StatCardGrid>
-        <StatCard label="Total Schools" value={o?.schools?.total ?? 0} icon={Building2} sub={`${o?.schools?.active ?? 0} active`} />
-        <StatCard label="Active Schools" value={o?.schools?.active ?? 0} icon={Building2} tone="success" />
-        <StatCard label="Trial Schools" value={o?.schools?.trial ?? 0} icon={Building2} tone="warning" />
-        <StatCard label="Suspended Schools" value={o?.schools?.suspended ?? 0} icon={ShieldAlert} tone="danger" />
-      </StatCardGrid>}
+      <section
+        aria-label="Platform metrics"
+        className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4"
+      >
+        {can("schools.view") && (
+          <>
+            <DashboardMetricCard label="Total schools" value={o?.schools?.total ?? 0} icon={Building2} sub={`${o?.schools?.active ?? 0} active`} tone="primary" />
+            <DashboardMetricCard label="Active schools" value={o?.schools?.active ?? 0} icon={Building2} tone="success" />
+            <DashboardMetricCard label="Trial schools" value={o?.schools?.trial ?? 0} icon={Activity} tone="warning" />
+            <DashboardMetricCard label="Suspended schools" value={o?.schools?.suspended ?? 0} icon={ShieldAlert} tone="danger" />
+          </>
+        )}
 
-      {/* Users */}
-      {can("users.view") && <StatCardGrid>
-        <StatCard label="Total Students" value={o?.users?.students ?? 0} icon={GraduationCap} />
-        <StatCard label="Total Teachers" value={o?.users?.teachers ?? 0} icon={Users} />
-        <StatCard label="Total Parents" value={o?.users?.parents ?? 0} icon={Users} />
-        <StatCard
-          label="Total Users"
-          value={o?.users?.total ?? 0}
-          icon={Activity}
-          sub={`${o?.users?.active_today ?? 0} active today · ${o?.users?.active_30d ?? 0} in last 30d`}
-        />
-      </StatCardGrid>}
+        {can("users.view") && (
+          <>
+            <DashboardMetricCard label="Students" value={o?.users?.students ?? 0} icon={GraduationCap} />
+            <DashboardMetricCard label="Teachers" value={o?.users?.teachers ?? 0} icon={Users} />
+            <DashboardMetricCard
+              label="Total users"
+              value={o?.users?.total ?? 0}
+              icon={Activity}
+              sub={`${o?.users?.active_today ?? 0} active today · ${o?.users?.active_30d ?? 0} in last 30d`}
+              tone="primary"
+            />
+          </>
+        )}
 
-      {/* Revenue, subscriptions, and storage */}
-      {(can("finance.view") || can("platform.storage")) && (
-        <>
-          {can("platform.storage") && storage.error && (
-            <div className="glass-red rounded-xl p-3 text-sm text-red-300">{storage.error}</div>
-          )}
-          <StatCardGrid>
-            {can("finance.view") && (
-              <>
-                <StatCard label="Revenue (all time)" value={fmtMoney(o?.revenue?.total ?? 0)} icon={CircleDollarSign} tone="primary" />
-                <StatCard label="Revenue this month" value={fmtMoney(o?.revenue?.this_month ?? 0)} icon={CircleDollarSign} />
-                <StatCard
-                  label="Subscriptions"
-                  value={`${o?.subscriptions?.active ?? 0} / ${o?.subscriptions?.cancelled ?? 0}`}
-                  icon={CircleDollarSign}
-                  sub="active / cancelled"
-                />
-              </>
-            )}
-            {can("platform.storage") && (
-              <StatCard
-                label="Storage used"
-                value={storage.data ? formatStorageBytes(Number(storage.data.used_bytes)) : "—"}
-                icon={Database}
-                sub={
-                  storage.loading
-                    ? "Loading live usage…"
-                    : storage.data
-                      ? `${Number(storage.data.object_count).toLocaleString()} objects across all buckets`
-                      : "Storage usage unavailable"
-                }
-              />
-            )}
-          </StatCardGrid>
-        </>
-      )}
+        {can("finance.view") && (
+          <>
+            <DashboardMetricCard label="Revenue (all time)" value={fmtMoney(o?.revenue?.total ?? 0)} icon={CircleDollarSign} tone="primary" />
+            <DashboardMetricCard label="Revenue this month" value={fmtMoney(o?.revenue?.this_month ?? 0)} icon={CircleDollarSign} />
+            <DashboardMetricCard
+              label="Subscriptions"
+              value={`${o?.subscriptions?.active ?? 0} / ${o?.subscriptions?.cancelled ?? 0}`}
+              icon={CircleDollarSign}
+              sub="active / cancelled"
+            />
+          </>
+        )}
+
+      </section>
 
       {/* Charts row */}
       {(can("platform.analytics") || can("platform.monitoring")) && <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">

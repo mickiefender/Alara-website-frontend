@@ -22,6 +22,7 @@ import {
   buildReportContext,
   type ReportCardData,
 } from "@/components/report-card-viewer"
+import { GHANA_REPORT_PRESET_HTML, renderTemplateLocally } from "@/components/ReportTemplateEditor"
 import {
   FileText,
   Printer,
@@ -187,6 +188,7 @@ function ReportCardsContent() {
     templates.find((t) => t.id.toString() === templateId) ||
     templates.find((t) => t.is_default) ||
     templates[0]
+  const reportTemplateHtml = selectedTemplate?.html_template?.trim() || GHANA_REPORT_PRESET_HTML
 
   const filteredReports = useMemo(
     () =>
@@ -215,10 +217,10 @@ function ReportCardsContent() {
 
     const iframe = document.createElement("iframe")
     iframe.style.position = "fixed"
-    iframe.style.right = "0"
-    iframe.style.bottom = "0"
-    iframe.style.width = "0"
-    iframe.style.height = "0"
+    iframe.style.left = "-10000px"
+    iframe.style.top = "0"
+    iframe.style.width = "100vw"
+    iframe.style.height = "100vh"
     iframe.style.border = "0"
     document.body.appendChild(iframe)
 
@@ -229,6 +231,7 @@ function ReportCardsContent() {
     }
     doc.open()
     doc.write(`<!DOCTYPE html><html><head><title>${report.student_name} - Terminal Report</title>
+<meta charset="utf-8">
 <style>
   @page { size: A4; margin: 12mm; }
   body { font-family: Arial, Helvetica, sans-serif; color: #000; margin: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -236,23 +239,41 @@ function ReportCardsContent() {
 </style></head><body>${html}</body></html>`)
     doc.close()
 
+    let cleanupTimer: ReturnType<typeof setTimeout> | undefined
     const cleanup = () => {
-      setTimeout(() => document.body.removeChild(iframe), 500)
+      if (cleanupTimer) clearTimeout(cleanupTimer)
+      cleanupTimer = setTimeout(() => {
+        if (iframe.isConnected) iframe.remove()
+      }, 500)
     }
-    iframe.contentWindow?.focus()
-    iframe.contentWindow?.print()
-    // Chrome fires afterprint; Safari/others may not — clean up either way.
-    iframe.contentWindow?.addEventListener("afterprint", cleanup)
-    setTimeout(cleanup, 60_000)
+    const printWindow = iframe.contentWindow
+    printWindow?.addEventListener("afterprint", cleanup, { once: true })
+    void (async () => {
+      await Promise.all(
+        Array.from(doc.images, (image) =>
+          image.complete
+            ? Promise.resolve()
+            : new Promise<void>((resolve) => {
+                image.addEventListener("load", () => resolve(), { once: true })
+                image.addEventListener("error", () => resolve(), { once: true })
+              }),
+        ),
+      )
+      await doc.fonts?.ready
+      printWindow?.focus()
+      printWindow?.print()
+    })()
+    // Safari and other browsers may not fire afterprint.
+    setTimeout(() => {
+      if (iframe.isConnected) iframe.remove()
+    }, 60_000)
   }
 
   /** Render one report's template HTML with real data (for printing/PDF). */
   const renderForPrint = (report: ReportCardData): string => {
     if (!selectedTemplate) return ""
-    // Reuse the same substitution engine as the on-screen preview by going
-    // through buildReportContext + a tiny local replace (mirrors viewer).
     const context = buildReportContext(report, school?.name || "", resolveImageUrl(school?.logo_url))
-    return substituteTemplate(selectedTemplate.html_template, context)
+    return renderTemplateLocally(reportTemplateHtml, context)
   }
 
   const downloadPdf = async (report: ReportCardData) => {
@@ -543,56 +564,23 @@ function ReportCardsContent() {
           </DialogHeader>
           <div className="flex-1 min-h-0 overflow-y-auto bg-muted/40 p-4 lg:p-6">
             {previewReport && selectedTemplate && (
-              <ReportCardViewer
-                report={previewReport}
-                templateHtml={selectedTemplate.html_template}
-                schoolName={school?.name || ""}
-                schoolLogoUrl={resolveImageUrl(school?.logo_url)}
-              />
+              <>
+                {!selectedTemplate.html_template?.trim() && (
+                  <p className="mx-auto mb-4 max-w-[820px] rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                    This template has no saved layout yet, so the standard report card layout is shown.
+                  </p>
+                )}
+                <ReportCardViewer
+                  report={previewReport}
+                  templateHtml={reportTemplateHtml}
+                  schoolName={school?.name || ""}
+                  schoolLogoUrl={resolveImageUrl(school?.logo_url)}
+                />
+              </>
             )}
           </div>
         </DialogContent>
       </Dialog>
     </div>
   )
-}
-
-/**
- * Minimal {{ variable }} substitution used for the print window. Mirrors
- * `renderTemplateLocally` from the template editor but without its mock-data
- * defaults, so missing values simply render blank instead of sample data.
- */
-function substituteTemplate(html: string, data: Record<string, any>): string {
-  const subjects = (data.subject_scores || []) as Array<Record<string, any>>
-  const cell = "border:1px solid #94a3b8; padding:4px 6px;"
-  const th = (label: string) =>
-    `<th style="${cell} background:#1a7a4a; color:#ffffff; font-size:10px; font-weight:bold; text-align:center;">${label}</th>`
-
-  const subjectsTable = subjects.length > 0
-    ? `<table style="width:100%; border-collapse:collapse; font-size:11px; margin-top:8px;">
-        <thead><tr>${th("S/N")}${th("SUBJECTS")}${th("CLASS SCORE (50%)")}${th("EXAM SCORE (50%)")}${th("TOTAL SCORE (100%)")}${th("GRADE")}${th("REMARK")}${th("POSITION IN SUBJECT")}</tr></thead>
-        <tbody>${subjects
-          .map((s, i) => {
-            const total = Number(s.total_score ?? 0)
-            return `<tr>` +
-              `<td style="${cell} text-align:center;">${i + 1}</td>` +
-              `<td style="${cell}">${s.subject_name ?? ""}</td>` +
-              `<td style="${cell} text-align:center;">${s.ca_score ?? ""}</td>` +
-              `<td style="${cell} text-align:center;">${s.exam_score ?? ""}</td>` +
-              `<td style="${cell} text-align:center; font-weight:bold;">${total}</td>` +
-              `<td style="${cell} text-align:center; font-weight:bold;">${s.grade ?? ""}</td>` +
-              `<td style="${cell}">${s.remarks ?? ""}</td>` +
-              `<td style="${cell} text-align:center;">${s.subject_position ? ordinal(Number(s.subject_position)) : ""}</td>` +
-              `</tr>`
-          })
-          .join("")}</tbody>
-      </table>`
-    : ""
-
-  return html.replace(/\{\{\s*(\w+)\s*\}\}/g, (_match, key: string) => {
-    if (key === "subjects_table") return subjectsTable
-    if (key === "student_bill_table") return ""
-    const value = data[key]
-    return value === undefined || value === null || value === "" ? "" : String(value)
-  })
 }

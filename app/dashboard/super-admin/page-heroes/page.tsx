@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { ImagePlus, Info } from "lucide-react"
 import { PageHeader } from "@/components/super-admin/page-header"
 import { PageHeroCard } from "@/components/super-admin/page-hero-card"
 import { getErrorMessage, platformAPI } from "@/lib/api"
@@ -39,8 +39,6 @@ export default function PageHeroesPage() {
     })
   }
 
-  if (loading) return <div className="p-6 text-muted-foreground">Loading page hero images...</div>
-
   return (
     <div className="space-y-6 p-4 md:p-6">
       <PageHeader
@@ -48,35 +46,58 @@ export default function PageHeroesPage() {
         description="Upload the banner image shown at the top of the About, Careers, Join the Team, Contact, and Support pages."
       />
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">How hero images work</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2 text-sm text-muted-foreground">
-          <p>
-            Uploaded images are published immediately on the public site. Each page keeps its original heading and
-            subtitle, which are drawn over the image with a dark scrim so the text stays readable.
+      <div className="flex gap-3 rounded-xl border border-primary/15 bg-primary/[0.035] p-4">
+        <Info className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+        <div className="space-y-1 text-sm">
+          <p className="font-semibold">About page hero images</p>
+          <p className="text-muted-foreground">
+            Images publish immediately. Page headings remain layered over the image with a dark overlay for
+            readability. Pages without a custom image continue using their built-in banner.
           </p>
-          <p>
-            Until an image is uploaded for a page, that page keeps its built-in gradient banner — nothing breaks if an
-            image is missing.
-          </p>
-        </CardContent>
-      </Card>
-
-      {message && <p className="rounded-lg bg-muted p-3 text-sm">{message}</p>}
-
-      <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
-        {PAGE_HERO_PAGES.map((page) => (
-          <PageHeroCard
-            key={page.key}
-            page={page}
-            hero={heroes[page.key]}
-            onUploaded={handleUploaded}
-            onRemoved={handleRemoved}
-          />
-        ))}
+        </div>
       </div>
+
+      {message && (
+        <p role="alert" className="rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive">
+          {message}
+        </p>
+      )}
+
+      <section className="space-y-3" aria-label="Page hero images">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-base font-semibold">Managed pages</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {loading ? "Loading page banners..." : `${PAGE_HERO_PAGES.length} pages · ${Object.keys(heroes).length} custom images`}
+            </p>
+          </div>
+          {!loading && (
+            <span className="hidden items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground sm:inline-flex">
+              <ImagePlus className="h-3.5 w-3.5" />
+              Hero image library
+            </span>
+          )}
+        </div>
+        {loading ? (
+          <div className="space-y-3" aria-live="polite" aria-busy="true">
+            {PAGE_HERO_PAGES.map((page) => (
+              <div key={page.key} className="h-48 animate-pulse rounded-xl border border-border bg-muted/40 md:h-40" />
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {PAGE_HERO_PAGES.map((page) => (
+              <PageHeroCard
+                key={page.key}
+                page={page}
+                hero={heroes[page.key]}
+                onUploaded={handleUploaded}
+                onRemoved={handleRemoved}
+              />
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   )
 }

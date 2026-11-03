@@ -33,8 +33,16 @@ export default function ContentModerationPage() {
 
       <Tabs defaultValue="overview">
         <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="posts">
+          <TabsTrigger
+            value="overview"
+            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+          >
+            Overview
+          </TabsTrigger>
+          <TabsTrigger
+            value="posts"
+            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+          >
             Posts
             {flaggedCount > 0 && (
               <span className="ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500/15 px-1.5 text-[10px] font-semibold text-red-400 tabular-nums">
@@ -42,10 +50,30 @@ export default function ContentModerationPage() {
               </span>
             )}
           </TabsTrigger>
-          <TabsTrigger value="reports">Report Queue</TabsTrigger>
-          <TabsTrigger value="creators">Creators</TabsTrigger>
-          <TabsTrigger value="schools">Schools</TabsTrigger>
-          <TabsTrigger value="settings">Policies</TabsTrigger>
+          <TabsTrigger
+            value="reports"
+            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+          >
+            Report Queue
+          </TabsTrigger>
+          <TabsTrigger
+            value="creators"
+            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+          >
+            Creators
+          </TabsTrigger>
+          <TabsTrigger
+            value="schools"
+            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+          >
+            Schools
+          </TabsTrigger>
+          <TabsTrigger
+            value="settings"
+            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+          >
+            Policies
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-4">

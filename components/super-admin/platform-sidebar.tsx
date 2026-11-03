@@ -95,7 +95,7 @@ export function PlatformSidebar() {
     .filter((group) => group.items.length > 0)
 
   return (
-    <aside className="hidden lg:flex sticky top-0 h-screen overflow-y-auto w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar">
+    <aside className="sa-sidebar hidden lg:flex sticky top-0 h-screen overflow-hidden w-64 shrink-0 flex-col border-r border-sidebar-border">
       {/* Brand */}
       <div className="flex items-center gap-2.5 border-b border-[#7b1721] bg-[#650d16] px-5 py-5">
         <AlaraLogo width={36} height={36} className="h-9 w-9 object-contain shrink-0" forceVariant="dark" />
@@ -106,10 +106,10 @@ export function PlatformSidebar() {
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
+      <nav className="min-h-0 flex-1 overflow-y-auto px-3 py-4 space-y-5">
         {visibleGroups.map((group) => (
           <div key={group.label}>
-            <p className="px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+            <p className="px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-white/55">
               {group.label}
             </p>
             <div className="space-y-0.5">
@@ -136,7 +136,7 @@ export function PlatformSidebar() {
       </nav>
 
       <div className="border-t border-sidebar-border px-4 py-3">
-        <p className="text-[11px] text-muted-foreground">
+        <p className="text-[11px] text-white/60">
           Every sensitive action is recorded in the audit log.
         </p>
       </div>

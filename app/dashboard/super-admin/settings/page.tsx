@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react"
 import {
   AlertTriangle,
   BellRing,
+  Braces,
   Check,
   CreditCard,
   Eye,
@@ -95,6 +96,62 @@ function serializeOriginal(kind: EditorKind, setting: AnyObj): string {
   if (kind === "json") return JSON.stringify(v ?? null, null, 2)
   if (kind === "number") return String(v ?? "")
   return String(v ?? "")
+}
+
+function formatJsonValue(value: unknown) {
+  if (value === null || value === undefined || value === "") return "—"
+  if (typeof value === "string") return value
+  if (typeof value === "object") return JSON.stringify(value, null, 2)
+  return String(value)
+}
+
+function JsonValuePreview({ value }: { value: unknown }) {
+  if (Array.isArray(value)) {
+    if (!value.length) {
+      return <p className="text-sm text-muted-foreground">This list is empty.</p>
+    }
+
+    return (
+      <ol className="divide-y divide-border rounded-lg border border-border">
+        {value.map((item, index) => (
+          <li key={index} className="flex gap-3 px-3 py-2.5 text-sm">
+            <span className="w-8 shrink-0 text-xs font-medium tabular-nums text-muted-foreground">{index + 1}.</span>
+            <pre className="min-w-0 flex-1 whitespace-pre-wrap break-words font-sans text-sm leading-5">
+              {formatJsonValue(item)}
+            </pre>
+          </li>
+        ))}
+      </ol>
+    )
+  }
+
+  if (value && typeof value === "object") {
+    const entries = Object.entries(value as Record<string, unknown>)
+    if (!entries.length) {
+      return <p className="text-sm text-muted-foreground">No options configured.</p>
+    }
+
+    return (
+      <dl className="grid gap-x-6 rounded-lg border border-border px-3 sm:grid-cols-2">
+        {entries.map(([key, entry]) => (
+          <div key={key} className="min-w-0 border-b border-border py-2.5 last:border-0">
+            <dt className="text-xs font-medium text-muted-foreground">{humanizeKey(key)}</dt>
+            <dd className="mt-1 break-words text-sm text-foreground">
+              {entry !== null && typeof entry === "object" ? (
+                <pre className="whitespace-pre-wrap break-words font-mono text-xs leading-5">
+                  {formatJsonValue(entry)}
+                </pre>
+              ) : (
+                formatJsonValue(entry)
+              )}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    )
+  }
+
+  return <p className="text-sm">{formatJsonValue(value)}</p>
 }
 
 function draftFor(setting: AnyObj): Draft {
@@ -210,6 +267,7 @@ export default function SystemSettingsPage() {
   const [activeCategory, setActiveCategory] = useState<string>("all")
 
   const [drafts, setDrafts] = useState<Record<number, Draft>>({})
+  const [jsonEditing, setJsonEditing] = useState<Record<number, boolean>>({})
 
   const [createOpen, setCreateOpen] = useState(false)
   const [createForm, setCreateForm] = useState<NewForm>(EMPTY_NEW_FORM)
@@ -225,6 +283,7 @@ export default function SystemSettingsPage() {
     const next: Record<number, Draft> = {}
     for (const s of settings.data) next[s.id] = draftFor(s)
     setDrafts(next)
+    setJsonEditing({})
     setRevealedSecrets({})
   }, [settings.data])
 
@@ -586,19 +645,50 @@ export default function SystemSettingsPage() {
                         )}
 
                         {draft.kind === "json" && (
-                          <div>
-                            <Textarea
-                              rows={Math.min(10, Math.max(4, draft.text.split("\n").length))}
-                              value={draft.text}
-                              onChange={(e) => updateDraft(setting.id, { text: e.target.value })}
-                              disabled={busy}
-                              spellCheck={false}
-                              className={`font-mono text-xs leading-relaxed ${
-                                invalid ? "border-destructive focus-visible:ring-destructive" : ""
-                              }`}
-                            />
-                            {invalid && (
-                              <p className="text-xs text-destructive mt-1.5">{invalid}</p>
+                          <div className="space-y-2">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <p className="text-xs font-medium text-muted-foreground">
+                                {jsonEditing[setting.id] ? "JSON editor" : Array.isArray(setting.value) ? "List values" : "Configured values"}
+                              </p>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-xs"
+                                disabled={busy}
+                                onClick={() =>
+                                  setJsonEditing((current) => ({
+                                    ...current,
+                                    [setting.id]: !current[setting.id],
+                                  }))
+                                }
+                              >
+                                <Braces className="mr-1.5 h-3.5 w-3.5" />
+                                {jsonEditing[setting.id] ? "Formatted view" : "Edit JSON"}
+                              </Button>
+                            </div>
+                            {jsonEditing[setting.id] ? (
+                              <>
+                                <Textarea
+                                  rows={Math.min(10, Math.max(4, draft.text.split("\n").length))}
+                                  value={draft.text}
+                                  onChange={(e) => updateDraft(setting.id, { text: e.target.value })}
+                                  disabled={busy}
+                                  spellCheck={false}
+                                  aria-label={`Edit JSON value for ${setting.key}`}
+                                  className={`font-mono text-xs leading-relaxed ${
+                                    invalid ? "border-destructive focus-visible:ring-destructive" : ""
+                                  }`}
+                                />
+                                {invalid && <p className="text-xs text-destructive">{invalid}</p>}
+                              </>
+                            ) : invalid ? (
+                              <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+                                <p className="text-xs font-medium text-destructive">The JSON draft is invalid.</p>
+                                <p className="mt-1 text-xs text-muted-foreground">Correct it in the JSON editor before saving.</p>
+                              </div>
+                            ) : (
+                              <JsonValuePreview value={parseDraft(draft)} />
                             )}
                           </div>
                         )}

@@ -492,7 +492,7 @@ export function ModernTimetable() {
             <Button
               onClick={handleDownloadPDF}
               disabled={downloadLoading || filteredTimetables.length === 0}
-              className="bg-secondary hover:bg-blue-700 text-white gap-2 print:no-print"
+              className="bg-red-600 hover:bg-red-700 text-white gap-2 print:no-print"
             >
               <Download className="w-4 h-4" />
               {downloadLoading ? "Generating..." : "Download PDF"}
@@ -500,7 +500,7 @@ export function ModernTimetable() {
             <Button
               onClick={handleDownloadExcel}
               disabled={excelLoading || filteredTimetables.length === 0}
-              className="bg-secondary hover:bg-blue-700 text-white gap-2 print:no-print"
+              className="bg-red-600 hover:bg-red-700 text-white gap-2 print:no-print"
             >
               <Download className="w-4 h-4" />
               {excelLoading ? "Preparing..." : "Download Excel"}
@@ -511,7 +511,7 @@ export function ModernTimetable() {
                 if (!open) resetForm()
               }}>
                 <DialogTrigger asChild>
-                  <Button className="bg-secondary hover:bg-blue-700 text-white gap-2">
+                  <Button className="bg-red-600 hover:bg-red-700 text-white gap-2">
                     <Plus className="w-4 h-4" />
                     Add Slot
                   </Button>
@@ -663,7 +663,7 @@ export function ModernTimetable() {
                       <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                         Cancel
                       </Button>
-                      <Button type="submit" className="bg-secondary hover:bg-blue-700">
+                      <Button type="submit" className="bg-red-600 text-white hover:bg-red-700">
                         {editingEntry ? "Update" : "Create"}
                       </Button>
                     </DialogFooter>
