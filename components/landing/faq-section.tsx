@@ -41,7 +41,7 @@ export function FaqSection() {
   }, [])
 
   return (
-    <section id="faq" className="bg-red-50/50 px-4 py-20 md:py-28">
+    <section id="faq" className="bg-background px-4 py-20 md:py-28">
       <div className="mx-auto max-w-3xl">
         <div className="mb-12 text-center">
           <p className="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-red-700">Questions, answered</p>

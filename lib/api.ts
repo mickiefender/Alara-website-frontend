@@ -436,6 +436,7 @@ export const authAPI = {
 
 export const schoolsAPI = {
   list: () => apiClient.get("/schools/schools/"),
+  retrieve: (id: number) => apiClient.get(`/schools/schools/${id}/`),
   subscriptionStatus: () => apiClient.get("/schools/schools/subscription_status/"),
   plans: () => apiClient.get("/schools/plans/"),
   create: (data: any) => apiClient.post("/schools/schools/", data),

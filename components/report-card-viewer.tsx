@@ -28,6 +28,10 @@ export interface ReportCardData {
   subject_scores: Array<{
     subject_id: number
     subject_name: string
+    ca1_score?: number | null
+    ca2_score?: number | null
+    ca3_score?: number | null
+    exam_score?: number | null
     total_score: number
     percentage: number
     grade: string
@@ -58,7 +62,25 @@ export function buildReportContext(
   schoolLogoUrl = "",
 ): Record<string, any> {
   const subjects = report.subject_scores || []
-  const grandTotal = subjects.reduce((sum, s) => sum + (s.total_score ?? 0), 0)
+  const getComponentScore = (subject: ReportCardData["subject_scores"][number]) => {
+    const storedCaScores = [subject.ca1_score, subject.ca2_score, subject.ca3_score].filter(
+      (score): score is number => typeof score === "number",
+    )
+    const fallbackScore = Math.min(Math.max(subject.total_score ?? 0, 0), 100) * 0.5
+    return {
+      caScore: Math.min(
+        Math.max(storedCaScores.length ? storedCaScores.reduce((sum, score) => sum + score, 0) : fallbackScore, 0),
+        50,
+      ),
+      examScore: Math.min(
+        Math.max(typeof subject.exam_score === "number" ? subject.exam_score : fallbackScore, 0),
+        50,
+      ),
+    }
+  }
+  const subjectComponents = subjects.map(getComponentScore)
+  const grandTotal = subjectComponents.reduce((sum, score) => sum + score.caScore + score.examScore, 0)
+  const averageMarks = subjects.length ? grandTotal / subjects.length : report.average_marks ?? 0
 
   return {
     student_name: report.student_name,
@@ -74,8 +96,8 @@ export function buildReportContext(
     position_in_class: report.position ? String(report.position) : "N/A",
     position: report.position,
     total_students: report.total_students,
-    average_mark: (report.average_marks ?? 0).toFixed(1),
-    average_marks: report.average_marks,
+    average_mark: averageMarks.toFixed(1),
+    average_marks: averageMarks,
     average_remark: "",
     grade: report.grade || "",
     overall_grade: report.grade || "",
@@ -96,28 +118,28 @@ export function buildReportContext(
     best_subject_name: report.best_subject_name || "",
     best_subject_score: report.best_subject_score ?? 0,
     promotion_status: report.promotion_status || "",
-    ca_total: Number((grandTotal * 0.5).toFixed(1)),
-    exam_total: Number((grandTotal * 0.5).toFixed(1)),
+    ca_total: Number(subjectComponents.reduce((sum, score) => sum + score.caScore, 0).toFixed(1)),
+    exam_total: Number(subjectComponents.reduce((sum, score) => sum + score.examScore, 0).toFixed(1)),
     grand_total: Number(grandTotal.toFixed(1)),
     max_total: subjects.length * 100,
     school_logo: schoolLogoUrl,
-    subjects: subjects.map((s) => ({
+    subjects: subjects.map((s, index) => ({
       name: s.subject_name,
-      score: s.total_score,
-      percentage: s.percentage,
-      ca_score: Number(((s.total_score ?? 0) * 0.5).toFixed(1)),
-      exam_score: Number(((s.total_score ?? 0) * 0.5).toFixed(1)),
-      total_score: s.total_score,
+      score: subjectComponents[index].caScore + subjectComponents[index].examScore,
+      percentage: subjectComponents[index].caScore + subjectComponents[index].examScore,
+      ca_score: Number(subjectComponents[index].caScore.toFixed(1)),
+      exam_score: Number(subjectComponents[index].examScore.toFixed(1)),
+      total_score: subjectComponents[index].caScore + subjectComponents[index].examScore,
       grade: s.grade,
       subject_position: s.subject_position ? String(s.subject_position) : undefined,
       subject_total_students: s.subject_total_students,
     })),
-    subject_scores: subjects.map((s) => ({
+    subject_scores: subjects.map((s, index) => ({
       subject_name: s.subject_name,
-      percentage: s.percentage,
-      total_score: s.total_score,
-      ca_score: Number(((s.total_score ?? 0) * 0.5).toFixed(1)),
-      exam_score: Number(((s.total_score ?? 0) * 0.5).toFixed(1)),
+      percentage: subjectComponents[index].caScore + subjectComponents[index].examScore,
+      total_score: subjectComponents[index].caScore + subjectComponents[index].examScore,
+      ca_score: Number(subjectComponents[index].caScore.toFixed(1)),
+      exam_score: Number(subjectComponents[index].examScore.toFixed(1)),
       grade: s.grade,
       remarks: "",
       subject_position: s.subject_position,

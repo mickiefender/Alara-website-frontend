@@ -1,8 +1,7 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import { AlertTriangle, CalendarClock, Loader2 } from "lucide-react"
-import { schoolsAPI } from "@/lib/api"
+import { useAuthContext } from "@/lib/auth-context"
 
 type SubscriptionDetails = {
   plan?: { name?: string } | null
@@ -17,30 +16,8 @@ function formatPlanName(name?: string) {
 }
 
 export function SubscriptionBadge() {
-  const [subscription, setSubscription] = useState<SubscriptionDetails | null>(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    let mounted = true
-
-    const loadSubscription = async () => {
-      try {
-        const response = await schoolsAPI.subscriptionStatus()
-        if (mounted) setSubscription(response.data)
-      } catch {
-        if (mounted) setSubscription(null)
-      } finally {
-        if (mounted) setLoading(false)
-      }
-    }
-
-    loadSubscription()
-    const interval = window.setInterval(loadSubscription, 60_000)
-    return () => {
-      mounted = false
-      window.clearInterval(interval)
-    }
-  }, [])
+  const { school, loading } = useAuthContext()
+  const subscription: SubscriptionDetails | null = school?.subscription_details ?? null
 
   if (loading) {
     return (

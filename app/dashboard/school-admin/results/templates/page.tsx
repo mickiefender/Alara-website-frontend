@@ -11,13 +11,23 @@ import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
-import { FileText, LayoutList, Eye, Save, Trash2, Copy, Download, Plus, Edit3 } from 'lucide-react'
+import { FileText, LayoutList, Eye, Save, Trash2, Copy, Download, Plus, Edit3, Loader2, AlertCircle } from 'lucide-react'
 import { academicsAPI } from '@/lib/api'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAuthContext } from '@/lib/auth-context'
 import { ReportTemplateEditor, renderTemplateLocally, type TemplateEditorRef } from '@/components/ReportTemplateEditor'
 import { VariableInserter } from '@/components/VariableInserter'
 import { useToast } from '@/hooks/use-toast'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 interface TemplateSection {
   id: string;
@@ -50,6 +60,9 @@ export default function TemplatesPage() {
   const [templates, setTemplates] = useState<BackendTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [deletingTemplateId, setDeletingTemplateId] = useState<number | null>(null);
+  const [templatePendingDelete, setTemplatePendingDelete] = useState<BackendTemplate | null>(null);
   const { school } = useAuthContext();
   const [editingTemplate, setEditingTemplate] = useState<TemplateState | null>(null);
   const [showPreview, setShowPreview] = useState(false);
@@ -71,22 +84,23 @@ export default function TemplatesPage() {
     }
   }, [editingTemplate?.structure, toast]);
 
-  useEffect(() => {
-    fetchTemplates();
-  }, []);
-
   const fetchTemplates = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
       const response = await academicsAPI.terminalReportTemplates();
-      setTemplates(Array.isArray(response.data) ? response.data : response.data?.results || []);
+      const loadedTemplates = Array.isArray(response.data) ? response.data : response.data?.results;
+      if (!Array.isArray(loadedTemplates)) {
+        throw new Error('The server returned an invalid templates response.');
+      }
+      setTemplates(loadedTemplates);
     } catch (err: any) {
       console.error('Templates fetch error:', err);
-      setError('Failed to load templates. Please check if backend is running.');
+      const message = err.response?.data?.detail || err.message || 'Failed to load report templates.';
+      setError(message);
       toast({ 
         title: 'Connection Error', 
-        description: `Failed to fetch templates: ${err.response?.status || 'Unknown error'}`, 
+        description: message,
         variant: 'destructive' 
       });
     } finally {
@@ -94,8 +108,16 @@ export default function TemplatesPage() {
     }
   }, [toast]);
 
+  useEffect(() => {
+    fetchTemplates();
+  }, [fetchTemplates]);
+
   const handleCreateTemplate = useCallback(async () => {
-    if (!editorRef.current || !editingTemplate?.name) return;
+    if (!editorRef.current || !editingTemplate) return;
+    if (!editingTemplate.name.trim()) {
+      toast({ title: 'Template name required', description: 'Enter a name before creating the template.', variant: 'destructive' });
+      return;
+    }
     const htmlContent = editorRef.current.getHTML();
     if (!htmlContent.trim()) {
       toast({ title: 'Error', description: 'Template content is required', variant: 'destructive' });
@@ -103,6 +125,7 @@ export default function TemplatesPage() {
     }
 
     try {
+      setSaving(true);
       await academicsAPI.createTerminalReportTemplate({
         name: editingTemplate.name,
         html_template: htmlContent,
@@ -113,13 +136,15 @@ export default function TemplatesPage() {
       toast({ title: 'Success', description: 'Template created successfully!' });
       setEditingTemplate(null);
       if (editorRef.current) editorRef.current.setHTML('');
-      fetchTemplates();
+      await fetchTemplates();
     } catch (err: any) {
       toast({ 
         title: 'Create Failed', 
-        description: err.response?.data?.detail || 'Failed to create template', 
+        description: err.response?.data?.detail || err.message || 'Failed to create template',
         variant: 'destructive' 
       });
+    } finally {
+      setSaving(false);
     }
   }, [editingTemplate, toast, fetchTemplates, school]);
 
@@ -128,6 +153,7 @@ export default function TemplatesPage() {
     const htmlContent = editorRef.current.getHTML();
 
     try {
+      setSaving(true);
       await academicsAPI.updateTerminalReportTemplate(editingTemplate.id, {
         name: editingTemplate.name,
         html_template: htmlContent,
@@ -137,29 +163,37 @@ export default function TemplatesPage() {
       toast({ title: 'Success', description: 'Template updated successfully!' });
       setEditingTemplate(null);
       if (editorRef.current) editorRef.current.setHTML('');
-      fetchTemplates();
+      await fetchTemplates();
     } catch (err: any) {
       toast({ 
         title: 'Update Failed', 
-        description: err.response?.data?.detail || 'Failed to update template', 
+        description: err.response?.data?.detail || err.message || 'Failed to update template',
         variant: 'destructive' 
       });
+    } finally {
+      setSaving(false);
     }
   }, [editingTemplate, toast, fetchTemplates]);
 
-  const handleDeleteTemplate = useCallback(async (id: number) => {
+  const handleDeleteTemplate = useCallback(async () => {
+    if (!templatePendingDelete) return;
+    const id = templatePendingDelete.id;
     try {
+      setDeletingTemplateId(id);
       await academicsAPI.deleteTerminalReportTemplate(id);
       setTemplates(t => t.filter(t => t.id !== id));
-      toast({ title: 'Success', description: 'Template deleted successfully!' });
+      setTemplatePendingDelete(null);
+      toast({ title: 'Template deleted', description: `"${templatePendingDelete.name}" was deleted.` });
     } catch (err: any) {
       toast({ 
         title: 'Delete Failed', 
-        description: err.response?.data?.detail || 'Failed to delete template', 
+        description: err.response?.data?.detail || err.message || 'Failed to delete template',
         variant: 'destructive' 
       });
+    } finally {
+      setDeletingTemplateId(null);
     }
-  }, [toast]);
+  }, [templatePendingDelete, toast]);
 
   const addSection = (type: TemplateSection['type']) => {
     if (editingTemplate) {
@@ -212,7 +246,7 @@ export default function TemplatesPage() {
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <Badge className="hidden md:inline-flex bg-primary/10 text-primary border border-primary/20">School Theme</Badge>
-            <Button variant="outline" size="sm" onClick={() => setEditingTemplate(null)}>
+            <Button variant="outline" size="sm" disabled={saving} onClick={() => setEditingTemplate(null)}>
               Close
             </Button>
           </div>
@@ -249,6 +283,11 @@ export default function TemplatesPage() {
               <div className="rounded-xl border border-primary/15 bg-background p-4">
                 <p className="text-sm font-semibold mb-3">Template Sections</p>
                 <div className="space-y-3 max-h-[280px] overflow-y-auto pr-1">
+                  {safeStructure.filter((section) => section.visible).length === 0 && (
+                    <p className="rounded-lg border border-dashed p-3 text-xs text-muted-foreground">
+                      No sections added yet. Use Quick Add Sections or build your layout in the editor.
+                    </p>
+                  )}
                   {safeStructure.filter((section) => section.visible).map((section) => (
                     <div key={section.id} className="group border rounded-lg p-3 hover:border-primary/40 transition-all bg-card">
                       <div className="flex items-center justify-between">
@@ -296,22 +335,21 @@ export default function TemplatesPage() {
               </Button>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                <Button variant="outline" onClick={() => setEditingTemplate(null)} className="h-10">Cancel</Button>
-                <Button onClick={editingTemplate.id ? handleUpdateTemplate : handleCreateTemplate} className="h-10 bg-primary hover:bg-primary/90">
-                  <Save className="w-4 h-4 mr-2" />
-                  {editingTemplate.id ? 'Update' : 'Create'}
+                <Button variant="outline" disabled={saving} onClick={() => setEditingTemplate(null)} className="h-10">Cancel</Button>
+                <Button disabled={saving} onClick={editingTemplate.id ? handleUpdateTemplate : handleCreateTemplate} className="h-10 bg-primary hover:bg-primary/90">
+                  {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+                  {saving ? 'Saving…' : editingTemplate.id ? 'Update' : 'Create'}
                 </Button>
               </div>
             </div>
           </aside>
 
-          <section className="xl:col-span-9 2xl:col-span-10 min-h-0 overflow-y-auto">
-            <div className="p-4 lg:p-6">
+          <section className="xl:col-span-9 2xl:col-span-10 min-w-0 min-h-0 overflow-y-auto">
+            <div className="p-3 lg:p-4 2xl:p-5">
               <ReportTemplateEditor
                 ref={editorRef}
                 templateId={editingTemplate?.id || 0}
                 initialHTML={editingTemplate.htmlContent || ''}
-                onSave={() => {}}
               />
             </div>
           </section>
@@ -364,11 +402,32 @@ export default function TemplatesPage() {
 
       <Card>
         <CardContent className="p-0">
-          {templates.length === 0 ? (
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6" aria-label="Loading report templates">
+              {Array.from({ length: 3 }, (_, index) => (
+                <Card key={index} className="p-6 space-y-4">
+                  <Skeleton className="h-6 w-2/3" />
+                  <Skeleton className="h-4 w-1/3" />
+                  <Skeleton className="h-16 w-full" />
+                  <Skeleton className="h-4 w-1/2" />
+                </Card>
+              ))}
+            </div>
+          ) : error ? (
+            <div className="text-center py-16 px-6" role="alert">
+              <AlertCircle className="w-12 h-12 text-destructive mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Couldn’t load report templates</h3>
+              <p className="text-sm text-muted-foreground mb-5">{error}</p>
+              <Button onClick={fetchTemplates} variant="outline" disabled={loading}>
+                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Try again
+              </Button>
+            </div>
+          ) : templates.length === 0 ? (
             <div className="text-center py-20">
               <FileText className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-xl font-semibold mb-2">No templates yet</h3>
-              <p className="text-muted-foreground mb-6">Create your first report template to get started.</p>
+              <h3 className="text-xl font-semibold mb-2">No report templates yet</h3>
+              <p className="text-muted-foreground mb-6">Create a template to design and preview your school’s terminal reports.</p>
               <Button onClick={() => setEditingTemplate({ name: '', structure: [], htmlContent: '' })}>
                 Create First Template
               </Button>
@@ -408,7 +467,16 @@ export default function TemplatesPage() {
                           </span>
                         </div>
                       </div>
-                      <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); handleDeleteTemplate(template.id); }}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        aria-label={`Delete ${template.name}`}
+                        disabled={deletingTemplateId === template.id}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setTemplatePendingDelete(template)
+                        }}
+                      >
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
@@ -429,15 +497,35 @@ export default function TemplatesPage() {
         </CardContent>
       </Card>
 
-      {error && (
-        <Card>
-          <CardContent className="p-6 text-center py-12">
-            <FileText className="w-12 h-12 text-destructive mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2 text-destructive">{error}</h3>
-            <Button onClick={fetchTemplates} variant="outline">Retry</Button>
-          </CardContent>
-        </Card>
-      )}
+      <AlertDialog
+        open={Boolean(templatePendingDelete)}
+        onOpenChange={(open) => {
+          if (!open && deletingTemplateId === null) setTemplatePendingDelete(null)
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this report template?</AlertDialogTitle>
+            <AlertDialogDescription>
+              “{templatePendingDelete?.name}” will be permanently deleted. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingTemplateId !== null}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deletingTemplateId !== null}
+              onClick={(event) => {
+                event.preventDefault()
+                void handleDeleteTemplate()
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deletingTemplateId !== null && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {deletingTemplateId !== null ? 'Deleting…' : 'Delete template'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

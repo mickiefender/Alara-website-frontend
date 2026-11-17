@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { createContext, useContext, useEffect, useState } from "react"
+import { createContext, useCallback, useContext, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { authAPI, schoolsAPI, authLoading } from "./api"
 import { resolvePostLoginRoute } from "./compliance-routing"
@@ -38,12 +38,22 @@ interface School {
   website: string
   status: string
   compliance_status?: string | null
+  primary_color?: string
+  secondary_color?: string
+  sidebar_color?: string
   plan?: { name: string }
+  subscription_details?: {
+    plan?: { name?: string } | null
+    status: "active" | "expiring_soon" | "expired" | "none"
+    end_date?: string | null
+    days_remaining?: number | null
+  } | null
 }
 
 interface AuthContextType {
   user: User | null
   school: School | null
+  refreshSchool: () => Promise<School | null>
   loading: boolean
   isAuthenticated: boolean
   login: (credential: string, password: string, loginType?: "email" | "student_id") => Promise<void>
@@ -60,7 +70,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const router = useRouter()
 
-  const fetchSchool = async (schoolId: number) => {
+  const fetchSchool = useCallback(async (schoolId: number) => {
     if (process.env.NODE_ENV === 'development') { console.log('[Auth] fetchSchool called with schoolId:', schoolId) }
     if (!schoolId) {
       if (process.env.NODE_ENV === 'development') { console.warn('[Auth] No schoolId provided, skipping school fetch') }
@@ -68,11 +78,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return null
     }
     try {
-      // Use list and filter since get is not available on schoolsAPI
-      const response = await schoolsAPI.list()
-      const schools = response.data.results || response.data
-      const schoolData = Array.isArray(schools) ? schools.find((s: any) => s.id === schoolId) : null
-      if (process.env.NODE_ENV === 'development') { console.log('[Auth] Fetched schools, found for id', schoolId, ':', schoolData) }
+      const response = await schoolsAPI.retrieve(schoolId)
+      const schoolData = response.data
+      if (process.env.NODE_ENV === 'development') { console.log('[Auth] Fetched school with id', schoolId, ':', schoolData) }
       setSchool(schoolData)
       setUser((currentUser) => currentUser ? {
         ...currentUser,
@@ -92,7 +100,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSchool(null)
       return null
     }
-  }
+  }, [])
+
+  const refreshSchool = useCallback(() => {
+    if (!user?.school_id) {
+      setSchool(null)
+      return Promise.resolve(null)
+    }
+    return fetchSchool(user.school_id)
+  }, [fetchSchool, user?.school_id])
 
   const validateToken = async () => {
     const token = sessionStorage.getItem("authToken")
@@ -164,14 +180,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       })
   }, [])
-
-  useEffect(() => {
-    if (!isAuthenticated || !user?.school_id) return
-    const interval = window.setInterval(() => {
-      void fetchSchool(user.school_id!)
-    }, 5000)
-    return () => window.clearInterval(interval)
-  }, [isAuthenticated, user?.school_id])
 
   const login = async (credential: string, password: string, loginType: "email" | "student_id" = "email") => {
     try {
@@ -253,7 +261,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  return <AuthContext.Provider value={{ user, school, loading, isAuthenticated, login, logout, register }}>{children}</AuthContext.Provider>
+  return <AuthContext.Provider value={{ user, school, refreshSchool, loading, isAuthenticated, login, logout, register }}>{children}</AuthContext.Provider>
 }
 
 export function useAuthContext() {
@@ -263,6 +271,7 @@ export function useAuthContext() {
     return {
       user: null,
       school: null,
+      refreshSchool: async () => null,
       loading: true,
       isAuthenticated: false,
       login: async () => {},

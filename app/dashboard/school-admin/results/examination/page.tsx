@@ -145,6 +145,13 @@ function ExaminationContent() {
         }))
         setStudents(studentList)
         setGrades(classGrades)
+        const seededScores: Record<string, string> = {}
+        for (const grade of classGrades) {
+          if (grade.assessment_type === "exam") {
+            seededScores[`${grade.student}:${grade.subject}`] = String(grade.score ?? "")
+          }
+        }
+        setExamScores(seededScores)
       } catch (err) {
         if (!cancelled) {
           console.error("Failed to load class data:", err)
@@ -164,17 +171,6 @@ function ExaminationContent() {
       cancelled = true
     }
   }, [filterClass, filterSession, toast])
-
-  // Seed the editable exam-score inputs from existing exam-type grades
-  useEffect(() => {
-    const seeded: Record<string, string> = {}
-    for (const g of grades) {
-      if (g.assessment_type === "exam") {
-        seeded[`${g.student}:${g.subject}`] = String(g.score ?? "")
-      }
-    }
-    setExamScores(seeded)
-  }, [grades])
 
   /** Teachers' continuous-assessment total (sum of weighted percentages) per student/subject. */
   const caTotals = useMemo(() => {
@@ -245,6 +241,8 @@ function ExaminationContent() {
       const session = parseInt(filterSession)
       let saved = 0
       const errors: string[] = []
+      const lockErrors: string[] = []
+      const savedGrades: GradeRecord[] = []
 
       for (const entry of entries) {
         const payload = {
@@ -256,34 +254,72 @@ function ExaminationContent() {
           academic_session: session,
         }
         try {
-          if (entry.gradeId) {
-            await gradesAPI.update(entry.gradeId, payload)
-          } else {
-            await gradesAPI.create(payload)
-          }
+          const response = entry.gradeId
+            ? await gradesAPI.update(entry.gradeId, payload)
+            : await gradesAPI.create(payload)
+          const grade = response.data
+          savedGrades.push({
+            id: grade.id,
+            student: Number(grade.student ?? entry.studentId),
+            subject: Number(grade.subject ?? grade.subject_id ?? entry.subjectId),
+            assessment_type: grade.assessment_type || "exam",
+            score: Number(grade.score ?? entry.score),
+            max_score: Number(grade.max_score ?? 100),
+            percentage: Number(grade.percentage ?? entry.score),
+            grade: grade.grade || "",
+            is_locked: Boolean(grade.is_locked),
+          })
           saved++
         } catch (err: any) {
           errors.push(getErrorMessage(err, `Failed for student ${entry.studentId}`))
         }
       }
 
+      if (savedGrades.length > 0) {
+        setGrades((currentGrades) => {
+          const updatedByCell = new Map(
+            savedGrades.map((grade) => [`${grade.student}:${grade.subject}`, grade]),
+          )
+          const mergedGrades = currentGrades.filter(
+            (grade) => grade.assessment_type !== "exam" || !updatedByCell.has(`${grade.student}:${grade.subject}`),
+          )
+          return [...mergedGrades, ...savedGrades]
+        })
+      }
+
       // Lock every grade for this class/session so the terminal-report
       // generator (which only counts locked grades) includes them.
       if (lockAfter) {
-        try {
-          await gradesAPI.lock_by_class({
-            class_id: parseInt(filterClass),
-            academic_session_id: session,
-          })
-        } catch (lockErr) {
-          console.error("Lock by class failed:", lockErr)
+        const subjectIds = [
+          ...new Set([
+            ...classSubjects.map((subject) => subject.id),
+            ...grades.map((grade) => grade.subject),
+            ...savedGrades.map((grade) => grade.subject),
+          ]),
+        ]
+        for (const subjectId of subjectIds) {
+          try {
+            await gradesAPI.lock_by_class({
+              class_id: parseInt(filterClass),
+              subject_id: subjectId,
+              academic_session_id: session,
+            })
+          } catch (lockErr) {
+            lockErrors.push(getErrorMessage(lockErr, `Failed to lock subject ${subjectId}`))
+          }
         }
       }
 
-      if (errors.length > 0) {
+      if (errors.length > 0 || lockErrors.length > 0) {
+        const description = [
+          ...errors.slice(0, 3),
+          ...lockErrors.slice(0, Math.max(0, 3 - errors.length)),
+        ].join("; ")
         toast({
-          title: `Saved ${saved} score(s) with errors`,
-          description: errors.slice(0, 3).join("; "),
+          title: lockErrors.length > 0 && errors.length === 0
+            ? `Saved ${saved} score(s), but locking failed`
+            : `Saved ${saved} score(s) with errors`,
+          description,
           variant: "destructive",
         })
       } else {
@@ -293,14 +329,6 @@ function ExaminationContent() {
         })
       }
 
-      // Reload to reflect server state
-      if (filterClass && filterSession) {
-        const classGrades = await fetchAllGrades<GradeRecord>({
-          class_obj: filterClass,
-          academic_session: filterSession,
-        })
-        setGrades(classGrades)
-      }
     } catch (err) {
       toast({
         title: "Save failed",

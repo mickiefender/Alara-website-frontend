@@ -2,7 +2,7 @@ import { Navbar } from "@/components/landing/navbar"
 import { HeroSection } from "@/components/landing/hero-section"
 import { PartnersSection } from "@/components/landing/partners-section"
 import { FeaturesSection } from "@/components/landing/features-section"
-import { StatsSection } from "@/components/landing/stats-section"
+import { SchoolAdminBenefitsSection } from "@/components/landing/school-admin-benefits-section"
 import { TestimonialsSection } from "@/components/landing/testimonials-section"
 import { Footer } from "@/components/footer"
 import { AppShowcaseTimeline } from "@/components/AppShowcaseTimeline"
@@ -17,7 +17,7 @@ export default function Home() {
         <HeroSection />
         <PartnersSection />
         <AppShowcaseTimeline />
-        <StatsSection />
+        <SchoolAdminBenefitsSection />
         <FaqSection />
         <FeaturedBlogSection />
         <TestimonialsSection />

@@ -8,6 +8,7 @@ import { useState, useEffect, useRef } from "react"
 import { schoolsAPI } from "@/lib/api"
 import Image from "next/image"
 import { Upload, X, Loader2, Save } from "lucide-react"
+import { useAuthContext } from "@/lib/auth-context"
 
 interface School {
   id: number
@@ -28,6 +29,7 @@ interface School {
 }
 
 export function SchoolProfileSetup() {
+  const { school: authSchool, loading: authLoading, refreshSchool } = useAuthContext()
   const [editing, setEditing] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -38,32 +40,12 @@ export function SchoolProfileSetup() {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    fetchSchool()
-  }, [])
+    setLoading(authLoading)
+    if (!authSchool) return
 
-  const fetchSchool = async () => {
-    try {
-      setLoading(true)
-      const response = await schoolsAPI.list()
-      if (response.data.results && response.data.results.length > 0) {
-        const schoolData = response.data.results[0]
-        setSchool(schoolData)
-        // Set logo preview from existing logo
-        const logoUrl = schoolData.logo_url || schoolData.logo_url_computed
-        if (logoUrl) {
-          setLogoPreview(logoUrl)
-        }
-      }
-    } catch (error: any) {
-      console.error("[v0] Failed to fetch school:", error)
-      // Handle error gracefully - don't crash
-      if (error.response?.status === 500) {
-        console.warn("Backend server error - school data unavailable")
-      }
-    } finally {
-      setLoading(false)
-    }
-  }
+    setSchool(authSchool)
+    setLogoPreview(authSchool.logo_url || authSchool.logo_url_computed || null)
+  }, [authSchool, authLoading])
 
   const handleLogoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -116,12 +98,10 @@ export function SchoolProfileSetup() {
       const { logo_url, logo_url_computed, ...schoolData } = school
       await schoolsAPI.update(school.id, schoolData)
 
-      // Refresh school data & trigger theme update
-      await fetchSchool()
-      
-      // Trigger theme provider refetch
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('schoolThemeUpdated'))
+      const refreshedSchool = await refreshSchool()
+      if (refreshedSchool) {
+        setSchool(refreshedSchool)
+        setLogoPreview(refreshedSchool.logo_url || refreshedSchool.logo_url_computed || null)
       }
       
       setEditing(false)

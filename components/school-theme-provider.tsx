@@ -1,8 +1,6 @@
 "use client"
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react'
-import { schoolsAPI } from '@/lib/api'
-import { useToast } from '@/hooks/use-toast'
 import { useAuthContext } from '@/lib/auth-context'
 
 interface SchoolTheme {
@@ -40,11 +38,10 @@ interface SchoolThemeProviderProps {
 }
 
 export function SchoolThemeProvider({ children }: SchoolThemeProviderProps) {
-  const { isAuthenticated } = useAuthContext()
+  const { isAuthenticated, school, refreshSchool } = useAuthContext()
   const [schoolTheme, setSchoolTheme] = useState<SchoolTheme | null>(DEFAULT_SCHOOL_THEME)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const { toast } = useToast()
 
   const applyTheme = (theme: SchoolTheme) => {
     const root = document.documentElement
@@ -83,68 +80,54 @@ export function SchoolThemeProvider({ children }: SchoolThemeProviderProps) {
     }
   }
 
-  const fetchSchoolTheme = async () => {
-    // Always apply default baseline for every school first
-    applyTheme(DEFAULT_SCHOOL_THEME)
-    setSchoolTheme(DEFAULT_SCHOOL_THEME)
+  useEffect(() => {
+    const resolvedTheme: SchoolTheme = isAuthenticated && school ? {
+      primary_color: school.primary_color || DEFAULT_SCHOOL_THEME.primary_color,
+      secondary_color: school.secondary_color || DEFAULT_SCHOOL_THEME.secondary_color,
+      sidebar_color: school.sidebar_color || DEFAULT_SCHOOL_THEME.sidebar_color,
+    } : DEFAULT_SCHOOL_THEME
 
-    // For public/unauth pages, default theme is the intended final state
-    if (!isAuthenticated) {
-      setError(null)
-      setIsLoading(false)
-      return
-    }
-
-    try {
-      setIsLoading(true)
-      setError(null)
-
-      const response = await schoolsAPI.list()
-      const schools = response.data?.results || response.data || []
-      const schoolData = Array.isArray(schools) && schools.length > 0 ? schools[0] : null
-
-      if (!schoolData) {
-        setSchoolTheme(DEFAULT_SCHOOL_THEME)
-        applyTheme(DEFAULT_SCHOOL_THEME)
-        return
-      }
-
-      const resolvedTheme: SchoolTheme = {
-        primary_color: schoolData.primary_color || DEFAULT_SCHOOL_THEME.primary_color,
-        secondary_color: schoolData.secondary_color || DEFAULT_SCHOOL_THEME.secondary_color,
-        sidebar_color: schoolData.sidebar_color || DEFAULT_SCHOOL_THEME.sidebar_color,
-      }
-
-      setSchoolTheme(resolvedTheme)
-      applyTheme(resolvedTheme)
-    } catch (err: any) {
-      if (process.env.NODE_ENV === 'development') { console.error('[SchoolTheme] Fetch error:', err) }
-      setSchoolTheme(DEFAULT_SCHOOL_THEME)
-      applyTheme(DEFAULT_SCHOOL_THEME)
-      setError('Failed to load school theme')
-      toast({
-        title: 'Theme Error',
-        description: 'Could not load school colors',
-        variant: 'destructive'
-      })
-    } finally {
-      setIsLoading(false)
-    }
-  }
+    setSchoolTheme(resolvedTheme)
+    applyTheme(resolvedTheme)
+    setError(null)
+    setIsLoading(false)
+  }, [
+    isAuthenticated,
+    school?.primary_color,
+    school?.secondary_color,
+    school?.sidebar_color,
+  ])
 
   useEffect(() => {
-    fetchSchoolTheme()
-
-    const handleThemeUpdate = () => {
-      fetchSchoolTheme()
+    const handleThemeUpdate = async () => {
+      setIsLoading(true)
+      try {
+        await refreshSchool()
+        setError(null)
+      } catch (err) {
+        if (process.env.NODE_ENV === 'development') { console.error('[SchoolTheme] Refresh error:', err) }
+        setError('Failed to load school theme')
+      } finally {
+        setIsLoading(false)
+      }
     }
 
     window.addEventListener('schoolThemeUpdated', handleThemeUpdate)
     return () => window.removeEventListener('schoolThemeUpdated', handleThemeUpdate)
-  }, [isAuthenticated])
+  }, [refreshSchool])
 
   const refetch = async () => {
-    await fetchSchoolTheme()
+    setIsLoading(true)
+    try {
+      await refreshSchool()
+      setError(null)
+    } catch (err) {
+      if (process.env.NODE_ENV === 'development') { console.error('[SchoolTheme] Refresh error:', err) }
+      setError('Failed to load school theme')
+      throw err
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (

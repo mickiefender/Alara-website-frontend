@@ -527,19 +527,19 @@ function ManageClassView({ classId, className, onBack }: ManageClassViewProps) {
       {/* Single Tabs instance — controls both the tab bar and the panels */}
       <Tabs defaultValue="subjects" className="w-full">
         <TabsList className="grid grid-cols-2 lg:w-fit lg:grid-cols-4 w-full h-11 p-1 rounded-xl bg-muted/60">
-          <TabsTrigger value="subjects" className="gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg">
+          <TabsTrigger value="subjects" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm rounded-lg">
             <BookOpen size={14} />
             Subjects
           </TabsTrigger>
-          <TabsTrigger value="students" className="gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg">
+          <TabsTrigger value="students" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm rounded-lg">
             <Users size={14} />
             Students
           </TabsTrigger>
-          <TabsTrigger value="class-teachers" className="gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg">
+          <TabsTrigger value="class-teachers" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm rounded-lg">
             <UserCheck size={14} />
             Class Teachers
           </TabsTrigger>
-          <TabsTrigger value="subject-teachers" className="gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg">
+          <TabsTrigger value="subject-teachers" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm rounded-lg">
             <Users2 size={14} />
             Subject Teachers
           </TabsTrigger>

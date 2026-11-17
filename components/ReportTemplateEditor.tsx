@@ -6,13 +6,13 @@ import 'quill/dist/quill.snow.css'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
-import { Badge } from "@/components/ui/badge"
-import { Eye as PreviewIcon, Download, Save, LayoutTemplate } from "lucide-react"
+import { Download, LayoutTemplate, Table2, Paintbrush, Image as ImageIcon, GripVertical, Move } from "lucide-react"
 import { VariableInserter } from './VariableInserter'
 import { academicsAPI } from '@/lib/api'
 import { useSchoolTheme } from '@/components/school-theme-provider'
 import { toast } from 'sonner'
 import { QuillEditorProvider } from './QuillEditorContext'
+import { Input } from '@/components/ui/input'
 
 /* ------------------------------------------------------------------ */
 /*  Shared style helpers used by the preset + local renderer           */
@@ -20,6 +20,44 @@ import { QuillEditorProvider } from './QuillEditorContext'
 
 const GREEN = '#1a7a4a'
 const CELL = `border:1px solid #94a3b8; padding:4px 6px;`
+type QuillDelta = ReturnType<Quill['getContents']>
+const Delta = Quill.import('delta') as new () => QuillDelta
+
+interface StyleAttributorFormat {
+  scope: number
+  constructor: new (
+    attrName: string,
+    keyName: string,
+    options: { scope: number; whitelist?: string[] },
+  ) => { attrName: string }
+}
+const backgroundStyle = Quill.import('formats/background') as StyleAttributorFormat
+const alignStyle = Quill.import('formats/align') as Pick<StyleAttributorFormat, 'scope'>
+const parchment = Quill.import('parchment') as { Scope: { ANY: number } }
+const SectionBackground = new backgroundStyle.constructor(
+  'sectionBackground',
+  'background-color',
+  { scope: alignStyle.scope },
+)
+Quill.register('formats/sectionBackground', SectionBackground, true)
+const TemplatePosition = new backgroundStyle.constructor(
+  'templatePosition',
+  'position',
+  { scope: parchment.Scope.ANY, whitelist: ['absolute'] },
+)
+const TemplateLeft = new backgroundStyle.constructor(
+  'templateLeft',
+  'left',
+  { scope: parchment.Scope.ANY },
+)
+const TemplateTop = new backgroundStyle.constructor(
+  'templateTop',
+  'top',
+  { scope: parchment.Scope.ANY },
+)
+Quill.register('formats/templatePosition', TemplatePosition, true)
+Quill.register('formats/templateLeft', TemplateLeft, true)
+Quill.register('formats/templateTop', TemplateTop, true)
 
 /** Maps a total score to the Ghanaian proficiency grade + remark. */
 export function gradeRemark(total: number): [string, string] {
@@ -270,33 +308,96 @@ export interface TemplateEditorRef {
 interface ReportTemplateEditorProps {
   templateId?: number
   initialHTML?: string
-  onSave?: (data: any) => void
   previewData?: any
   readOnly?: boolean
   className?: string
 }
 
+type ImageResizeDirection = 'left' | 'right' | 'top' | 'bottom'
+
+interface ImageResizeSession {
+  pointerId: number
+  direction: ImageResizeDirection
+  startX: number
+  startY: number
+  startWidth: number
+  startHeight: number
+  image: HTMLImageElement
+  index: number
+}
+
 const ReportTemplateEditor = forwardRef<TemplateEditorRef, ReportTemplateEditorProps>(
-  ({ templateId, initialHTML = '', onSave, previewData = BASE_MOCK_PREVIEW_DATA, readOnly = false, className }, ref) => {
+  ({ templateId, initialHTML = '', previewData = BASE_MOCK_PREVIEW_DATA, readOnly = false, className }, ref) => {
     const { schoolTheme } = useSchoolTheme()
     const quillRef = useRef<Quill | null>(null)
     const containerRef = useRef<HTMLDivElement>(null)
-    const [previewHtml, setPreviewHtml] = useState('')
-    const [showPreview, setShowPreview] = useState(false)
-    const [loading, setLoading] = useState(false)
+    const workspaceRef = useRef<HTMLDivElement>(null)
+    const selectionRef = useRef<{ index: number; length: number }>({ index: 0, length: 0 })
+    const draggedElementRef = useRef<HTMLElement | null>(null)
+    const dragOffsetRef = useRef({ x: 0, y: 0 })
+    const freePositionModeRef = useRef(false)
+    const hoveredElementRef = useRef<HTMLElement | null>(null)
+    const selectedImageElementRef = useRef<HTMLImageElement | null>(null)
+    const imageResizeSessionRef = useRef<ImageResizeSession | null>(null)
+    const [dragHandlePosition, setDragHandlePosition] = useState<{ top: number; left: number } | null>(null)
+    const [imageResizeBounds, setImageResizeBounds] = useState<{ top: number; left: number; width: number; height: number } | null>(null)
+    const [freePositionMode, setFreePositionMode] = useState(false)
+    const [tableRows, setTableRows] = useState('3')
+    const [tableColumns, setTableColumns] = useState('3')
+    const [backgroundColor, setBackgroundColor] = useState('#fff2cc')
+    const [sectionColor, setSectionColor] = useState('#eaf5ef')
+    const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null)
+    const [imageWidth, setImageWidth] = useState('')
+    const [imageHeight, setImageHeight] = useState('')
+
+    const updateImageResizeBounds = useCallback((image = selectedImageElementRef.current) => {
+      const workspace = workspaceRef.current
+      if (!image?.isConnected || !workspace || readOnly) {
+        setImageResizeBounds(null)
+        return
+      }
+      const imageRect = image.getBoundingClientRect()
+      const workspaceRect = workspace.getBoundingClientRect()
+      setImageResizeBounds({
+        top: imageRect.top - workspaceRect.top,
+        left: imageRect.left - workspaceRect.left,
+        width: imageRect.width,
+        height: imageRect.height,
+      })
+    }, [readOnly])
+
+    const getHTML = useCallback(() => {
+      const root = quillRef.current?.root
+      if (!root) return ''
+      const html = root.innerHTML
+      if (!root.querySelector('[style*="position: absolute"]')) return html
+      return `<div class="report-template-canvas" style="position:relative; min-height:${Math.max(root.scrollHeight, root.clientHeight)}px;">${html}</div>`
+    }, [])
 
     useImperativeHandle(ref, () => ({
-      getHTML: () => quillRef.current?.root.innerHTML || '',
+      getHTML,
       setHTML: (html: string) => {
-        if (quillRef.current) quillRef.current.root.innerHTML = html
+        const quill = quillRef.current
+        if (!quill) return
+        quill.setText('', 'silent')
+        if (html) {
+          const parsed = document.createElement('div')
+          parsed.innerHTML = html
+          const canvas = parsed.firstElementChild
+          const content = parsed.childElementCount === 1 && canvas?.classList.contains('report-template-canvas')
+            ? canvas.innerHTML
+            : html
+          quill.clipboard.dangerouslyPasteHTML(0, content, 'silent')
+        }
       }
-    }))
+    }), [getHTML])
 
     useEffect(() => {
       if (containerRef.current && !quillRef.current) {
         const quill = new Quill(containerRef.current, {
           theme: 'snow',
           modules: {
+            table: true,
             toolbar: [
               [{ header: [1, 2, 3, 4, 5, 6, false] }],
               [{ font: [] }],
@@ -329,46 +430,429 @@ const ReportTemplateEditor = forwardRef<TemplateEditorRef, ReportTemplateEditorP
           placeholder: `Design with your school colors: Primary ${schoolTheme?.primary_color || GREEN}, Secondary ${schoolTheme?.secondary_color || '#f1f5f9'}.`
         })
         quillRef.current = quill
-        if (initialHTML) quill.root.innerHTML = initialHTML
+        if (initialHTML) {
+          const parsed = document.createElement('div')
+          parsed.innerHTML = initialHTML
+          const canvas = parsed.firstElementChild
+          const content = parsed.childElementCount === 1 && canvas?.classList.contains('report-template-canvas')
+            ? canvas.innerHTML
+            : initialHTML
+          quill.clipboard.dangerouslyPasteHTML(0, content, 'silent')
+        }
+        quill.root.style.position = 'relative'
+        const minimumEditorHeight = Number.parseFloat(window.getComputedStyle(quill.root).minHeight) || 420
+        const syncCanvasHeight = () => {
+          const rootRect = quill.root.getBoundingClientRect()
+          const positionedBottom = Array.from(quill.root.querySelectorAll<HTMLElement>('*'))
+            .filter((element) => window.getComputedStyle(element).position === 'absolute')
+            .reduce((bottom, element) => Math.max(
+              bottom,
+              element.getBoundingClientRect().bottom - rootRect.top + quill.root.scrollTop,
+            ), 0)
+          quill.root.style.minHeight = `${Math.max(minimumEditorHeight, Math.ceil(positionedBottom + 32))}px`
+        }
+        syncCanvasHeight()
+
+        const getRootBlock = (target: EventTarget | null) => {
+          let element = target instanceof HTMLElement ? target : target instanceof Node ? target.parentElement : null
+          while (element && element.parentElement !== quill.root) element = element.parentElement
+          return element?.parentElement === quill.root ? element : null
+        }
+
+        const getMoveTarget = (target: EventTarget | null) => {
+          const element = target instanceof HTMLElement ? target : target instanceof Node ? target.parentElement : null
+          if (element instanceof HTMLImageElement) return element
+          const listItem = element?.closest('li')
+          if (listItem && quill.root.contains(listItem)) return listItem
+          const line = element?.closest('p, h1, h2, h3, h4, h5, h6, blockquote, pre')
+          if (line && quill.root.contains(line)) return line as HTMLElement
+          let current = element
+          while (current && current.parentElement !== quill.root) {
+            if (
+              current.tagName === 'DIV' &&
+              !current.querySelector('div, p, h1, h2, h3, h4, h5, h6, ul, ol, table, blockquote, pre')
+            ) return current
+            current = current.parentElement
+          }
+          return getRootBlock(element)
+        }
+
+        const getBlotRange = (element: HTMLElement) => {
+          const blot = Quill.find(element)
+          if (!blot || !('length' in blot) || typeof blot.length !== 'function') return null
+          return { index: quill.getIndex(blot), length: blot.length() }
+        }
+
+        const updateDragHandlePosition = (element: HTMLElement | null) => {
+          if (!element || !getBlotRange(element) || !workspaceRef.current) {
+            hoveredElementRef.current = null
+            setDragHandlePosition(null)
+            return
+          }
+          hoveredElementRef.current = element
+          const elementRect = element.getBoundingClientRect()
+          const workspaceRect = workspaceRef.current.getBoundingClientRect()
+          const nextPosition = {
+            top: elementRect.top - workspaceRect.top + workspaceRef.current.scrollTop,
+            left: Math.max(0, elementRect.left - workspaceRect.left + workspaceRef.current.scrollLeft - 30),
+          }
+          setDragHandlePosition((current) => (
+            current?.top === nextPosition.top && current.left === nextPosition.left
+              ? current
+              : nextPosition
+          ))
+        }
+
+        const clearDropIndicator = () => {
+          quill.root.querySelectorAll<HTMLElement>('[data-template-drop-target]').forEach((element) => {
+            element.style.outline = ''
+            delete element.dataset.templateDropTarget
+          })
+          quill.root.style.outline = ''
+          delete quill.root.dataset.templateFreeDropTarget
+        }
+
+        const handleDragOver = (event: DragEvent) => {
+          if (!draggedElementRef.current) return
+          if (freePositionModeRef.current) {
+            event.preventDefault()
+            clearDropIndicator()
+            quill.root.dataset.templateFreeDropTarget = 'true'
+            quill.root.style.outline = '2px dashed #1a7a4a'
+            if (event.dataTransfer) event.dataTransfer.dropEffect = 'move'
+            return
+          }
+          const target = getMoveTarget(event.target)
+          if (!target || target === draggedElementRef.current || !getBlotRange(target)) return
+          event.preventDefault()
+          clearDropIndicator()
+          target.dataset.templateDropTarget = 'true'
+          target.style.outline = '2px dashed #1a7a4a'
+          if (event.dataTransfer) event.dataTransfer.dropEffect = 'move'
+        }
+
+        const handleDrop = (event: DragEvent) => {
+          const sourceElement = draggedElementRef.current
+          if (!sourceElement) return
+          if (freePositionModeRef.current) {
+            event.preventDefault()
+            clearDropIndicator()
+            const rootRect = quill.root.getBoundingClientRect()
+            const sourceRange = getBlotRange(sourceElement)
+            if (
+              !sourceRange ||
+              event.clientX < rootRect.left ||
+              event.clientX > rootRect.right ||
+              event.clientY < rootRect.top ||
+              event.clientY > rootRect.bottom
+            ) return
+
+            const rootStyle = window.getComputedStyle(quill.root)
+            const borderLeft = Number.parseFloat(rootStyle.borderLeftWidth) || 0
+            const borderTop = Number.parseFloat(rootStyle.borderTopWidth) || 0
+            const left = Math.max(
+              0,
+              Math.round(event.clientX - rootRect.left - borderLeft + quill.root.scrollLeft - dragOffsetRef.current.x),
+            )
+            const top = Math.max(
+              0,
+              Math.round(event.clientY - rootRect.top - borderTop + quill.root.scrollTop - dragOffsetRef.current.y),
+            )
+            const formats = {
+              templatePosition: 'absolute',
+              templateLeft: `${left}px`,
+              templateTop: `${top}px`,
+            }
+            if (sourceElement instanceof HTMLImageElement) {
+              quill.formatText(sourceRange.index, 1, formats, 'user')
+            } else {
+              quill.formatLine(sourceRange.index, Math.max(sourceRange.length, 1), formats, 'user')
+            }
+            syncCanvasHeight()
+            quill.setSelection(Math.min(sourceRange.index, quill.getLength() - 1), 0, 'silent')
+            quill.focus()
+            updateDragHandlePosition(sourceElement)
+            toast.success(sourceElement instanceof HTMLImageElement ? 'Image positioned.' : 'Text positioned.')
+            return
+          }
+
+          const targetElement = getMoveTarget(event.target)
+          if (!targetElement) return
+          event.preventDefault()
+          clearDropIndicator()
+
+          const sourceRange = getBlotRange(sourceElement)
+          const targetRange = getBlotRange(targetElement)
+          if (!sourceRange || !targetRange || sourceElement === targetElement) return
+
+          const targetRect = targetElement.getBoundingClientRect()
+          const dropAfter = event.clientY >= targetRect.top + targetRect.height / 2
+          const destination = targetRange.index + (dropAfter ? targetRange.length : 0)
+          if (destination >= sourceRange.index && destination <= sourceRange.index + sourceRange.length) return
+
+          const insertionIndex = destination > sourceRange.index ? destination - sourceRange.length : destination
+          const movedContents = quill.getContents(sourceRange.index, sourceRange.length)
+          const change = new Delta()
+          const moveChange = sourceRange.index < destination
+            ? change
+              .retain(sourceRange.index)
+              .delete(sourceRange.length)
+              .retain(destination - sourceRange.index - sourceRange.length)
+              .concat(movedContents)
+            : change
+              .retain(insertionIndex)
+              .concat(movedContents)
+              .retain(sourceRange.index - insertionIndex)
+              .delete(sourceRange.length)
+
+          quill.updateContents(moveChange, 'user')
+          quill.setSelection(Math.min(insertionIndex, quill.getLength() - 1), 0, 'silent')
+          quill.focus()
+          draggedElementRef.current = null
+          updateDragHandlePosition(targetElement)
+          toast.success(sourceElement instanceof HTMLImageElement ? 'Image moved.' : 'Content block moved.')
+        }
+
+        const handleMouseMove = (event: MouseEvent) => {
+          updateDragHandlePosition(getMoveTarget(event.target))
+        }
+
+        const handleScroll = () => {
+          if (hoveredElementRef.current) updateDragHandlePosition(hoveredElementRef.current)
+          updateImageResizeBounds()
+        }
+
+        quill.root.addEventListener('dragover', handleDragOver)
+        quill.root.addEventListener('drop', handleDrop)
+        quill.root.addEventListener('mousemove', handleMouseMove)
+        quill.root.addEventListener('scroll', handleScroll)
+        containerRef.current?.addEventListener('scroll', handleScroll)
+
+        const handleSelectionChange = (range: { index: number; length: number } | null) => {
+          if (!range) return
+          selectionRef.current = range
+          const imagePosition = [range.index, range.index - 1].find((index) => {
+            if (index < 0) return false
+            const [leaf] = quill.getLeaf(index)
+            return leaf?.domNode instanceof HTMLImageElement
+          })
+          if (imagePosition !== undefined) {
+            const [leaf] = quill.getLeaf(imagePosition)
+            if (!(leaf?.domNode instanceof HTMLImageElement)) return
+            const image = leaf.domNode
+            selectedImageElementRef.current = image
+            setSelectedImageIndex(imagePosition)
+            setImageWidth(image.getAttribute('width') || String(Math.round(image.getBoundingClientRect().width || image.naturalWidth || 120)))
+            setImageHeight(image.getAttribute('height') || String(Math.round(image.getBoundingClientRect().height || image.naturalHeight || 80)))
+            updateImageResizeBounds(image)
+          } else {
+            selectedImageElementRef.current = null
+            setSelectedImageIndex(null)
+            setImageResizeBounds(null)
+          }
+        }
+        quill.on('selection-change', handleSelectionChange)
       }
-    }, [initialHTML, schoolTheme?.primary_color, schoolTheme?.secondary_color])
+    }, [initialHTML, schoolTheme?.primary_color, schoolTheme?.secondary_color, readOnly, updateImageResizeBounds])
 
-    const previewTemplate = useCallback(async () => {
-      if (!quillRef.current) return
-      const htmlContent = quillRef.current.root.innerHTML
+    useEffect(() => {
+      if (selectedImageIndex === null) return
+      const updateOnResize = () => updateImageResizeBounds()
+      window.addEventListener('resize', updateOnResize)
+      return () => window.removeEventListener('resize', updateOnResize)
+    }, [selectedImageIndex, updateImageResizeBounds])
 
-      // Unsaved template: render locally with mock data.
-      if (!templateId) {
-        setPreviewHtml(renderTemplateLocally(htmlContent, previewData))
-        setShowPreview(true)
-        toast.success("Local preview (save the template to use server-side PDF generation)")
+    const startImageResize = useCallback((
+      direction: ImageResizeDirection,
+      event: React.PointerEvent<HTMLButtonElement>,
+    ) => {
+      const image = selectedImageElementRef.current
+      const quill = quillRef.current
+      if (readOnly || !image || selectedImageIndex === null || !quill) return
+      event.preventDefault()
+      event.stopPropagation()
+      const rect = image.getBoundingClientRect()
+      imageResizeSessionRef.current = {
+        pointerId: event.pointerId,
+        direction,
+        startX: event.clientX,
+        startY: event.clientY,
+        startWidth: rect.width,
+        startHeight: rect.height,
+        image,
+        index: selectedImageIndex,
+      }
+      workspaceRef.current?.setPointerCapture(event.pointerId)
+    }, [readOnly, selectedImageIndex])
+
+    const handleImageResizeMove = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+      const session = imageResizeSessionRef.current
+      if (!session || event.pointerId !== session.pointerId) return
+      event.preventDefault()
+      const deltaX = event.clientX - session.startX
+      const deltaY = event.clientY - session.startY
+      const width = Math.max(
+        1,
+        session.startWidth + (session.direction === 'right' ? deltaX : session.direction === 'left' ? -deltaX : 0),
+      )
+      const height = Math.max(
+        1,
+        session.startHeight + (session.direction === 'bottom' ? deltaY : session.direction === 'top' ? -deltaY : 0),
+      )
+      session.image.style.width = `${width}px`
+      session.image.style.height = `${height}px`
+      setImageWidth(String(Math.round(width)))
+      setImageHeight(String(Math.round(height)))
+      updateImageResizeBounds(session.image)
+    }, [updateImageResizeBounds])
+
+    const finishImageResize = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+      const session = imageResizeSessionRef.current
+      if (!session || event.pointerId !== session.pointerId) return
+      event.preventDefault()
+      const quill = quillRef.current
+      const width = Math.max(1, Math.round(session.image.getBoundingClientRect().width))
+      const height = Math.max(1, Math.round(session.image.getBoundingClientRect().height))
+      if (quill) {
+        quill.formatText(session.index, 1, { width: String(width), height: String(height) }, 'user')
+        const [leaf] = quill.getLeaf(session.index)
+        if (leaf?.domNode instanceof HTMLImageElement) {
+          session.image = leaf.domNode
+          selectedImageElementRef.current = leaf.domNode
+        }
+      }
+      session.image.style.width = ''
+      session.image.style.height = ''
+      imageResizeSessionRef.current = null
+      setImageWidth(String(width))
+      setImageHeight(String(height))
+      if (quill) {
+        const rootRect = quill.root.getBoundingClientRect()
+        const imageRect = session.image.getBoundingClientRect()
+        quill.root.style.minHeight = `${Math.max(
+          quill.root.clientHeight,
+          imageRect.bottom - rootRect.top + quill.root.scrollTop + 32,
+        )}px`
+      }
+      updateImageResizeBounds(session.image)
+    }, [updateImageResizeBounds])
+
+    const handleDragGripStart = useCallback((event: React.DragEvent<HTMLButtonElement>) => {
+      const source = hoveredElementRef.current
+      if (readOnly || !source) {
+        event.preventDefault()
+        return
+      }
+      event.stopPropagation()
+      draggedElementRef.current = source
+      const sourceRect = source.getBoundingClientRect()
+      dragOffsetRef.current = {
+        x: event.clientX - sourceRect.left,
+        y: event.clientY - sourceRect.top,
+      }
+      event.dataTransfer.effectAllowed = 'move'
+      event.dataTransfer.setData('text/plain', 'report-template-block')
+    }, [readOnly])
+
+    const handleDragGripEnd = useCallback(() => {
+      draggedElementRef.current = null
+      quillRef.current?.root.querySelectorAll<HTMLElement>('[data-template-drop-target]').forEach((element) => {
+        element.style.outline = ''
+        delete element.dataset.templateDropTarget
+      })
+      if (quillRef.current) {
+        quillRef.current.root.style.outline = ''
+        delete quillRef.current.root.dataset.templateFreeDropTarget
+      }
+    }, [])
+
+    const toggleFreePositionMode = useCallback(() => {
+      const enabled = !freePositionModeRef.current
+      freePositionModeRef.current = enabled
+      setFreePositionMode(enabled)
+      toast.success(enabled ? 'Free placement enabled. Drop items anywhere in the editor.' : 'Block reordering enabled.')
+    }, [])
+
+    const restoreSelection = useCallback((quill: Quill) => {
+      const { index, length } = selectionRef.current
+      const safeIndex = Math.min(index, Math.max(quill.getLength() - 1, 0))
+      quill.focus()
+      quill.setSelection(safeIndex, Math.min(length, quill.getLength() - safeIndex - 1), 'silent')
+      return { index: safeIndex, length: Math.min(length, quill.getLength() - safeIndex - 1) }
+    }, [])
+
+    const insertTable = useCallback(() => {
+      const rows = Number(tableRows)
+      const columns = Number(tableColumns)
+      if (!Number.isInteger(rows) || !Number.isInteger(columns) || rows < 1 || columns < 1 || rows > 20 || columns > 12) {
+        toast.error('Choose 1–20 rows and 1–12 columns for the table.')
         return
       }
 
-      setLoading(true)
-      try {
-        const response = await academicsAPI.templatePreview(templateId, {
-          html_template: htmlContent,
-          preview_data: previewData
-        })
-        setPreviewHtml(response.data.rendered_html)
-        setShowPreview(true)
-        toast.success("Preview generated with school theme!")
-      } catch (error) {
-        // Fall back to local rendering so the user always sees something.
-        setPreviewHtml(renderTemplateLocally(htmlContent, previewData))
-        setShowPreview(true)
-        toast.error("Server preview failed - showing local preview instead")
-        console.error('Preview error:', error)
-      } finally {
-        setLoading(false)
+      const quill = quillRef.current
+      if (!quill) return
+      const tableModule = quill.getModule('table') as { insertTable: (rows: number, columns: number) => void } | undefined
+      if (!tableModule || typeof tableModule.insertTable !== 'function') {
+        toast.error('Table insertion is unavailable. Please reload the editor and try again.')
+        return
       }
-    }, [templateId, previewData])
+      restoreSelection(quill)
+      tableModule.insertTable(rows, columns)
+      toast.success('Table inserted.')
+    }, [tableRows, tableColumns, restoreSelection])
+
+    const applyTextBackground = useCallback(() => {
+      const quill = quillRef.current
+      if (!quill) return
+      const range = restoreSelection(quill)
+      if (range.length > 0) {
+        quill.formatText(range.index, range.length, 'background', backgroundColor, 'user')
+      } else {
+        quill.format('background', backgroundColor, 'user')
+      }
+    }, [backgroundColor, restoreSelection])
+
+    const applySectionBackground = useCallback(() => {
+      const quill = quillRef.current
+      if (!quill) return
+      const range = restoreSelection(quill)
+      quill.formatLine(range.index, Math.max(range.length, 1), 'sectionBackground', sectionColor, 'user')
+    }, [sectionColor, restoreSelection])
+
+    const clearBackgrounds = useCallback(() => {
+      const quill = quillRef.current
+      if (!quill) return
+      const range = restoreSelection(quill)
+      quill.formatLine(range.index, Math.max(range.length, 1), 'sectionBackground', false, 'user')
+      if (range.length > 0) {
+        quill.formatText(range.index, range.length, 'background', false, 'user')
+      } else {
+        quill.format('background', false, 'user')
+      }
+    }, [restoreSelection])
+
+    const applyImageSize = useCallback(() => {
+      const quill = quillRef.current
+      const width = Number(imageWidth)
+      const height = Number(imageHeight)
+      if (!quill || selectedImageIndex === null) return
+      if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+        toast.error('Enter a positive image width and height in pixels.')
+        return
+      }
+      quill.formatText(selectedImageIndex, 1, { width: String(width), height: String(height) }, 'user')
+      const [leaf] = quill.getLeaf(selectedImageIndex)
+      if (leaf?.domNode instanceof HTMLImageElement) {
+        selectedImageElementRef.current = leaf.domNode
+        updateImageResizeBounds(leaf.domNode)
+      }
+      toast.success('Image size updated.')
+    }, [imageWidth, imageHeight, selectedImageIndex, updateImageResizeBounds])
 
     const generatePDF = useCallback(async () => {
       if (!quillRef.current || !templateId) return
       try {
-        const htmlContent = quillRef.current.root.innerHTML
+        const htmlContent = getHTML()
         const response = await academicsAPI.templatePdf(templateId, {
           html_template: htmlContent,
           preview_data: previewData
@@ -385,12 +869,7 @@ const ReportTemplateEditor = forwardRef<TemplateEditorRef, ReportTemplateEditorP
         toast.error("PDF generation failed")
         console.error('PDF error:', error)
       }
-    }, [templateId, previewData])
-
-    const handleSave = useCallback(() => {
-      const htmlContent = quillRef.current?.root.innerHTML || ''
-      onSave?.({ html_template: htmlContent })
-    }, [onSave])
+    }, [templateId, previewData, getHTML])
 
     return (
       <QuillEditorProvider quillRef={quillRef}>
@@ -415,59 +894,151 @@ const ReportTemplateEditor = forwardRef<TemplateEditorRef, ReportTemplateEditorP
                 <LayoutTemplate className="w-4 h-4 mr-1" />
                 Use Ghana Report Layout
               </Button>
-              <Button onClick={previewTemplate} disabled={loading} size="sm">
-                {loading ? "..." : <PreviewIcon className="w-4 h-4 mr-1" />}
-                Preview
-              </Button>
               <Button onClick={generatePDF} disabled={!templateId} size="sm" variant="outline" title={templateId ? undefined : "Save the template first to generate a PDF"}>
                 <Download className="w-4 h-4 mr-1" />
                 PDF
               </Button>
-              {!readOnly && (
-                <Button onClick={handleSave} size="sm">
-                  <Save className="w-4 h-4 mr-1" />
-                  Save
-                </Button>
-              )}
             </div>
 
-            <div className="grid grid-cols-1 2xl:grid-cols-2 gap-4 items-stretch min-h-[520px] h-full">
-              <Card className="h-full flex flex-col border-primary/15 shadow-sm">
+            <div className="min-h-[520px] h-full">
+              <Card className="h-full w-full flex flex-col border-primary/15 shadow-sm">
                 <CardContent className="pt-5 px-4 lg:px-6 pb-5 flex-1 flex flex-col">
                   <Label className="mb-3 block text-sm font-semibold">Template Editor</Label>
-                  <div
-                    ref={containerRef}
-                    className="flex-1 w-full rounded-xl border border-primary/15 bg-background [&_.ql-toolbar]:!border-0 [&_.ql-toolbar]:!border-b [&_.ql-toolbar]:!border-primary/15 [&_.ql-toolbar]:sticky [&_.ql-toolbar]:top-0 [&_.ql-toolbar]:z-10 [&_.ql-toolbar]:!bg-card [&_.ql-container]:!border-0 [&_.ql-editor]:!min-h-[360px] [&_.ql-editor]:lg:!min-h-[420px] [&_.ql-editor]:!p-4 lg:[&_.ql-editor]:!p-6 [&_.ql-editor]:!leading-relaxed mt-3 overflow-auto"
-                  />
-                </CardContent>
-              </Card>
-
-              <Card className="h-full flex flex-col">
-                <CardContent className="pt-6 px-4 lg:px-6 pb-6 flex-1 flex flex-col">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Label className="text-sm font-medium">Live Preview</Label>
-                    <Badge variant="secondary" className="text-xs">
-                      {previewData.student_name}
-                    </Badge>
-                  </div>
-                  {showPreview ? (
-                    <div className="flex-1 min-h-[500px] overflow-auto rounded-xl border bg-muted/40 p-3 lg:p-6">
-                      <div
-                        className="mx-auto w-full max-w-[820px] rounded-md bg-white text-black shadow-xl ring-1 ring-black/10 p-5 sm:p-8"
-                        dangerouslySetInnerHTML={{ __html: previewHtml }}
-                      />
-                    </div>
-                  ) : (
-                    <div className="flex-1 min-h-[500px] flex items-center justify-center p-8 border-2 border-dashed border-muted rounded-2xl bg-gradient-to-br from-muted/30 to-background/50">
-                      <div className="text-center space-y-3">
-                        <PreviewIcon className="w-16 h-16 text-muted-foreground mx-auto" />
-                        <div>
-                          <h3 className="text-xl font-semibold text-muted-foreground mb-1">Preview Ready</h3>
-                          <p className="text-sm text-muted-foreground/80">Click Preview to see the full report with school colors</p>
+                  {!readOnly && (
+                    <p className="mb-3 text-xs text-muted-foreground">
+                      Drag the grip beside an item to move it. Enable free placement to position text and images anywhere on the page.
+                    </p>
+                  )}
+                  {!readOnly && (
+                    <div className="mb-3 flex flex-wrap items-end gap-3 rounded-lg border border-primary/15 bg-muted/20 p-3" role="toolbar" aria-label="Template layout tools">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={freePositionMode ? "default" : "outline"}
+                        aria-pressed={freePositionMode}
+                        onClick={toggleFreePositionMode}
+                        className="h-8"
+                      >
+                        <Move className="mr-1.5 h-4 w-4" />
+                        Free placement {freePositionMode ? "On" : "Off"}
+                      </Button>
+                      <div className="flex items-end gap-2">
+                        <div className="space-y-1">
+                          <Label htmlFor="table-rows" className="text-xs">Rows</Label>
+                          <Input id="table-rows" type="number" min={1} max={20} value={tableRows} onChange={(event) => setTableRows(event.target.value)} className="h-8 w-16" />
                         </div>
+                        <div className="space-y-1">
+                          <Label htmlFor="table-columns" className="text-xs">Columns</Label>
+                          <Input id="table-columns" type="number" min={1} max={12} value={tableColumns} onChange={(event) => setTableColumns(event.target.value)} className="h-8 w-20" />
+                        </div>
+                        <Button type="button" size="sm" variant="outline" onClick={insertTable} className="h-8">
+                          <Table2 className="mr-1.5 h-4 w-4" /> Insert table
+                        </Button>
                       </div>
+
+                      <div className="flex items-end gap-2">
+                        <div className="space-y-1">
+                          <Label htmlFor="template-background-color" className="text-xs">Text background</Label>
+                          <Input id="template-background-color" aria-label="Text background color" type="color" value={backgroundColor} onChange={(event) => setBackgroundColor(event.target.value)} className="h-8 w-12 cursor-pointer p-1" />
+                        </div>
+                        <Button type="button" size="sm" variant="outline" onClick={applyTextBackground} className="h-8">
+                          <Paintbrush className="mr-1.5 h-4 w-4" /> Apply to text
+                        </Button>
+                      </div>
+
+                      <div className="flex items-end gap-2">
+                        <div className="space-y-1">
+                          <Label htmlFor="template-section-color" className="text-xs">Section color</Label>
+                          <Input id="template-section-color" aria-label="Section background color" type="color" value={sectionColor} onChange={(event) => setSectionColor(event.target.value)} className="h-8 w-12 cursor-pointer p-1" />
+                        </div>
+                        <Button type="button" size="sm" variant="outline" onClick={applySectionBackground} className="h-8">
+                          <Paintbrush className="mr-1.5 h-4 w-4" /> Apply to section
+                        </Button>
+                        <Button type="button" size="sm" variant="ghost" onClick={clearBackgrounds} className="h-8">Clear colors</Button>
+                      </div>
+
+                      {selectedImageIndex !== null && (
+                        <div className="flex items-end gap-2 border-l pl-3">
+                          <ImageIcon className="mb-2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                          <div className="space-y-1">
+                            <Label htmlFor="image-width" className="text-xs">Image width (px)</Label>
+                            <Input id="image-width" type="number" min={0.1} step="any" value={imageWidth} onChange={(event) => setImageWidth(event.target.value)} className="h-8 w-24" />
+                          </div>
+                          <div className="space-y-1">
+                            <Label htmlFor="image-height" className="text-xs">Image height (px)</Label>
+                            <Input id="image-height" type="number" min={0.1} step="any" value={imageHeight} onChange={(event) => setImageHeight(event.target.value)} className="h-8 w-24" />
+                          </div>
+                          <Button type="button" size="sm" variant="outline" onClick={applyImageSize} className="h-8">Apply size</Button>
+                        </div>
+                      )}
                     </div>
                   )}
+                  <div
+                    ref={workspaceRef}
+                    className="relative min-h-[420px] flex-1"
+                    onPointerMove={handleImageResizeMove}
+                    onPointerUp={finishImageResize}
+                    onPointerCancel={finishImageResize}
+                  >
+                    <div
+                      ref={containerRef}
+                      className="h-full w-full rounded-xl border border-primary/15 bg-background [&_.ql-toolbar]:!border-0 [&_.ql-toolbar]:!border-b [&_.ql-toolbar]:!border-primary/15 [&_.ql-toolbar]:sticky [&_.ql-toolbar]:top-0 [&_.ql-toolbar]:z-10 [&_.ql-toolbar]:!bg-card [&_.ql-container]:!border-0 [&_.ql-editor]:!min-h-[360px] [&_.ql-editor]:lg:!min-h-[420px] [&_.ql-editor]:!p-4 lg:[&_.ql-editor]:!p-6 [&_.ql-editor]:!leading-relaxed mt-3 overflow-auto"
+                    />
+                    {!readOnly && imageResizeBounds && selectedImageIndex !== null && (
+                      <div
+                        aria-label="Image resize controls"
+                        data-image-resize-overlay
+                        className="pointer-events-none absolute z-30 border border-primary"
+                        style={{
+                          top: imageResizeBounds.top,
+                          left: imageResizeBounds.left,
+                          width: imageResizeBounds.width,
+                          height: imageResizeBounds.height,
+                        }}
+                      >
+                        <button
+                          type="button"
+                          aria-label="Resize image width from left edge"
+                          onPointerDown={(event) => startImageResize('left', event)}
+                          className="pointer-events-auto absolute -left-1.5 top-1/2 h-3 w-3 -translate-y-1/2 touch-none rounded-full border border-primary bg-background shadow-sm cursor-ew-resize"
+                        />
+                        <button
+                          type="button"
+                          aria-label="Resize image width from right edge"
+                          onPointerDown={(event) => startImageResize('right', event)}
+                          className="pointer-events-auto absolute -right-1.5 top-1/2 h-3 w-3 -translate-y-1/2 touch-none rounded-full border border-primary bg-background shadow-sm cursor-ew-resize"
+                        />
+                        <button
+                          type="button"
+                          aria-label="Resize image height from top edge"
+                          onPointerDown={(event) => startImageResize('top', event)}
+                          className="pointer-events-auto absolute -top-1.5 left-1/2 h-3 w-3 -translate-x-1/2 touch-none rounded-full border border-primary bg-background shadow-sm cursor-ns-resize"
+                        />
+                        <button
+                          type="button"
+                          aria-label="Resize image height from bottom edge"
+                          onPointerDown={(event) => startImageResize('bottom', event)}
+                          className="pointer-events-auto absolute -bottom-1.5 left-1/2 h-3 w-3 -translate-x-1/2 touch-none rounded-full border border-primary bg-background shadow-sm cursor-ns-resize"
+                        />
+                      </div>
+                    )}
+                    {!readOnly && dragHandlePosition && (
+                      <Button
+                        type="button"
+                        draggable
+                        size="icon-sm"
+                        variant="outline"
+                        aria-label="Drag content block to move it"
+                        title={freePositionMode ? "Drag and drop anywhere in the editor to position this item" : "Drag this handle to reorder the block"}
+                        onDragStart={handleDragGripStart}
+                        onDragEnd={handleDragGripEnd}
+                        className="absolute z-20 cursor-grab active:cursor-grabbing shadow-md"
+                        style={{ top: dragHandlePosition.top, left: dragHandlePosition.left }}
+                      >
+                        <GripVertical className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             </div>
