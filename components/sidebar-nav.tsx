@@ -137,6 +137,7 @@ const navSections: Record<string, NavSection[]> = {
         { label: "Withdrawals", href: "/dashboard/school-admin/withdrawals", icon: DollarSignIcon },
         { label: "Receipts", href: "/dashboard/school-admin/receipts", icon: BookUser },
         { label: "Expenses", href: "/dashboard/school-admin/expenses", icon: FileText },
+        { label: "Staff Payroll", href: "/dashboard/school-admin/payroll", icon: DollarSignIcon },
       ],
     },
     {
@@ -214,6 +215,7 @@ const navSections: Record<string, NavSection[]> = {
         { label: "Ai Chat", href: "/dashboard/teacher/ai-assistant", icon: Sparkles },
         { label: "Submissions", href: "/dashboard/teacher/submissions", icon: BookOpen },
         { label: "Performance", href: "/dashboard/teacher/performance", icon: BarChart },
+        { label: "Payroll & Payslips", href: "/dashboard/payroll/payslips", icon: DollarSignIcon },
         { label: "Materials", href: "/dashboard/teacher/materials", icon: UploadCloud },
         { label: "Messages", href: "/dashboard/teacher/messages", icon: MessageCircle },
         { label: "Notifications", href: "/dashboard/teacher/notifications", icon: Bell },
@@ -266,6 +268,10 @@ const PERMISSION_ICONS: Record<string, React.ComponentType<{ className?: string 
   view_payments: CreditCard,
   manage_withdrawals: DollarSignIcon,
   manage_expenses: FileText,
+  view_payroll: DollarSignIcon,
+  manage_payroll: DollarSignIcon,
+  approve_payroll: ClipboardList,
+  pay_payroll: CreditCard,
   view_fees: BookUser,
   manage_transport: Bus,
   manage_hostel: Home,
@@ -285,6 +291,8 @@ const CATEGORY_ICONS: Record<string, React.ComponentType<{ className?: string }>
   Communication: MessageCircle,
   Library: Library,
 }
+
+const PAYROLL_PERMISSION_IDS = new Set(["view_payroll", "manage_payroll", "approve_payroll", "pay_payroll"])
 
 /**
  * Build the admin-staff nav sections from their assigned permissions:
@@ -319,8 +327,22 @@ function buildAdminStaffSections(perms: string[]): NavSection[] {
   ]
 
   const grouped = new Map<string, NavItem[]>()
+  let payrollLinkAdded = false
   for (const perm of NAV_LINK_PERMISSIONS) {
     if (perm.category === "Admin Staff") continue
+    if (PAYROLL_PERMISSION_IDS.has(perm.id)) {
+      if (!payrollLinkAdded && perms.some((permission) => PAYROLL_PERMISSION_IDS.has(permission))) {
+        const financeItems = grouped.get("Finance") ?? []
+        financeItems.push({
+          label: "Staff Payroll",
+          href: "/dashboard/school-admin/payroll",
+          icon: DollarSignIcon,
+        })
+        grouped.set("Finance", financeItems)
+      }
+      payrollLinkAdded = true
+      continue
+    }
     if (!perms.includes(perm.id)) continue
     const items = grouped.get(perm.category) ?? []
     items.push({
@@ -413,6 +435,9 @@ function SidebarNavContent({ isCollapsed, onClose, isMobile, onToggleCollapse }:
       if (user.role === 'school_admin') return true
       // Admin staff: filter by permissions
       if (isAdminStaff) {
+        if (item.href === "/dashboard/school-admin/payroll") {
+          return userPerms.some((permission) => PAYROLL_PERMISSION_IDS.has(permission))
+        }
         // Exact match by href from NAV_LINK_PERMISSIONS
         const hrefMatch = NAV_LINK_PERMISSIONS.find(p => p.href === item.href)
         if (hrefMatch && userPerms.includes(hrefMatch.id as any)) return true

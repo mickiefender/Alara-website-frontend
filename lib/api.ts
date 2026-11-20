@@ -470,6 +470,37 @@ export const libraryAPI = {
   returnBook: (id: number) => apiClient.post(`/library/loans/${id}/return/`),
 }
 
+export const payrollAPI = {
+  dashboard: () => apiClient.get("/payroll/dashboard/"),
+  employees: () => apiClient.get("/payroll/employees/"),
+  availableEmployees: () => apiClient.get("/payroll/employees/available/"),
+  createEmployee: (data: Record<string, unknown>) => apiClient.post("/payroll/employees/", data),
+  structures: () => apiClient.get("/payroll/structures/"),
+  createStructure: (data: Record<string, unknown>) => apiClient.post("/payroll/structures/", data),
+  assignStructure: (data: Record<string, unknown>) => apiClient.post("/payroll/assignments/", data),
+  adjustments: () => apiClient.get("/payroll/adjustments/"),
+  createAdjustment: (data: Record<string, unknown>) => apiClient.post("/payroll/adjustments/", data),
+  periods: () => apiClient.get("/payroll/periods/"),
+  period: (id: number) => apiClient.get(`/payroll/periods/${id}/`),
+  createPeriod: (data: Record<string, unknown>) => apiClient.post("/payroll/periods/", data),
+  calculate: (id: number) => apiClient.post(`/payroll/periods/${id}/calculate/`),
+  workflow: (id: number, action: "submit" | "approve" | "return" | "reject" | "close", note = "") =>
+    apiClient.post(`/payroll/periods/${id}/${action}/`, { note }),
+  payments: (periodId?: number) => apiClient.get("/payroll/payments/", {
+    params: periodId ? { period_id: periodId } : undefined,
+  }),
+  recordPayment: (data: Record<string, unknown>) => apiClient.post("/payroll/payments/", data),
+  payslips: () => apiClient.get("/payroll/payslips/"),
+  payslipPdf: (id: number) => apiClient.get(`/payroll/payslips/${id}/pdf/`, { responseType: "blob" }),
+  report: (periodId: number, format: "csv" | "xlsx" | "pdf") =>
+    apiClient.get("/payroll/reports/", { params: { period_id: periodId, format }, responseType: "blob" }),
+  settings: () => apiClient.get("/payroll/settings/"),
+  saveSettings: (data: Record<string, unknown>) => apiClient.put("/payroll/settings/", data),
+  loans: () => apiClient.get("/payroll/loans/"),
+  createLoan: (data: Record<string, unknown>) => apiClient.post("/payroll/loans/", data),
+  insights: () => apiClient.get("/payroll/insights/"),
+}
+
 export const complianceAPI = {
   status: () => apiClient.get("/compliance/status/"),
   profile: () => apiClient.get("/compliance/profile/"),
